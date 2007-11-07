@@ -1,0 +1,20 @@
+Some quick and dirty TODO's
+
+* The base nav background (display a grid - know the co-ordinates and accept
+  world long/lat coords. click to drag/scroll plus the ability to set zoom)
+* Create generic object container + some basic "dummy" objects to play in
+  the nav bg and havt it control on pan and zoom etc.
+* Create generic "menu object" - click to pop up cirtular menu. click again
+  to pop down, handle menu selection, display and callback and have it attach
+  to generic objects.
+* Create AP objects that set up menu and display AP info/status
+* Crate Neo objects that set up menu and display neo state
+* Create the "me" neo object as above but specifically for me
+* Create network "signal info" objects - display strength of signal at a given
+  point (otherwise not able to interact)
+* Create object links used for when you have joined an AP to display what
+  you are connected to - could be used for other no's too if done right).
+
+--- now we are at demo stage.
+
+  
