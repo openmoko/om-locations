@@ -25,7 +25,9 @@ struct _E_Smart_Data
 {
    Evas_Coord       x, y, w, h;
    Evas_Object     *obj;
+   
    Evas_Object     *clip;
+   Evas_Object     *overlay;
    Evas_Object     *event;
 
    Evas_List       *nav_items;
@@ -89,6 +91,7 @@ static void _e_nav_cb_event_mouse_wheel(void *data, Evas *evas, Evas_Object *obj
 static Evas_Object *_e_nav_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
 static void _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, Evas_Coord y);
 static void _e_nav_update(Evas_Object *obj);
+static void _e_nav_overlay_update(Evas_Object *obj);
 static int _e_nav_momentum_calc(Evas_Object *obj, double t);
 static int _e_nav_cb_timer_momemntum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
@@ -137,15 +140,15 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 	     sd->nav_items = evas_list_append(sd->nav_items, ni);
 	  }
      }
-/*   
-   sd->logo = _e_nav_theme_obj_new(evas_object_evas_get(obj), sd->dir,
-				   "modules/example/main");
-   evas_object_smart_member_add(sd->logo, obj);
-   evas_object_move(sd->logo, sd->x, sd->y);
-   evas_object_resize(sd->logo, sd->w, sd->h);
-   evas_object_clip_set(sd->logo, sd->clip);
-   evas_object_show(sd->logo);
- */ 
+
+   sd->overlay = _e_nav_theme_obj_new(evas_object_evas_get(obj), sd->dir,
+				   "modules/diversity_nav/main");
+   evas_object_smart_member_add(sd->overlay, obj);
+   evas_object_move(sd->overlay, sd->x, sd->y);
+   evas_object_resize(sd->overlay, sd->w, sd->h);
+   evas_object_clip_set(sd->overlay, sd->clip);
+   evas_object_show(sd->overlay);
+
    sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->event, obj);
    evas_object_move(sd->event, sd->x, sd->y);
@@ -163,6 +166,8 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 				  _e_nav_cb_event_mouse_move, obj);
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_WHEEL,
 				  _e_nav_cb_event_mouse_wheel, obj);
+   
+   _e_nav_overlay_update(obj);
 }
 
 /* location stack */
@@ -206,7 +211,6 @@ e_nav_coord_set(Evas_Object *obj, double lat, double lon, double when)
    double t;
    
    SMART_CHECK(obj, ;);
-//   if ((sd->lon == lon) && (sd->lat == lat)) return;
    if (when == 0.0)
      {
 	sd->cur.target.lat_lon_time = 0.0;
@@ -259,7 +263,6 @@ e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
    double t;
    
    SMART_CHECK(obj, ;);
-//   if (sd->zoom == zoom) return;
    /* zoom: 1.0 == 1pixel == 1 degree lat/lon */
    /*       2.0 == 1pixel == 2 degrees lat/lon */
    /*       5.0 == 1pixel == 5 degrees lat/lon */
@@ -362,8 +365,19 @@ _e_nav_smart_del(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    evas_object_del(sd->clip);
+   evas_object_del(sd->event);
+   evas_object_del(sd->overlay);
    if (sd->cur.momentum_timer) ecore_timer_del(sd->cur.momentum_timer);
    if (sd->moveng.pause_timer) ecore_timer_del(sd->moveng.pause_timer);
+   while (sd->nav_items)
+     {
+	E_Nav_Item *ni;
+	
+	ni = sd->nav_items->data;
+	evas_object_del(ni->obj);
+	free(ni);
+	sd->nav_items = evas_list_remove_list(sd->nav_items, sd->nav_items);
+     }
    free(sd);
 }
                     
@@ -377,6 +391,7 @@ _e_nav_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    sd->x = x;
    sd->y = y;
    evas_object_move(sd->clip, sd->x, sd->y);
+   evas_object_move(sd->overlay, sd->x, sd->y);
    evas_object_move(sd->event, sd->x, sd->y);
    _e_nav_update(obj);
 }
@@ -391,6 +406,7 @@ _e_nav_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    sd->w = w;
    sd->h = h;
    evas_object_resize(sd->clip, sd->w, sd->h);
+   evas_object_resize(sd->overlay, sd->w, sd->h);
    evas_object_resize(sd->event, sd->w, sd->h);
    _e_nav_update(obj);
 }
@@ -652,6 +668,26 @@ _e_nav_update(Evas_Object *obj)
 	     evas_object_resize(ni->obj, w, h);
 	  }
      }
+   _e_nav_overlay_update(obj);
+}
+
+static void
+_e_nav_overlay_update(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   char buf[256];
+   double z;
+   
+   sd = evas_object_smart_data_get(obj);
+   z = ((1000.0 * 40000.0 * 64.0) / 360.0) * sd->zoom;
+   if (z > 1000.0)
+     snprintf(buf, sizeof(buf), "%1.2fKm", z / 1000.0);
+   else
+     snprintf(buf, sizeof(buf), "%1.2fm", z);
+   edje_object_part_text_set(sd->overlay, "e.text.zoom", buf);
+   
+   snprintf(buf, sizeof(buf), "%1.5f %1.5f", sd->lat, sd->lon);
+   edje_object_part_text_set(sd->overlay, "e.text.latlon", buf);
 }
 
 static int
