@@ -1,5 +1,6 @@
 #include <e.h>
 #include "e_mod_main.h"
+#include "e_mod_nav.h"
 
 /* this is needed to advertise a label for the module IN the code (not just
  * the .desktop file) but more specifically the api version it was compiled
@@ -17,6 +18,8 @@ e_modapi_init(E_Module *m)
    bindtextdomain(PACKAGE, LOCALEDIR);
    bind_textdomain_codeset(PACKAGE, "UTF-8");
    
+   _e_mod_nav_init(m);
+   
    return m; /* return NULL on failure, anything else on success. the pointer
 	      * returned will be set as m->data for convenience tracking */
 }
@@ -25,6 +28,7 @@ e_modapi_init(E_Module *m)
 EAPI int
 e_modapi_shutdown(E_Module *m) 
 {
+   _e_mod_nav_shutdown();
    return 1; /* 1 for success, 0 for failure */
 }
 

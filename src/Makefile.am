@@ -9,7 +9,11 @@ INCLUDES = -I. \
 pkgdir = $(datadir)/$(MODULE_ARCH)
 pkg_LTLIBRARIES = module.la
 module_la_SOURCES = e_mod_main.h \
-		    e_mod_main.c
+		    e_mod_main.c \
+		    e_mod_nav.h \
+		    e_mod_nav.c \
+		    e_nav.h \
+		    e_nav.c
 		    
 module_la_LIBADD = @e_libs@
 module_la_LDFLAGS = -module -avoid-version
