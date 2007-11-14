@@ -29,7 +29,8 @@ struct _E_Smart_Data
    Evas_Object     *clip;
    Evas_Object     *overlay;
    Evas_Object     *event;
-
+   
+   /* the list of currently active items */
    Evas_List       *nav_items;
    
    /* directory to find theme .edj files from the module - if there is one */
@@ -70,6 +71,15 @@ struct _E_Smart_Data
       } history[20];
       Ecore_Timer   *pause_timer;
    } moveng;
+   
+   struct {
+      int min_level, max_level, level;
+      struct {
+	 Evas_Coord x, y, w, h;
+	 int ow, oh;
+	 Evas_Object *objs;
+      } tiles;
+   } zoominfo;
 };
 
 static void _e_nav_smart_init(void);
@@ -93,6 +103,7 @@ static void _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Ev
 static void _e_nav_update(Evas_Object *obj);
 static void _e_nav_overlay_update(Evas_Object *obj);
 static int _e_nav_momentum_calc(Evas_Object *obj, double t);
+static void _e_nav_zoominfo_upate(Evas_Object *obj);
 static int _e_nav_cb_timer_momemntum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
 
@@ -166,7 +177,8 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 				  _e_nav_cb_event_mouse_move, obj);
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_WHEEL,
 				  _e_nav_cb_event_mouse_wheel, obj);
-   
+
+   _e_nav_zoominfo_upate(obj);
    _e_nav_overlay_update(obj);
 }
 
@@ -263,6 +275,8 @@ e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
    double t;
    
    SMART_CHECK(obj, ;);
+   if (zoom > 1.0) zoom = 1.0;
+   else if (zoom < 0.000001) zoom = 0.000001;
    /* zoom: 1.0 == 1pixel == 1 degree lat/lon */
    /*       2.0 == 1pixel == 2 degrees lat/lon */
    /*       5.0 == 1pixel == 5 degrees lat/lon */
@@ -355,6 +369,9 @@ _e_nav_smart_add(Evas_Object *obj)
    sd->conf.lat = sd->lat;
    sd->conf.lon = sd->lon;
    sd->conf.zoom = sd->zoom;
+   
+   sd->zoominfo.min_level = 1;
+   sd->zoominfo.max_level = 3;
 }
 
 static void
@@ -607,7 +624,7 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
    vy2 = y;
    dist = sqrt(((vx2 - vx1) * (vx2 - vx1)) + ((vy2 - vy1) * (vy2 - vy1)));
 
-   zoomout = (double)(dist - 50) / 20;
+   zoomout = (double)(dist - 80) / 40;
    if (zoomout < 0.0) zoomout = 0.0;
    zoomout = zoomout * zoomout;
    
@@ -647,6 +664,7 @@ _e_nav_update(Evas_Object *obj)
    E_Smart_Data *sd;
    
    sd = evas_object_smart_data_get(obj);
+   _e_nav_zoominfo_upate(obj);
      {
 	Evas_List *l;
 	
@@ -676,7 +694,9 @@ _e_nav_overlay_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    char buf[256];
-   double z;
+   double z, lat, lon;
+   char *xdir, *ydir;
+   int latd, latm, lats, lond, lonm, lons;
    
    sd = evas_object_smart_data_get(obj);
    z = ((1000.0 * 40000.0 * 64.0) / 360.0) * sd->zoom;
@@ -686,8 +706,35 @@ _e_nav_overlay_update(Evas_Object *obj)
      snprintf(buf, sizeof(buf), "%1.2fm", z);
    edje_object_part_text_set(sd->overlay, "e.text.zoom", buf);
    
-   snprintf(buf, sizeof(buf), "%1.5f %1.5f", sd->lat, sd->lon);
-   edje_object_part_text_set(sd->overlay, "e.text.latlon", buf);
+   lat = sd->lat;
+   if (lat >= 0.0) xdir = "E";
+   else 
+     {
+	xdir = "W";
+	lat = -lat;
+     }
+   latd = (int)lat;
+   lat = (lat - (double)latd) * 60.0;
+   latm = (int)lat;
+   lat = (lat - (double)latm) * 60.0;
+   lats = (int)lat;
+   snprintf(buf, sizeof(buf), "%i°%i'%i\"%s", latd, latm, lats, xdir);
+   edje_object_part_text_set(sd->overlay, "e.text.latitude", buf);
+   
+   lon = sd->lon;
+   if (lon >= 0.0) ydir = "S";
+   else 
+     {
+	ydir = "N";
+	lon = -lon;
+     }
+   lond = (int)lon;
+   lon = (lon - (double)lond) * 60.0;
+   lonm = (int)lon;
+   lon = (lon - (double)lonm) * 60.0;
+   lons = (int)lon;
+   snprintf(buf, sizeof(buf), "%i°%i'%i\"%s", lond, lonm, lons, ydir);
+   edje_object_part_text_set(sd->overlay, "e.text.longitude", buf);
 }
 
 static int
@@ -737,6 +784,60 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
    else
      done++;
    return done;
+}
+
+static void
+_e_nav_zoominfo_upate(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   int i;
+   int level, tiles_x, tiles_y, tiles_w, tiles_h, tiles_ox, tiles_oy;
+   int wtilesx, wtilesy;
+   double tpx, tpy;
+   double span, tw;
+   
+   sd = evas_object_smart_data_get(obj);
+   span = 360.0 / sd->zoom; /* world width is 'span' pixels */
+   printf("zoom = %3.9f\n", sd->zoom);
+   printf("  world width = %3.3f pxiels\n", span);
+   level = 1;
+   /* 1 tile = 225x225 - each level has world in NxM tiles */
+   /* FIXME: support more zoom levels here - if ever */
+   if      (span >=  21600) level =  5; /* 96x48 */
+   else if (span >=  10800) level =  4; /* 48x24 */
+   else if (span >=   5400) level =  3; /* 24x12 */
+   else if (span >=   2700) level =  2; /* 12x6 */
+   else if (span >=   1350) level =  1; /* 6x3 */
+   if (level < sd->zoominfo.min_level) level = sd->zoominfo.min_level;
+   else if (level > sd->zoominfo.max_level) level = sd->zoominfo.max_level;
+   printf("  level = %i\n", level);
+   wtilesx = 6 << (level - 1);
+   wtilesy = 3 << (level - 1);
+   tw = span / ((double)wtilesx);
+   printf("  tile size = %3.1fx%3.1f\n", tw, tw);
+   tiles_w = 1 + (((double)sd->w + tw) / tw);
+   tiles_h = 1 + (((double)sd->h + tw) / tw);
+   printf("  tile count = %i x %i\n", tiles_w, tiles_h);
+   tpx = ((180.0 + sd->lat - ((sd->w * sd->zoom) / 2)) * wtilesx) / 360.0;
+   tpy = ((90.0 + sd->lon - ((sd->h * sd->zoom) / 2)) * wtilesy) / 180.0;
+   printf("    tpx = %3.3f tpy = %3.3f\n", tpx, tpy);
+   tiles_ox = (int)tpx;
+   tiles_oy = (int)tpy;
+   tiles_x = -tw * (tpx - tiles_ox);
+   tiles_y = -tw * (tpy - tiles_oy);
+   printf("   tiles origin = %i %i\n", tiles_ox, tiles_oy);
+   printf("   tiles offset = %i %i\n", tiles_x, tiles_y);
+   
+   /* MOVE each zoominfo.tiles.objs objs
+    *   if (tiles_ox || tiles_oy) changed;
+    * MOVE + RESIZE zoominfo.tiles.objs objs
+    *   if (tw) changed
+    * MOVE obj handles zoominfo.tiles.objs by a memcpy()
+    *   if (tiles_ox || tiles_oy) changed.
+    * RE-ALLOC zoominfo.tiles.objs
+    *   if (tiles_w || tiles_h || level) changed
+    *
+    */
 }
 
 static int
