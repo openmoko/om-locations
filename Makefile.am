@@ -3,7 +3,7 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.guess config.h.in \
 		       config.sub configure depcomp install-sh ltmain.sh \
 		       missing config.rpath mkinstalldirs 
 
-SUBDIRS = src po
+SUBDIRS = src po maps
 
 EDJE_FLAGS = -v \
 -id $(top_srcdir)/images \
