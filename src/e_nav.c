@@ -4,6 +4,7 @@
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _E_Nav_Item E_Nav_Item;
+typedef struct _E_Nav_Tileset E_Nav_Tileset;
 
 typedef enum _E_Nav_Movengine_Action
 {
@@ -19,6 +20,20 @@ struct _E_Nav_Item
    struct {
       double x, y, w, h;
    } pos;
+};
+
+struct _E_Nav_Tileset
+{
+   Evas_Object *obj;
+   const char *map;
+   const char *format;
+   int min_level, max_level, level;
+   struct {
+      double tilesize;
+      Evas_Coord offset_x, offset_y;
+      int ox, oy, ow, oh;
+      Evas_Object **objs;
+   } tiles;
 };
 
 struct _E_Smart_Data
@@ -72,6 +87,8 @@ struct _E_Smart_Data
       Ecore_Timer   *pause_timer;
    } moveng;
    
+   Evas_List *tilesets;
+/*   
    struct {
       const char *map;
       const char *format;
@@ -83,6 +100,7 @@ struct _E_Smart_Data
 	 Evas_Object **objs;
       } tiles;
    } zoominfo;
+ */
 };
 
 static void _e_nav_smart_init(void);
@@ -106,7 +124,10 @@ static void _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Ev
 static void _e_nav_update(Evas_Object *obj);
 static void _e_nav_overlay_update(Evas_Object *obj);
 static int _e_nav_momentum_calc(Evas_Object *obj, double t);
+static E_Nav_Tileset *_e_nav_tileset_add(Evas_Object *obj);
+static void _e_nav_tileset_del(E_Nav_Tileset *nt);
 static void _e_nav_zoominfo_update(Evas_Object *obj);
+static void _e_nav_zoominfo_update_tileset(E_Nav_Tileset *nt);
 static int _e_nav_cb_timer_momemntum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
 
@@ -128,18 +149,18 @@ void
 e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 {
    E_Smart_Data *sd;
+   E_Nav_Tileset *nt;
    
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
 
      {
+	E_Nav_Item *ni;
 	int i;
 	
 	for (i = 0; i < 30; i++)
 	  {
-	     E_Nav_Item *ni;
-	     
 	     ni = calloc(1, sizeof(E_Nav_Item));
 	     ni->obj = evas_object_rectangle_add(evas_object_evas_get(obj));
 	     evas_object_smart_member_add(ni->obj, obj);
@@ -153,6 +174,19 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 	     ni->pos.h = ((double)(rand() % 4500) / 1000.0) + 0.5;
 	     sd->nav_items = evas_list_append(sd->nav_items, ni);
 	  }
+
+	     ni = calloc(1, sizeof(E_Nav_Item));
+	     ni->obj = evas_object_rectangle_add(evas_object_evas_get(obj));
+	     evas_object_smart_member_add(ni->obj, obj);
+	     evas_object_color_set(ni->obj, rand() & 0xff, rand() & 0xff, rand() & 0xff, 255);
+	     evas_object_clip_set(ni->obj, sd->clip);
+	     evas_object_show(ni->obj);
+	     ni->nav = obj;
+	     ni->pos.x = 151.207114 - 0.001;
+	     ni->pos.y = 33.867139 - 0.001;
+	     ni->pos.w = 0.002;
+	     ni->pos.h = 0.002;
+	     sd->nav_items = evas_list_append(sd->nav_items, ni);
      }
 
    sd->overlay = _e_nav_theme_obj_new(evas_object_evas_get(obj), sd->dir,
@@ -181,6 +215,11 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_WHEEL,
 				  _e_nav_cb_event_mouse_wheel, obj);
 
+   nt = _e_nav_tileset_add(obj);
+//   nt = _e_nav_tileset_add(obj);
+//   nt->map = "map";
+//   nt->format = "png";
+//   nt->max_level = 5;
    _e_nav_zoominfo_update(obj);
    _e_nav_overlay_update(obj);
 }
@@ -377,18 +416,12 @@ _e_nav_smart_add(Evas_Object *obj)
    sd->conf.lat = sd->lat;
    sd->conf.lon = sd->lon;
    sd->conf.zoom = sd->zoom;
-   
-   sd->zoominfo.min_level = 1;
-   sd->zoominfo.max_level = 3;
-   sd->zoominfo.map = "sat";
-   sd->zoominfo.format = "jpg";
 }
 
 static void
 _e_nav_smart_del(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   int i, j;
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
@@ -406,15 +439,7 @@ _e_nav_smart_del(Evas_Object *obj)
 	free(ni);
 	sd->nav_items = evas_list_remove_list(sd->nav_items, sd->nav_items);
      }
-   if (sd->zoominfo.tiles.objs)
-     {
-	for (j = 0; j < sd->zoominfo.tiles.oh; j++)
-	  {
-	     for (i = 0; i < sd->zoominfo.tiles.ow; i++)
-	       evas_object_del(sd->zoominfo.tiles.objs[(j * sd->zoominfo.tiles.ow) + i]);
-	  }
-	free(sd->zoominfo.tiles.objs);
-     }
+   while (sd->tilesets) _e_nav_tileset_del(sd->tilesets->data);
    free(sd);
 }
                     
@@ -806,8 +831,63 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
    return done;
 }
 
+static E_Nav_Tileset *
+_e_nav_tileset_add(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   E_Nav_Tileset *nt;
+   
+   sd = evas_object_smart_data_get(obj);
+   nt = calloc(1, sizeof(E_Nav_Tileset));
+   if (!nt) return;
+   
+   sd->tilesets = evas_list_append(sd->tilesets, nt);
+   nt->obj = obj;
+   nt->min_level = 1;
+   nt->max_level = 3;
+   nt->map = "sat";
+   nt->format = "jpg";
+   return nt;
+}
+
+static void
+_e_nav_tileset_del(E_Nav_Tileset *nt)
+{
+   E_Smart_Data *sd;
+   int i, j;
+   
+   sd = evas_object_smart_data_get(nt->obj);
+   sd->tilesets = evas_list_remove(sd->tilesets, nt);
+   if (nt->tiles.objs)
+     {
+	for (j = 0; j < nt->tiles.oh; j++)
+	  {
+	     for (i = 0; i < nt->tiles.ow; i++)
+	       evas_object_del(nt->tiles.objs[(j * nt->tiles.ow) + i]);
+	  }
+	free(nt->tiles.objs);
+     }
+   free(nt);
+}
+
 static void
 _e_nav_zoominfo_update(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+   
+   sd = evas_object_smart_data_get(obj);
+   for (l = sd->tilesets; l; l = l->next)
+     {
+	E_Nav_Tileset *nt;
+	
+	nt = l->data;
+	_e_nav_zoominfo_update_tileset(nt);
+     }
+}
+
+static void
+_e_nav_zoominfo_update_tileset(E_Nav_Tileset *nt)
 {
    E_Smart_Data *sd;
    int i, j;
@@ -817,215 +897,136 @@ _e_nav_zoominfo_update(Evas_Object *obj)
    double span, tw;
    Evas_Coord x, y, xx, yy;
    const char *mapdir, *mapset, *mapformat;
-   char *mapbuf[4096];
+   char mapbuf[PATH_MAX];
+   enum {
+      MODE_NONE,
+	MODE_RESET,
+	MODE_ORIGIN,
+	MODE_RESIZE,
+	MODE_MOVE
+   };
+   int mode = MODE_NONE;
    
-   sd = evas_object_smart_data_get(obj);
+   sd = evas_object_smart_data_get(nt->obj);
 
    snprintf(mapbuf, sizeof(mapbuf), "%s/maps", sd->dir);
+   
    mapdir = mapbuf;
-   mapset = sd->zoominfo.map;
-   mapformat = sd->zoominfo.format;
+   mapset = nt->map;
+   mapformat = nt->format;
    
    span = 360.0 / sd->zoom; /* world width is 'span' pixels */
-//   printf("zoom = %3.9f\n", sd->zoom);
-//   printf("  world width = %3.3f pxiels\n", span);
    level = 1;
-   /* 1 tile = 225x225 - each level has world in NxM tiles */
-   /* FIXME: support more zoom levels here - if ever */
-   if      (span >=  21600) level =  5; /* 96x48 */
-   else if (span >=  10800) level =  4; /* 48x24 */
-   else if (span >=   5400) level =  3; /* 24x12 */
-   else if (span >=   2700) level =  2; /* 12x6 */
-   else if (span >=   1350) level =  1; /* 6x3 */
-   if (level < sd->zoominfo.min_level) level = sd->zoominfo.min_level;
-   else if (level > sd->zoominfo.max_level) level = sd->zoominfo.max_level;
-//   printf("  level = %i\n", level);
+   if      (span >  43200) level =  7; /* 384x192 */
+   else if (span >  21600) level =  6; /* 192x96 */
+   else if (span >  10800) level =  5; /* 96x48 */
+   else if (span >   5400) level =  4; /* 48x24 */
+   else if (span >   2700) level =  3; /* 24x12 */
+   else if (span >   1350) level =  2; /* 12x6 */
+   if (level < nt->min_level) level = nt->min_level;
+   else if (level > nt->max_level) level = nt->max_level;
+   
    wtilesx = 6 << (level - 1);
    wtilesy = 3 << (level - 1);
    tw = span / ((double)wtilesx);
-//   printf("  tile size = %3.1fx%3.1f\n", tw, tw);
    tiles_w = 1 + (((double)sd->w + tw) / tw);
    tiles_h = 1 + (((double)sd->h + tw) / tw);
-//   printf("  tile count = %i x %i\n", tiles_w, tiles_h);
    tpx = ((180.0 + sd->lat - ((sd->w * sd->zoom) / 2)) * wtilesx) / 360.0;
    tpy = ((90.0 + sd->lon - ((sd->h * sd->zoom) / 2)) * wtilesy) / 180.0;
-//   printf("    tpx = %3.3f tpy = %3.3f\n", tpx, tpy);
    tiles_ox = (int)tpx;
    tiles_oy = (int)tpy;
    tiles_x = -tw * (tpx - tiles_ox);
    tiles_y = -tw * (tpy - tiles_oy);
-//   printf("   tiles origin = %i %i\n", tiles_ox, tiles_oy);
-//   printf("   tiles offset = %i %i\n", tiles_x, tiles_y);
 
-   if ((sd->zoominfo.tiles.ow != tiles_w) ||
-       (sd->zoominfo.tiles.oh != tiles_h) ||
-       (sd->zoominfo.level != level))
+   if ((nt->tiles.ow != tiles_w) || (nt->tiles.oh != tiles_h) ||
+       (nt->level != level))
+     mode = MODE_RESET;
+   else if ((nt->tiles.ox != tiles_ox) || (nt->tiles.oy != tiles_oy))
+     mode = MODE_ORIGIN;
+   else if (tw != nt->tiles.tilesize)
+     mode = MODE_RESIZE;
+   else if ((tiles_x != nt->tiles.offset_x) || (tiles_y != nt->tiles.offset_y))
+     mode = MODE_MOVE;
+     
+   if (mode == MODE_NONE) return;
+   
+   if (mode == MODE_RESET)
      {
-	printf("reset tiles\n");
 	// reallac entirely move and resize
-	if (sd->zoominfo.tiles.objs)
+	if (nt->tiles.objs)
 	  {
-	     for (j = 0; j < sd->zoominfo.tiles.oh; j++)
+	     for (j = 0; j < nt->tiles.oh; j++)
 	       {
-		  for (i = 0; i < sd->zoominfo.tiles.ow; i++)
-		    evas_object_del(sd->zoominfo.tiles.objs[(j * sd->zoominfo.tiles.ow) + i]);
+		  for (i = 0; i < nt->tiles.ow; i++)
+		    evas_object_del(nt->tiles.objs[(j * nt->tiles.ow) + i]);
 	       }
-	     free(sd->zoominfo.tiles.objs);
-	  }
-	
-	sd->zoominfo.tiles.ow = tiles_w;
-	sd->zoominfo.tiles.oh = tiles_h;
-	sd->zoominfo.level = level;
-	sd->zoominfo.tiles.ox = tiles_ox;
-	sd->zoominfo.tiles.oy = tiles_oy;
-	sd->zoominfo.tiles.tilesize = tw;
-	sd->zoominfo.tiles.offset_x = tiles_x;
-	sd->zoominfo.tiles.offset_y = tiles_y;
-	
-	sd->zoominfo.tiles.objs = malloc(tiles_w * tiles_h * sizeof(Evas_Object *));
-	if (sd->zoominfo.tiles.objs)
-	  {
-	     for (j = 0; j < sd->zoominfo.tiles.oh; j++)
-	       {
-		  y = (j * sd->zoominfo.tiles.tilesize);
-		  yy = ((j + 1) * sd->zoominfo.tiles.tilesize);
-		  for (i = 0; i < sd->zoominfo.tiles.ow; i++)
-		    {
-		       Evas_Object *o;
-		       char buf[PATH_MAX];
-		       
-		       o = evas_object_image_add(evas_object_evas_get(obj));
-		       sd->zoominfo.tiles.objs[(j * sd->zoominfo.tiles.ow) + i] = o;
-		       
-		       evas_object_smart_member_add(o, obj);
-		       snprintf(buf, sizeof(buf), "%s/%s/w-%i-%i-%i.%s",
-				mapdir, mapset,
-				sd->zoominfo.level, 
-				i + sd->zoominfo.tiles.ox,
-				j + sd->zoominfo.tiles.oy,
-				mapformat);
-		       evas_object_image_file_set(o, buf, NULL);
-		       evas_object_clip_set(o, sd->clip);
-		       evas_object_pass_events_set(o, 1);
-		       x = (i * sd->zoominfo.tiles.tilesize);
-		       xx = ((i + 1) * sd->zoominfo.tiles.tilesize);
-		       evas_object_move(o, 
-					sd->x + sd->zoominfo.tiles.offset_x + x,
-					sd->y + sd->zoominfo.tiles.offset_y + y);
-		       evas_object_resize(o, xx - x, yy - y);
-		       evas_object_image_fill_set(o, 0, 0, xx - x, yy - y);
-		       evas_object_lower(o);
-		       evas_object_show(o);
-		    }
-	       }
-	  }
-     }
-   else if ((sd->zoominfo.tiles.ox != tiles_ox) ||
-	    (sd->zoominfo.tiles.oy != tiles_oy))
-     {
-	printf("tile origin moved\n");
-	sd->zoominfo.tiles.ox = tiles_ox;
-	sd->zoominfo.tiles.oy = tiles_oy;
-	sd->zoominfo.tiles.tilesize = tw;
-	sd->zoominfo.tiles.offset_x = tiles_x;
-	sd->zoominfo.tiles.offset_y = tiles_y;
-	
-	if (sd->zoominfo.tiles.objs)
-	  {
-	     for (j = 0; j < sd->zoominfo.tiles.oh; j++)
-	       {
-		  y = (j * sd->zoominfo.tiles.tilesize);
-		  yy = ((j + 1) * sd->zoominfo.tiles.tilesize);
-		  for (i = 0; i < sd->zoominfo.tiles.ow; i++)
-		    {
-		       Evas_Object *o;
-		       char buf[PATH_MAX];
-		       
-		       o = sd->zoominfo.tiles.objs[(j * sd->zoominfo.tiles.ow) + i];
-		       snprintf(buf, sizeof(buf), "%s/%s/w-%i-%i-%i.%s",
-				mapdir, mapset,
-				sd->zoominfo.level, 
-				i + sd->zoominfo.tiles.ox,
-				j + sd->zoominfo.tiles.oy,
-				mapformat);
-		       evas_object_image_file_set(o, buf, NULL);
-		       x = (i * sd->zoominfo.tiles.tilesize);
-		       xx = ((i + 1) * sd->zoominfo.tiles.tilesize);
-		       evas_object_move(o, 
-					sd->x + sd->zoominfo.tiles.offset_x + x,
-					sd->y + sd->zoominfo.tiles.offset_y + y);
-		       evas_object_resize(o, xx - x, yy - y);
-		       evas_object_image_fill_set(o, 0, 0, xx - x, yy - y);
-		    }
-	       }
-	  }
-     }
-   else if (tw != sd->zoominfo.tiles.tilesize)
-     {
-	printf("tile size changed\n");
-	sd->zoominfo.tiles.tilesize = tw;
-	sd->zoominfo.tiles.offset_x = tiles_x;
-	sd->zoominfo.tiles.offset_y = tiles_y;
-	
-	if (sd->zoominfo.tiles.objs)
-	  {
-	     for (j = 0; j < sd->zoominfo.tiles.oh; j++)
-	       {
-		  y = (j * sd->zoominfo.tiles.tilesize);
-		  yy = ((j + 1) * sd->zoominfo.tiles.tilesize);
-		  for (i = 0; i < sd->zoominfo.tiles.ow; i++)
-		    {
-		       Evas_Object *o;
-		       
-		       o = sd->zoominfo.tiles.objs[(j * sd->zoominfo.tiles.ow) + i];
-		       x = (i * sd->zoominfo.tiles.tilesize);
-		       xx = ((i + 1) * sd->zoominfo.tiles.tilesize);
-		       evas_object_move(o, 
-					sd->x + sd->zoominfo.tiles.offset_x + x,
-					sd->y + sd->zoominfo.tiles.offset_y + y);
-		       evas_object_resize(o, xx - x, yy - y);
-		       evas_object_image_fill_set(o, 0, 0, xx - x, yy - y);
-		    }
-	       }
-	  }
-     }
-   else if ((tiles_x != sd->zoominfo.tiles.offset_x) ||
-	    (tiles_y != sd->zoominfo.tiles.offset_y))
-     {
-	printf("tile offset changed\n");
-	sd->zoominfo.tiles.offset_x = tiles_x;
-	sd->zoominfo.tiles.offset_y = tiles_y;
-	if (sd->zoominfo.tiles.objs)
-	  {
-	     for (j = 0; j < sd->zoominfo.tiles.oh; j++)
-	       {
-		  y = (j * sd->zoominfo.tiles.tilesize);
-		  yy = ((j + 1) * sd->zoominfo.tiles.tilesize);
-		  for (i = 0; i < sd->zoominfo.tiles.ow; i++)
-		    {
-		       Evas_Object *o;
-		       
-		       o = sd->zoominfo.tiles.objs[(j * sd->zoominfo.tiles.ow) + i];
-		       x = (i * sd->zoominfo.tiles.tilesize);
-		       xx = ((i + 1) * sd->zoominfo.tiles.tilesize);
-		       evas_object_move(o, 
-					sd->x + sd->zoominfo.tiles.offset_x + x,
-					sd->y + sd->zoominfo.tiles.offset_y + y);
-		    }
-	       }
+	     free(nt->tiles.objs);
 	  }
      }
    
-   /* MOVE each zoominfo.tiles.objs objs
-    *   if (tiles_x || tiles_y) changed;
-    * MOVE + RESIZE zoominfo.tiles.objs objs
-    *   if (tw) changed
-    * MOVE obj handles zoominfo.tiles.objs by a memcpy()
-    *   if (tiles_ox || tiles_oy) changed.
-    * RE-ALLOC zoominfo.tiles.objs
-    *   if (tiles_w || tiles_h || level) changed
-    *
-    */
+   nt->tiles.ow = tiles_w;
+   nt->tiles.oh = tiles_h;
+   nt->level = level;
+   nt->tiles.ox = tiles_ox;
+   nt->tiles.oy = tiles_oy;
+   nt->tiles.tilesize = tw;
+   nt->tiles.offset_x = tiles_x;
+   nt->tiles.offset_y = tiles_y;
+   
+   if (mode == MODE_RESET)
+     nt->tiles.objs = malloc(tiles_w * tiles_h * sizeof(Evas_Object *));
+   
+   if (nt->tiles.objs)
+     {
+	for (j = 0; j < nt->tiles.oh; j++)
+	  {
+	     y = (j * nt->tiles.tilesize);
+	     yy = ((j + 1) * nt->tiles.tilesize);
+	     for (i = 0; i < nt->tiles.ow; i++)
+	       {
+		  Evas_Object *o;
+		  char buf[PATH_MAX];
+		  
+		  if (mode == MODE_RESET)
+		    {
+		       o = evas_object_image_add(evas_object_evas_get(nt->obj));
+		       nt->tiles.objs[(j * nt->tiles.ow) + i] = o;
+		       evas_object_smart_member_add(o, nt->obj);
+		       evas_object_clip_set(o, sd->clip);
+		       evas_object_pass_events_set(o, 1);
+		       evas_object_stack_below(o, sd->clip);
+		    }
+		  else
+		    o = nt->tiles.objs[(j * nt->tiles.ow) + i];
+		  
+		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN))
+		    {
+		       snprintf(buf, sizeof(buf), "%s/%s/w-%i-%i-%i.%s",
+				mapdir, mapset,
+				nt->level, 
+				i + nt->tiles.ox,
+				j + nt->tiles.oy,
+				mapformat);
+		       evas_object_image_file_set(o, buf, NULL);
+		       if (evas_object_image_load_error_get(o) == EVAS_LOAD_ERROR_NONE)
+			 evas_object_show(o);
+		       else
+			 evas_object_hide(o);
+		    }
+		  x = (i * nt->tiles.tilesize);
+		  xx = ((i + 1) * nt->tiles.tilesize);
+		  evas_object_move(o, 
+				   sd->x + nt->tiles.offset_x + x,
+				   sd->y + nt->tiles.offset_y + y);
+		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN) ||
+		      (mode == MODE_RESIZE))
+		    {
+		       evas_object_resize(o, xx - x, yy - y);
+		       evas_object_image_fill_set(o, 0, 0, xx - x, yy - y);
+		    }
+	       }
+	  }
+     }
 }
 
 static int
