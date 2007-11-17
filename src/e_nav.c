@@ -5,7 +5,9 @@
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _E_Nav_Item E_Nav_Item;
 typedef struct _E_Nav_Tileset E_Nav_Tileset;
-
+typedef struct _E_Nav_World E_Nav_World;
+typedef struct _E_Nav_World_Block E_Nav_World_Block;
+  
 typedef enum _E_Nav_Movengine_Action
 {
    E_NAV_MOVEENGINE_START,
@@ -16,6 +18,7 @@ typedef enum _E_Nav_Movengine_Action
 struct _E_Nav_Item
 {
    Evas_Object *nav;
+   E_Nav_World_Item *world_item;
    Evas_Object *obj;
    struct {
       double x, y, w, h;
@@ -34,6 +37,47 @@ struct _E_Nav_Tileset
       int ox, oy, ow, oh;
       Evas_Object **objs;
    } tiles;
+};
+
+struct _E_Nav_World_Item
+{
+   Evas_Object *obj; // the nav obj this nav item belongs to
+   E_Nav_World_Block *block;
+   E_Nav_Item *item; // an instance of this world item in the real canvas widget
+   E_Nav_World_Item_Type type;
+   struct { // callback to add new instances of this item
+      Evas_Object *(*func) (void *data, Evas *evas, const char *theme_dir);
+      void *data;
+   } add;
+   struct { // this is the zoom range that the item is visible between
+      double min, max; // if 0.0 for both - then always visible */
+   } zoom_range;
+   struct { // where in the world it lives. x,y are the center. w,h the size
+            // in latitudinal/longitudinal degrees
+      double x, y, w, h;
+   } geom;
+   unsigned char scale : 1; // scale item with zoom or not
+};
+
+struct _E_Nav_World
+{
+   void *parent; // always NULL
+   E_Nav_World_Block *blocks[360][180]; // the world is 360x180 degree blocks
+};
+
+struct _E_Nav_World_Block
+{
+   void *parent; // the parent item
+   Evas_List *summary_items; // a list of world items to summarise all 25x25
+                             // sub-blocks with a list or world items to show
+			     // when zoomd out so the sub-blocks are too
+			     // small
+   void *blocks[25][25]; // each world block is 25x25 sub-blocks. if the parent
+                         // is a world struct, then u have another 2 levels of
+			 // blocks then a list of world items (so it goes
+                         // world -> block -> block-> block -> list). as it's
+                         // a void * for blocks - they can nest infinitely
+                         // if we want.
 };
 
 struct _E_Smart_Data
@@ -88,19 +132,8 @@ struct _E_Smart_Data
    } moveng;
    
    Evas_List *tilesets;
-/*   
-   struct {
-      const char *map;
-      const char *format;
-      int min_level, max_level, level;
-      struct {
-	 double tilesize;
-	 Evas_Coord offset_x, offset_y;
-	 int ox, oy, ow, oh;
-	 Evas_Object **objs;
-      } tiles;
-   } zoominfo;
- */
+   
+   E_Nav_World *world;
 };
 
 static void _e_nav_smart_init(void);
@@ -126,8 +159,8 @@ static void _e_nav_overlay_update(Evas_Object *obj);
 static int _e_nav_momentum_calc(Evas_Object *obj, double t);
 static E_Nav_Tileset *_e_nav_tileset_add(Evas_Object *obj);
 static void _e_nav_tileset_del(E_Nav_Tileset *nt);
-static void _e_nav_zoominfo_update(Evas_Object *obj);
-static void _e_nav_zoominfo_update_tileset(E_Nav_Tileset *nt);
+static void _e_nav_wallpaper_update(Evas_Object *obj);
+static void _e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt);
 static int _e_nav_cb_timer_momemntum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
 
@@ -175,6 +208,7 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 	     sd->nav_items = evas_list_append(sd->nav_items, ni);
 	  }
 
+	/* home !!! */
 	     ni = calloc(1, sizeof(E_Nav_Item));
 	     ni->obj = evas_object_rectangle_add(evas_object_evas_get(obj));
 	     evas_object_smart_member_add(ni->obj, obj);
@@ -220,7 +254,7 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 //   nt->map = "map";
 //   nt->format = "png";
 //   nt->max_level = 5;
-   _e_nav_zoominfo_update(obj);
+   _e_nav_wallpaper_update(obj);
    _e_nav_overlay_update(obj);
 }
 
@@ -358,8 +392,187 @@ e_nav_zoom_get(Evas_Object *obj)
    return sd->zoom;
 }
 
+/* world items */
+E_Nav_World_Item *
+e_nav_world_item_add(Evas_Object *obj)
+{
+   E_Nav_World_Item *nwi;
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, NULL;);
+   nwi = calloc(1, sizeof(E_Nav_World_Item));
+   if (!nwi) return NULL;
+   nwi->obj = obj;
+   /* FIXME: add to sd->world */
+   return nwi;
+}
 
+void
+e_nav_world_item_del(E_Nav_World_Item *nwi)
+{
+   free(nwi);
+}
 
+void
+e_nav_world_item_type_set(E_Nav_World_Item *nwi, E_Nav_World_Item_Type type)
+{
+}
+
+E_Nav_World_Item_Type
+e_nav_world_item_type_get(E_Nav_World_Item *nwi)
+{
+}
+
+void
+e_nav_world_item_add_func_set(E_Nav_World_Item *nwi, Evas_Object *(*func) (void *data, Evas *evas, const char *theme_dir), void *data)
+{
+}
+
+void
+e_nav_world_item_zoom_range_set(E_Nav_World_Item *nwi, double min, double max)
+{
+}
+
+void
+e_nav_world_item_zoom_range_get(E_Nav_World_Item *nwi, double *min, double *max)
+{
+}
+
+void
+e_nav_world_item_geometry_set(E_Nav_World_Item *nwi, double x, double y, double w, double h)
+{
+}
+
+void
+e_nav_world_item_geometry_get(E_Nav_World_Item *nwi, double *x, double *y, double *w, double *h)
+{
+}
+
+void
+e_nav_world_item_scale_set(E_Nav_World_Item *nwi, int scale)
+{
+}
+
+int
+e_nav_world_item_scale_get(E_Nav_World_Item *nwi)
+{
+}
+
+/* nav world internal calls - move to the end later */
+static void
+_e_nav_world_item_free(E_Nav_World_Item *nwi)
+{
+   /* FIXME: free all nwi stuff */
+   free(nwi);
+}
+
+static void
+_e_nav_world_block_3_del(E_Nav_World_Block *blk)
+{
+   int i, j;
+   Evas_List *items;
+   
+   items = blk->summary_items;
+   while (items)
+     {
+	_e_nav_world_item_free(items->data);
+	items = evas_list_remove_list(items, items);
+     }
+   blk->summary_items = NULL;
+   for (j = 0; j < 25; j++)
+     {
+	for (i = 0; i < 25; i++)
+	  {
+	     items = blk->blocks[i][j];
+	     while (items)
+	       {
+		  _e_nav_world_item_free(items->data);
+		  items = evas_list_remove_list(items, items);
+	       }
+	     blk->blocks[i][j] = NULL;
+	  }
+     }
+}
+  
+static void
+_e_nav_world_block_2_del(E_Nav_World_Block *blk)
+{
+   int i, j;
+   Evas_List *items;
+   
+   items = blk->summary_items;
+   while (items)
+     {
+	_e_nav_world_item_free(items->data);
+	items = evas_list_remove_list(items, items);
+     }
+   blk->summary_items = NULL;
+   for (j = 0; j < 25; j++)
+     {
+	for (i = 0; i < 25; i++)
+	  {
+	     _e_nav_world_block_3_del(blk->blocks[i][j]);
+	     blk->blocks[i][j] = NULL;
+	  }
+     }
+}
+  
+static void
+_e_nav_world_block_1_del(E_Nav_World_Block *blk)
+{
+   int i, j;
+   Evas_List *items;
+   
+   items = blk->summary_items;
+   while (items)
+     {
+	_e_nav_world_item_free(items->data);
+	items = evas_list_remove_list(items, items);
+     }
+   blk->summary_items = NULL;
+   for (j = 0; j < 25; j++)
+     {
+	for (i = 0; i < 25; i++)
+	  {
+	     if (blk->blocks[i][j])
+	       {
+		  _e_nav_world_block_2_del(blk->blocks[i][j]);
+		  blk->blocks[i][j] = NULL;
+	       }
+	  }
+     }
+}
+  
+static void
+_e_nav_world_add(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (sd->world) return;
+   sd->world = calloc(1, sizeof(E_Nav_World));
+   return;
+}
+
+static void
+_e_nav_world_del(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   int i, j;
+   
+   sd = evas_object_smart_data_get(obj);
+   if (!sd->world) return;
+   for (j = 0; j < 180; j++)
+     {
+	for (i = 0; i < 360; i++)
+	  {
+	     if (sd->world->blocks[i][j])
+	       _e_nav_world_block_1_del(sd->world->blocks[i][j]);
+	  }
+     }
+   free(sd->world);
+   sd->world = NULL;
+}
 
 /* internal calls */
 static void
@@ -709,7 +922,7 @@ _e_nav_update(Evas_Object *obj)
    E_Smart_Data *sd;
    
    sd = evas_object_smart_data_get(obj);
-   _e_nav_zoominfo_update(obj);
+   _e_nav_wallpaper_update(obj);
      {
 	Evas_List *l;
 	
@@ -871,7 +1084,7 @@ _e_nav_tileset_del(E_Nav_Tileset *nt)
 }
 
 static void
-_e_nav_zoominfo_update(Evas_Object *obj)
+_e_nav_wallpaper_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_List *l;
@@ -882,12 +1095,12 @@ _e_nav_zoominfo_update(Evas_Object *obj)
 	E_Nav_Tileset *nt;
 	
 	nt = l->data;
-	_e_nav_zoominfo_update_tileset(nt);
+	_e_nav_wallpaper_update_tileset(nt);
      }
 }
 
 static void
-_e_nav_zoominfo_update_tileset(E_Nav_Tileset *nt)
+_e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt)
 {
    E_Smart_Data *sd;
    int i, j;
