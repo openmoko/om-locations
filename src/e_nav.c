@@ -18,7 +18,6 @@ typedef enum _E_Nav_Movengine_Action
 struct _E_Nav_Item
 {
    Evas_Object *nav;
-   E_Nav_World_Item *world_item;
    Evas_Object *obj;
    struct {
       double x, y, w, h;
@@ -42,8 +41,7 @@ struct _E_Nav_Tileset
 struct _E_Nav_World_Item
 {
    Evas_Object *obj; // the nav obj this nav item belongs to
-   E_Nav_World_Block *block;
-   E_Nav_Item *item; // an instance of this world item in the real canvas widget
+   Evas_Object *item; // the tiem object itself - if realized
    E_Nav_World_Item_Type type;
    struct { // callback to add new instances of this item
       Evas_Object *(*func) (void *data, Evas *evas, const char *theme_dir);
@@ -53,34 +51,7 @@ struct _E_Nav_World_Item
             // in latitudinal/longitudinal degrees
       double x, y, w, h;
    } geom;
-   int level; // the summary level for this item if the summary flag is set
    unsigned char scale : 1; // scale item with zoom or not
-   unsigned char summary : 1; // this is a summary item;
-};
-
-struct _E_Nav_World
-{
-   void *parent; // always NULL
-   int   level; // the zoom level - world == 0
-   Evas_List *summary_items; // a list of world items to summarise all of the
-                             // world
-   E_Nav_World_Block *blocks[360][180]; // the world is 360x180 degree blocks
-};
-
-struct _E_Nav_World_Block
-{
-   void *parent; // the parent item
-   int   level; // the zoom level - sub blocks == 1, 2, 3
-   Evas_List *summary_items; // a list of world items to summarise all 25x25
-                             // sub-blocks with a list or world items to show
-			     // when zoomd out so the sub-blocks are too
-			     // small
-   void *blocks[25][25]; // each world block is 25x25 sub-blocks. if the parent
-                         // is a world struct, then u have another 2 levels of
-			 // blocks then a list of world items (so it goes
-                         // world -> block -> block-> block -> list). as it's
-                         // a void * for blocks - they can nest infinitely
-                         // if we want.
 };
 
 struct _E_Smart_Data
@@ -94,6 +65,8 @@ struct _E_Smart_Data
    
    /* the list of currently active items */
    Evas_List       *nav_items;
+   /* the list of items in the world as we have been told by the backend */
+   Evas_List       *world_items;
    
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
@@ -135,8 +108,6 @@ struct _E_Smart_Data
    } moveng;
    
    Evas_List *tilesets;
-   
-   E_Nav_World *world;
 };
 
 static void _e_nav_smart_init(void);
@@ -210,24 +181,10 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 	     ni->pos.h = ((double)(rand() % 4500) / 1000.0) + 0.5;
 	     sd->nav_items = evas_list_append(sd->nav_items, ni);
 	  }
-
-	/* home !!! */
-	     ni = calloc(1, sizeof(E_Nav_Item));
-	     ni->obj = evas_object_rectangle_add(evas_object_evas_get(obj));
-	     evas_object_smart_member_add(ni->obj, obj);
-	     evas_object_color_set(ni->obj, rand() & 0xff, rand() & 0xff, rand() & 0xff, 255);
-	     evas_object_clip_set(ni->obj, sd->clip);
-	     evas_object_show(ni->obj);
-	     ni->nav = obj;
-	     ni->pos.x = 151.207114 - 0.001;
-	     ni->pos.y = 33.867139 - 0.001;
-	     ni->pos.w = 0.002;
-	     ni->pos.h = 0.002;
-	     sd->nav_items = evas_list_append(sd->nav_items, ni);
      }
 
    sd->overlay = _e_nav_theme_obj_new(evas_object_evas_get(obj), sd->dir,
-				   "modules/diversity_nav/main");
+				      "modules/diversity_nav/main");
    evas_object_smart_member_add(sd->overlay, obj);
    evas_object_move(sd->overlay, sd->x, sd->y);
    evas_object_resize(sd->overlay, sd->w, sd->h);
@@ -398,153 +355,64 @@ e_nav_zoom_get(Evas_Object *obj)
 /* world items */
 /* nav world internal calls - move to the end later */
 static void
-_e_nav_item_free(E_Nav_Item *ni)
+_e_nav_world_item_nav_realize(E_Nav_World_Item *nwi)
 {
    E_Smart_Data *sd;
+
+   if (nwi->item) return;
    
-   sd = evas_object_smart_data_get(ni->world_item->obj);
-   sd->nav_items = evas_list_remove(sd->nav_items, ni);
-   evas_object_del(ni->obj);
-   sd->nav_items = evas_list_remove(sd->nav_items, ni);
-   free(ni);
+   sd = evas_object_smart_data_get(nwi->obj);
+   nwi->item = nwi->add.func(nwi->add.data, evas_object_evas_get(nwi->obj), sd->dir);
+   evas_object_smart_member_add(nwi->item, nwi->obj);
+   evas_object_clip_set(nwi->item, sd->clip);
+   /* FIXME: get stacking right */
+   evas_object_show(nwi->item);
 }
 
 static void
-_e_nav_world_item_nav_item_add(E_Nav_World_Item *nwi)
+_e_nav_world_item_nav_unrealize(E_Nav_World_Item *nwi)
 {
-   E_Nav_Item *ni;
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(nwi->obj);
-   ni = calloc(1, sizeof(E_Nav_Item));
-   if (!ni) return;
-   ni->world_item = nwi;
-   ni->obj = nwi->add.func(nwi->add.data, evas_object_evas_get(nwi->obj), sd->dir);
-   evas_object_smart_member_add(ni->obj, nwi->obj);
-   evas_object_clip_set(ni->obj, sd->clip);
-   evas_object_show(ni->obj);
-   ni->nav = nwi->obj;
-   ni->pos.x = nwi->geom.x - (nwi->geom.w / 2.0);
-   ni->pos.y = nwi->geom.y - (nwi->geom.h / 2.0);
-   ni->pos.w = nwi->geom.w;
-   ni->pos.h = nwi->geom.h;
-   sd->nav_items = evas_list_append(sd->nav_items, ni);
+   if (!nwi->item) return;
+   evas_object_del(nwi->item);
+   nwi->item = NULL;
 }
 
 static void
 _e_nav_world_item_free(E_Nav_World_Item *nwi)
 {
-   if (nwi->item) _e_nav_item_free(nwi->item);
-   nwi->item = NULL;
+   _e_nav_world_item_nav_unrealize(nwi);
    free(nwi);
 }
 
 static void
-_e_nav_world_block_3_del(E_Nav_World_Block *blk)
-{
-   int i, j;
-   Evas_List *items;
-   
-   items = blk->summary_items;
-   while (items)
-     {
-	_e_nav_world_item_free(items->data);
-	items = evas_list_remove_list(items, items);
-     }
-   blk->summary_items = NULL;
-   for (j = 0; j < 25; j++)
-     {
-	for (i = 0; i < 25; i++)
-	  {
-	     items = blk->blocks[i][j];
-	     while (items)
-	       {
-		  _e_nav_world_item_free(items->data);
-		  items = evas_list_remove_list(items, items);
-	       }
-	     blk->blocks[i][j] = NULL;
-	  }
-     }
-}
-  
-static void
-_e_nav_world_block_2_del(E_Nav_World_Block *blk)
-{
-   int i, j;
-   Evas_List *items;
-   
-   items = blk->summary_items;
-   while (items)
-     {
-	_e_nav_world_item_free(items->data);
-	items = evas_list_remove_list(items, items);
-     }
-   blk->summary_items = NULL;
-   for (j = 0; j < 25; j++)
-     {
-	for (i = 0; i < 25; i++)
-	  {
-	     _e_nav_world_block_3_del(blk->blocks[i][j]);
-	     blk->blocks[i][j] = NULL;
-	  }
-     }
-}
-  
-static void
-_e_nav_world_block_1_del(E_Nav_World_Block *blk)
-{
-   int i, j;
-   Evas_List *items;
-   
-   items = blk->summary_items;
-   while (items)
-     {
-	_e_nav_world_item_free(items->data);
-	items = evas_list_remove_list(items, items);
-     }
-   blk->summary_items = NULL;
-   for (j = 0; j < 25; j++)
-     {
-	for (i = 0; i < 25; i++)
-	  {
-	     if (blk->blocks[i][j])
-	       {
-		  _e_nav_world_block_2_del(blk->blocks[i][j]);
-		  blk->blocks[i][j] = NULL;
-	       }
-	  }
-     }
-}
-  
-static void
-_e_nav_world_add(Evas_Object *obj)
+_e_nav_world_item_move_resize(E_Nav_World_Item *nwi)
 {
    E_Smart_Data *sd;
-
-   sd = evas_object_smart_data_get(obj);
-   if (sd->world) return;
-   sd->world = calloc(1, sizeof(E_Nav_World));
-   return;
-}
-
-static void
-_e_nav_world_del(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   int i, j;
+   double x, y, w, h;
    
-   sd = evas_object_smart_data_get(obj);
-   if (!sd->world) return;
-   for (j = 0; j < 180; j++)
+   sd = evas_object_smart_data_get(nwi->obj);
+   if (nwi->scale)
      {
-	for (i = 0; i < 360; i++)
-	  {
-	     if (sd->world->blocks[i][j])
-	       _e_nav_world_block_1_del(sd->world->blocks[i][j]);
-	  }
+	x = nwi->geom.x - (nwi->geom.w / 2.0) - sd->lat;
+	y = nwi->geom.y - (nwi->geom.h / 2.0) - sd->lon;
+	w = nwi->geom.w;
+	h = nwi->geom.h;
+	x = sd->x + (sd->w / 2) + (x / sd->zoom);
+	y = sd->y + (sd->h / 2) + (y / sd->zoom);
+	w = w / sd->zoom;
+	h = h / sd->zoom;
      }
-   free(sd->world);
-   sd->world = NULL;
+   else
+     {
+	x = nwi->geom.x - sd->lat;
+	y = nwi->geom.y - sd->lon;
+	w = nwi->geom.w;
+	h = nwi->geom.h;
+	x = (sd->x + (sd->w / 2) + (x / sd->zoom)) - (w / 2.0);
+	y = (sd->y + (sd->h / 2) + (y / sd->zoom)) - (h / 2.0);
+     }
+   evas_object_move(nwi->item, x, y);
+   evas_object_resize(nwi->item, w, h);
 }
 
 E_Nav_World_Item *
@@ -557,7 +425,7 @@ e_nav_world_item_add(Evas_Object *obj)
    nwi = calloc(1, sizeof(E_Nav_World_Item));
    if (!nwi) return NULL;
    nwi->obj = obj;
-   /* FIXME: add to sd->world */
+   sd->world_items = evas_list_append(sd->world_items, nwi);
    return nwi;
 }
 
@@ -567,10 +435,7 @@ e_nav_world_item_del(E_Nav_World_Item *nwi)
    E_Smart_Data *sd;
    
    sd = evas_object_smart_data_get(nwi->obj);
-   if (nwi->block)
-     {
-	/* FIXME: set block ref to NULL */
-     }
+   sd->world_items = evas_list_remove(sd->world_items, nwi);
    _e_nav_world_item_free(nwi);
 }
 
@@ -624,40 +489,10 @@ e_nav_world_item_scale_get(E_Nav_World_Item *nwi)
 }
 
 void
-e_nav_world_item_level_set(E_Nav_World_Item *nwi, int level)
-{
-   nwi->level = level;
-}
-
-int
-e_nav_world_item_level_get(E_Nav_World_Item *nwi)
-{
-   return nwi->level;
-}
-
-void
-e_nav_world_item_summary_set(E_Nav_World_Item *nwi, int summary)
-{
-   nwi->summary = summary;
-}
-
-int
-e_nav_world_item_summary_get(E_Nav_World_Item *nwi)
-{
-   return nwi->summary;
-}
-
-void
 e_nav_world_item_update(E_Nav_World_Item *nwi)
 {
-   if (nwi->block)
-     {
-	/* FIXME: remove from block */
-     }
-   /* FIXME: allocate to new block */
-   /* FIXME; if summary item add to appropriate summary list */
-   /* FIXME: determine if visible nav item shoucl be created (or old one 
-    * destroyed */
+   _e_nav_world_item_nav_realize(nwi);
+   _e_nav_world_item_move_resize(nwi);
 }
 
 /* internal calls */
@@ -737,6 +572,14 @@ _e_nav_smart_del(Evas_Object *obj)
 	evas_object_del(ni->obj);
 	free(ni);
 	sd->nav_items = evas_list_remove_list(sd->nav_items, sd->nav_items);
+     }
+   while (sd->world_items)
+     {
+	E_Nav_World_Item *nwi;
+	
+	nwi = sd->world_items->data;
+	_e_nav_world_item_free(nwi);
+	sd->world_items = evas_list_remove_list(sd->world_items, sd->world_items);
      }
    while (sd->tilesets) _e_nav_tileset_del(sd->tilesets->data);
    free(sd);
@@ -1030,6 +873,12 @@ _e_nav_update(Evas_Object *obj)
 	     evas_object_resize(ni->obj, w, h);
 	  }
      }
+     {
+	Evas_List *l;
+	
+	for (l = sd->world_items; l; l = l->next)
+	  _e_nav_world_item_move_resize(l->data);
+     }
    _e_nav_overlay_update(obj);
 }
 
@@ -1294,6 +1143,7 @@ _e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt)
 		       evas_object_clip_set(o, sd->clip);
 		       evas_object_pass_events_set(o, 1);
 		       evas_object_stack_below(o, sd->clip);
+		       evas_object_image_smooth_scale_set(o, 0);
 		    }
 		  else
 		    o = nt->tiles.objs[(j * nt->tiles.ow) + i];

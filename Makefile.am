@@ -21,7 +21,8 @@ EXTRA_DIST = $(files_DATA) \
 	     fonts/VeraBd.ttf \
 	     images/module_icon.png \
 	     images/logo.png \
-	     images/measure_64px.png
+	     images/measure_64px.png \
+	     images/city.png
 
 %.edj: %.edc
 	$(EDJE_CC) $(EDJE_FLAGS) $< $@

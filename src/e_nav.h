@@ -39,10 +39,6 @@ void                   e_nav_world_item_geometry_set(E_Nav_World_Item *nwi, doub
 void                   e_nav_world_item_geometry_get(E_Nav_World_Item *nwi, double *x, double *y, double *w, double *h);
 void                   e_nav_world_item_scale_set(E_Nav_World_Item *nwi, int scale);
 int                    e_nav_world_item_scale_get(E_Nav_World_Item *nwi);
-void                   e_nav_world_item_level_set(E_Nav_World_Item *nwi, int level);
-int                    e_nav_world_item_level_get(E_Nav_World_Item *nwi);
-void                   e_nav_world_item_summary_set(E_Nav_World_Item *nwi, int summary);
-int                    e_nav_world_item_summary_get(E_Nav_World_Item *nwi);
 void                   e_nav_world_item_update(E_Nav_World_Item *nwi);
 
 #endif
