@@ -37,6 +37,26 @@ city_add(void *data, Evas *e, const char *theme_dir)
    return o;
 }
 
+static void
+map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
+{
+   Evas_Coord w, h;
+   
+   evas_object_geometry_get(obj, NULL, NULL, &w, &h);
+   evas_object_image_fill_set(obj, 0, 0, w, h);
+}
+
+static Evas_Object *
+map_add(void *data, Evas *e, const char *theme_dir)
+{
+   Evas_Object *o;
+
+   o = evas_object_image_add(e);
+   evas_object_image_file_set(o, data, NULL);
+   evas_object_event_callback_add(o, EVAS_CALLBACK_RESIZE, map_resize, NULL);
+   return o;
+}
+
 void
 _e_mod_nav_init(E_Module *m)
 {
@@ -51,10 +71,11 @@ _e_mod_nav_init(E_Module *m)
    nav = e_nav_add(evas);
    e_nav_theme_source_set(nav, e_module_dir_get(mod));
    
+   /* testing items */
    nwi = e_nav_world_item_add(nav);
    e_nav_world_item_type_set(nwi, E_NAV_WORLD_ITEM_TYPE_ITEM);
-   e_nav_world_item_add_func_set(nwi, city_add, "Sydney");
-   e_nav_world_item_geometry_set(nwi, 151.207114, 33.867139, 32, 32);
+   e_nav_world_item_add_func_set(nwi, city_add, "Home");
+   e_nav_world_item_geometry_set(nwi, 151.205907, 33.875938, 32, 32);
    e_nav_world_item_scale_set(nwi, 0);
    e_nav_world_item_update(nwi);
    
@@ -64,7 +85,23 @@ _e_mod_nav_init(E_Module *m)
    e_nav_world_item_geometry_set(nwi, 121.549644, -25.046414, 32, 32);
    e_nav_world_item_scale_set(nwi, 0);
    e_nav_world_item_update(nwi);
+
+   nwi = e_nav_world_item_add(nav);
+   e_nav_world_item_type_set(nwi, E_NAV_WORLD_ITEM_TYPE_WALLPAPER);
+   e_nav_world_item_add_func_set(nwi, map_add, "/home/raster/sydney_city_map.png");
+   e_nav_world_item_geometry_set(nwi, 151.205907, 33.875938, 
+				 2 * (151.232171 - 151.205907), 
+				 (928 * 2 * (151.232171 - 151.205907)) / 1606);
+   e_nav_world_item_scale_set(nwi, 1);
+   e_nav_world_item_update(nwi);
    
+   nwi = e_nav_world_item_add(nav);
+   e_nav_world_item_type_set(nwi, E_NAV_WORLD_ITEM_TYPE_ITEM);
+   e_nav_world_item_add_func_set(nwi, city_add, "Kings Cross");
+   e_nav_world_item_geometry_set(nwi, 151.223588, 33.873622, 32, 32);
+   e_nav_world_item_scale_set(nwi, 0);
+   e_nav_world_item_update(nwi);
+
    evas_object_move(nav, zone->x, zone->y);
    evas_object_resize(nav, zone->w, zone->h);
    evas_object_show(nav);

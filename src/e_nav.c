@@ -3,7 +3,6 @@
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
-typedef struct _E_Nav_Item E_Nav_Item;
 typedef struct _E_Nav_Tileset E_Nav_Tileset;
 typedef struct _E_Nav_World E_Nav_World;
 typedef struct _E_Nav_World_Block E_Nav_World_Block;
@@ -14,15 +13,6 @@ typedef enum _E_Nav_Movengine_Action
    E_NAV_MOVEENGINE_STOP,
    E_NAV_MOVEENGINE_GO
 } E_Nav_Movengine_Action;
-
-struct _E_Nav_Item
-{
-   Evas_Object *nav;
-   Evas_Object *obj;
-   struct {
-      double x, y, w, h;
-   } pos;
-};
 
 struct _E_Nav_Tileset
 {
@@ -63,8 +53,6 @@ struct _E_Smart_Data
    Evas_Object     *overlay;
    Evas_Object     *event;
    
-   /* the list of currently active items */
-   Evas_List       *nav_items;
    /* the list of items in the world as we have been told by the backend */
    Evas_List       *world_items;
    
@@ -161,27 +149,6 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-
-     {
-	E_Nav_Item *ni;
-	int i;
-	
-	for (i = 0; i < 30; i++)
-	  {
-	     ni = calloc(1, sizeof(E_Nav_Item));
-	     ni->obj = evas_object_rectangle_add(evas_object_evas_get(obj));
-	     evas_object_smart_member_add(ni->obj, obj);
-	     evas_object_color_set(ni->obj, rand() & 0xff, rand() & 0xff, rand() & 0xff, 255);
-	     evas_object_clip_set(ni->obj, sd->clip);
-	     evas_object_show(ni->obj);
-	     ni->nav = obj;
-	     ni->pos.x = ((double)(rand() % 10000) / 1000.0) - 5.0;
-	     ni->pos.y = ((double)(rand() % 10000) / 1000.0) - 5.0;
-	     ni->pos.w = ((double)(rand() % 4500) / 1000.0) + 0.5;
-	     ni->pos.h = ((double)(rand() % 4500) / 1000.0) + 0.5;
-	     sd->nav_items = evas_list_append(sd->nav_items, ni);
-	  }
-     }
 
    sd->overlay = _e_nav_theme_obj_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/main");
@@ -365,7 +332,9 @@ _e_nav_world_item_nav_realize(E_Nav_World_Item *nwi)
    nwi->item = nwi->add.func(nwi->add.data, evas_object_evas_get(nwi->obj), sd->dir);
    evas_object_smart_member_add(nwi->item, nwi->obj);
    evas_object_clip_set(nwi->item, sd->clip);
-   /* FIXME: get stacking right */
+   /* FIXME: get stacking right - hack for now */
+   if (nwi->type == E_NAV_WORLD_ITEM_TYPE_WALLPAPER)
+     evas_object_stack_above(nwi->item, sd->clip);
    evas_object_show(nwi->item);
 }
 
@@ -564,15 +533,6 @@ _e_nav_smart_del(Evas_Object *obj)
    evas_object_del(sd->overlay);
    if (sd->cur.momentum_timer) ecore_timer_del(sd->cur.momentum_timer);
    if (sd->moveng.pause_timer) ecore_timer_del(sd->moveng.pause_timer);
-   while (sd->nav_items)
-     {
-	E_Nav_Item *ni;
-	
-	ni = sd->nav_items->data;
-	evas_object_del(ni->obj);
-	free(ni);
-	sd->nav_items = evas_list_remove_list(sd->nav_items, sd->nav_items);
-     }
    while (sd->world_items)
      {
 	E_Nav_World_Item *nwi;
@@ -852,33 +812,14 @@ _e_nav_update(Evas_Object *obj)
    
    sd = evas_object_smart_data_get(obj);
    _e_nav_wallpaper_update(obj);
-     {
-	Evas_List *l;
-	
-	for (l = sd->nav_items; l; l = l->next)
-	  {
-	     E_Nav_Item *ni;
-	     double x, y, w, h;
-	     
-	     ni = l->data;
-	     x = ni->pos.x - sd->lat;
-	     y = ni->pos.y - sd->lon;
-	     w = ni->pos.w;
-	     h = ni->pos.h;
-	     x = sd->x + (sd->w / 2) + (x / sd->zoom);
-	     y = sd->y + (sd->h / 2) + (y / sd->zoom);
-	     w = w / sd->zoom;
-	     h = h / sd->zoom;
-	     evas_object_move(ni->obj, x, y);
-	     evas_object_resize(ni->obj, w, h);
-	  }
-     }
+   
      {
 	Evas_List *l;
 	
 	for (l = sd->world_items; l; l = l->next)
 	  _e_nav_world_item_move_resize(l->data);
      }
+   
    _e_nav_overlay_update(obj);
 }
 
