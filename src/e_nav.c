@@ -49,25 +49,28 @@ struct _E_Nav_World_Item
       Evas_Object *(*func) (void *data, Evas *evas, const char *theme_dir);
       void *data;
    } add;
-   struct { // this is the zoom range that the item is visible between
-      double min, max; // if 0.0 for both - then always visible */
-   } zoom_range;
    struct { // where in the world it lives. x,y are the center. w,h the size
             // in latitudinal/longitudinal degrees
       double x, y, w, h;
    } geom;
+   int level; // the summary level for this item if the summary flag is set
    unsigned char scale : 1; // scale item with zoom or not
+   unsigned char summary : 1; // this is a summary item;
 };
 
 struct _E_Nav_World
 {
    void *parent; // always NULL
+   int   level; // the zoom level - world == 0
+   Evas_List *summary_items; // a list of world items to summarise all of the
+                             // world
    E_Nav_World_Block *blocks[360][180]; // the world is 360x180 degree blocks
 };
 
 struct _E_Nav_World_Block
 {
    void *parent; // the parent item
+   int   level; // the zoom level - sub blocks == 1, 2, 3
    Evas_List *summary_items; // a list of world items to summarise all 25x25
                              // sub-blocks with a list or world items to show
 			     // when zoomd out so the sub-blocks are too
@@ -393,76 +396,46 @@ e_nav_zoom_get(Evas_Object *obj)
 }
 
 /* world items */
-E_Nav_World_Item *
-e_nav_world_item_add(Evas_Object *obj)
+/* nav world internal calls - move to the end later */
+static void
+_e_nav_item_free(E_Nav_Item *ni)
 {
-   E_Nav_World_Item *nwi;
    E_Smart_Data *sd;
    
-   SMART_CHECK(obj, NULL;);
-   nwi = calloc(1, sizeof(E_Nav_World_Item));
-   if (!nwi) return NULL;
-   nwi->obj = obj;
-   /* FIXME: add to sd->world */
-   return nwi;
+   sd = evas_object_smart_data_get(ni->world_item->obj);
+   sd->nav_items = evas_list_remove(sd->nav_items, ni);
+   evas_object_del(ni->obj);
+   sd->nav_items = evas_list_remove(sd->nav_items, ni);
+   free(ni);
 }
 
-void
-e_nav_world_item_del(E_Nav_World_Item *nwi)
+static void
+_e_nav_world_item_nav_item_add(E_Nav_World_Item *nwi)
 {
-   free(nwi);
+   E_Nav_Item *ni;
+   E_Smart_Data *sd;
+   
+   sd = evas_object_smart_data_get(nwi->obj);
+   ni = calloc(1, sizeof(E_Nav_Item));
+   if (!ni) return;
+   ni->world_item = nwi;
+   ni->obj = nwi->add.func(nwi->add.data, evas_object_evas_get(nwi->obj), sd->dir);
+   evas_object_smart_member_add(ni->obj, nwi->obj);
+   evas_object_clip_set(ni->obj, sd->clip);
+   evas_object_show(ni->obj);
+   ni->nav = nwi->obj;
+   ni->pos.x = nwi->geom.x - (nwi->geom.w / 2.0);
+   ni->pos.y = nwi->geom.y - (nwi->geom.h / 2.0);
+   ni->pos.w = nwi->geom.w;
+   ni->pos.h = nwi->geom.h;
+   sd->nav_items = evas_list_append(sd->nav_items, ni);
 }
 
-void
-e_nav_world_item_type_set(E_Nav_World_Item *nwi, E_Nav_World_Item_Type type)
-{
-}
-
-E_Nav_World_Item_Type
-e_nav_world_item_type_get(E_Nav_World_Item *nwi)
-{
-}
-
-void
-e_nav_world_item_add_func_set(E_Nav_World_Item *nwi, Evas_Object *(*func) (void *data, Evas *evas, const char *theme_dir), void *data)
-{
-}
-
-void
-e_nav_world_item_zoom_range_set(E_Nav_World_Item *nwi, double min, double max)
-{
-}
-
-void
-e_nav_world_item_zoom_range_get(E_Nav_World_Item *nwi, double *min, double *max)
-{
-}
-
-void
-e_nav_world_item_geometry_set(E_Nav_World_Item *nwi, double x, double y, double w, double h)
-{
-}
-
-void
-e_nav_world_item_geometry_get(E_Nav_World_Item *nwi, double *x, double *y, double *w, double *h)
-{
-}
-
-void
-e_nav_world_item_scale_set(E_Nav_World_Item *nwi, int scale)
-{
-}
-
-int
-e_nav_world_item_scale_get(E_Nav_World_Item *nwi)
-{
-}
-
-/* nav world internal calls - move to the end later */
 static void
 _e_nav_world_item_free(E_Nav_World_Item *nwi)
 {
-   /* FIXME: free all nwi stuff */
+   if (nwi->item) _e_nav_item_free(nwi->item);
+   nwi->item = NULL;
    free(nwi);
 }
 
@@ -572,6 +545,119 @@ _e_nav_world_del(Evas_Object *obj)
      }
    free(sd->world);
    sd->world = NULL;
+}
+
+E_Nav_World_Item *
+e_nav_world_item_add(Evas_Object *obj)
+{
+   E_Nav_World_Item *nwi;
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, NULL;);
+   nwi = calloc(1, sizeof(E_Nav_World_Item));
+   if (!nwi) return NULL;
+   nwi->obj = obj;
+   /* FIXME: add to sd->world */
+   return nwi;
+}
+
+void
+e_nav_world_item_del(E_Nav_World_Item *nwi)
+{
+   E_Smart_Data *sd;
+   
+   sd = evas_object_smart_data_get(nwi->obj);
+   if (nwi->block)
+     {
+	/* FIXME: set block ref to NULL */
+     }
+   _e_nav_world_item_free(nwi);
+}
+
+void
+e_nav_world_item_type_set(E_Nav_World_Item *nwi, E_Nav_World_Item_Type type)
+{
+   nwi->type = type;
+}
+
+E_Nav_World_Item_Type
+e_nav_world_item_type_get(E_Nav_World_Item *nwi)
+{
+   return nwi->type;
+}
+
+void
+e_nav_world_item_add_func_set(E_Nav_World_Item *nwi, Evas_Object *(*func) (void *data, Evas *evas, const char *theme_dir), void *data)
+{
+   nwi->add.func = func;
+   nwi->add.data = data;
+}
+
+void
+e_nav_world_item_geometry_set(E_Nav_World_Item *nwi, double x, double y, double w, double h)
+{
+   nwi->geom.x = x;
+   nwi->geom.y = y;
+   nwi->geom.w = w;
+   nwi->geom.h = h;
+}
+
+void
+e_nav_world_item_geometry_get(E_Nav_World_Item *nwi, double *x, double *y, double *w, double *h)
+{
+   if (x) *x = nwi->geom.x;
+   if (y) *y = nwi->geom.y;
+   if (w) *w = nwi->geom.w;
+   if (h) *h = nwi->geom.h;
+}
+
+void
+e_nav_world_item_scale_set(E_Nav_World_Item *nwi, int scale)
+{
+   nwi->scale = scale;
+}
+
+int
+e_nav_world_item_scale_get(E_Nav_World_Item *nwi)
+{
+   return nwi->scale;
+}
+
+void
+e_nav_world_item_level_set(E_Nav_World_Item *nwi, int level)
+{
+   nwi->level = level;
+}
+
+int
+e_nav_world_item_level_get(E_Nav_World_Item *nwi)
+{
+   return nwi->level;
+}
+
+void
+e_nav_world_item_summary_set(E_Nav_World_Item *nwi, int summary)
+{
+   nwi->summary = summary;
+}
+
+int
+e_nav_world_item_summary_get(E_Nav_World_Item *nwi)
+{
+   return nwi->summary;
+}
+
+void
+e_nav_world_item_update(E_Nav_World_Item *nwi)
+{
+   if (nwi->block)
+     {
+	/* FIXME: remove from block */
+     }
+   /* FIXME: allocate to new block */
+   /* FIXME; if summary item add to appropriate summary list */
+   /* FIXME: determine if visible nav item shoucl be created (or old one 
+    * destroyed */
 }
 
 /* internal calls */
