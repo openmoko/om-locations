@@ -1117,12 +1117,10 @@ _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const 
 	double x = 0, y = 0, z;
 	
 	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
-	printf("GO %3.38f\n", y);
 	z = 0.1 + ((sqrt(sqrt(sqrt(0.2))) - 0.1) * y);
 	z = z * z;
 	z = z * z;
 	z = z * z;
-	printf("  z = %3.8f\n", z);
 	e_nav_zoom_set(sd->obj, z, 0.2);
      }
 }
