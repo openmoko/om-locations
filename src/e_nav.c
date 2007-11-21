@@ -49,7 +49,9 @@ struct _E_Smart_Data
    Evas_Coord       x, y, w, h;
    Evas_Object     *obj;
    
+   Evas_Object     *underlay;
    Evas_Object     *clip;
+   Evas_Object     *stacking;
    Evas_Object     *overlay;
    Evas_Object     *event;
    
@@ -126,6 +128,15 @@ static void _e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt);
 static int _e_nav_cb_timer_momemntum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
 
+static void _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source);
+static void _e_nav_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, const char *source);
+static void _e_nav_cb_signal_drag_stop(void *data, Evas_Object *obj, const char *emission, const char *source);
+
+static void _e_nav_world_item_nav_realize(E_Nav_World_Item *nwi);
+static void _e_nav_world_item_nav_unrealize(E_Nav_World_Item *nwi);
+static void _e_nav_world_item_free(E_Nav_World_Item *nwi);
+static void _e_nav_world_item_move_resize(E_Nav_World_Item *nwi);
+
 static Evas_Smart *_e_smart = NULL;
 
 #define SMART_CHECK(obj, ret) \
@@ -150,6 +161,15 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    
    sd->dir = custom_dir;
 
+   sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
+   evas_object_smart_member_add(sd->event, obj);
+   evas_object_move(sd->event, sd->x, sd->y);
+   evas_object_resize(sd->event, sd->w, sd->h);
+   evas_object_color_set(sd->event, 0, 0, 0, 0);
+   evas_object_clip_set(sd->event, sd->clip);
+   evas_object_repeat_events_set(sd->event, 1);
+   evas_object_show(sd->event);
+   
    sd->overlay = _e_nav_theme_obj_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/main");
    evas_object_smart_member_add(sd->overlay, obj);
@@ -158,15 +178,6 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_clip_set(sd->overlay, sd->clip);
    evas_object_show(sd->overlay);
 
-   sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
-   evas_object_smart_member_add(sd->event, obj);
-   evas_object_move(sd->event, sd->x, sd->y);
-   evas_object_resize(sd->event, sd->w, sd->h);
-   evas_object_color_set(sd->event, 0, 0, 0, 0);
-   evas_object_clip_set(sd->event, sd->clip);
-//   evas_object_repeat_events_set(sd->event, 1);
-   evas_object_show(sd->event);
-   
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_cb_event_mouse_down, obj);
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_UP,
@@ -176,6 +187,13 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_WHEEL,
 				  _e_nav_cb_event_mouse_wheel, obj);
 
+   edje_object_signal_callback_add(sd->overlay, "drag", "*", _e_nav_cb_signal_drag, sd);
+   edje_object_signal_callback_add(sd->overlay, "drag,start", "*", _e_nav_cb_signal_drag_start, sd);
+   edje_object_signal_callback_add(sd->overlay, "drag,stop", "*", _e_nav_cb_signal_drag_stop, sd);
+   edje_object_signal_callback_add(sd->overlay, "drag,step", "*", _e_nav_cb_signal_drag_stop, sd);
+   edje_object_signal_callback_add(sd->overlay, "drag,set", "*", _e_nav_cb_signal_drag_stop, sd);
+   
+
    nt = _e_nav_tileset_add(obj);
 //   nt = _e_nav_tileset_add(obj);
 //   nt->map = "map";
@@ -183,39 +201,6 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 //   nt->max_level = 5;
    _e_nav_wallpaper_update(obj);
    _e_nav_overlay_update(obj);
-}
-
-/* location stack */
-E_Nav_Location *
-e_nav_location_push(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, NULL;);
-}
-
-void
-e_nav_location_pop(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-}
-
-void
-e_nav_location_del(Evas_Object *obj, E_Nav_Location *loc)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-}
-
-E_Nav_Location *
-e_nav_location_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, NULL;);
 }
 
 /* spatial & zoom controls */
@@ -280,14 +265,19 @@ void
 e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
 {
    E_Smart_Data *sd;
-   double t;
+   double t, y;
    
    SMART_CHECK(obj, ;);
-   if (zoom > 1.0) zoom = 1.0;
+   if (zoom > 0.2) zoom = 0.2;
    else if (zoom < 0.000001) zoom = 0.000001;
    /* zoom: 1.0 == 1pixel == 1 degree lat/lon */
    /*       2.0 == 1pixel == 2 degrees lat/lon */
    /*       5.0 == 1pixel == 5 degrees lat/lon */
+   y = (zoom - 0.000001) / (0.2 - 0.000001);
+   y = sqrt(y);
+   y = sqrt(y);
+   y = sqrt(y);
+   edje_object_part_drag_value_set(sd->overlay, "e.dragable.zoom", 0.0, y);
    if (when == 0.0)
      {
 	sd->cur.target.zoom_time = 0.0;
@@ -320,69 +310,6 @@ e_nav_zoom_get(Evas_Object *obj)
 }
 
 /* world items */
-/* nav world internal calls - move to the end later */
-static void
-_e_nav_world_item_nav_realize(E_Nav_World_Item *nwi)
-{
-   E_Smart_Data *sd;
-
-   if (nwi->item) return;
-   
-   sd = evas_object_smart_data_get(nwi->obj);
-   nwi->item = nwi->add.func(nwi->add.data, evas_object_evas_get(nwi->obj), sd->dir);
-   evas_object_smart_member_add(nwi->item, nwi->obj);
-   evas_object_clip_set(nwi->item, sd->clip);
-   /* FIXME: get stacking right - hack for now */
-   if (nwi->type == E_NAV_WORLD_ITEM_TYPE_WALLPAPER)
-     evas_object_stack_above(nwi->item, sd->clip);
-   evas_object_show(nwi->item);
-}
-
-static void
-_e_nav_world_item_nav_unrealize(E_Nav_World_Item *nwi)
-{
-   if (!nwi->item) return;
-   evas_object_del(nwi->item);
-   nwi->item = NULL;
-}
-
-static void
-_e_nav_world_item_free(E_Nav_World_Item *nwi)
-{
-   _e_nav_world_item_nav_unrealize(nwi);
-   free(nwi);
-}
-
-static void
-_e_nav_world_item_move_resize(E_Nav_World_Item *nwi)
-{
-   E_Smart_Data *sd;
-   double x, y, w, h;
-   
-   sd = evas_object_smart_data_get(nwi->obj);
-   if (nwi->scale)
-     {
-	x = nwi->geom.x - (nwi->geom.w / 2.0) - sd->lat;
-	y = nwi->geom.y - (nwi->geom.h / 2.0) - sd->lon;
-	w = nwi->geom.w;
-	h = nwi->geom.h;
-	x = sd->x + (sd->w / 2) + (x / sd->zoom);
-	y = sd->y + (sd->h / 2) + (y / sd->zoom);
-	w = w / sd->zoom;
-	h = h / sd->zoom;
-     }
-   else
-     {
-	x = nwi->geom.x - sd->lat;
-	y = nwi->geom.y - sd->lon;
-	w = nwi->geom.w;
-	h = nwi->geom.h;
-	x = (sd->x + (sd->w / 2) + (x / sd->zoom)) - (w / 2.0);
-	y = (sd->y + (sd->h / 2) + (y / sd->zoom)) - (h / 2.0);
-     }
-   evas_object_move(nwi->item, x, y);
-   evas_object_resize(nwi->item, w, h);
-}
 
 E_Nav_World_Item *
 e_nav_world_item_add(Evas_Object *obj)
@@ -510,11 +437,26 @@ _e_nav_smart_add(Evas_Object *obj)
    evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
    
+   sd->underlay = evas_object_rectangle_add(evas_object_evas_get(obj));
+   evas_object_smart_member_add(sd->underlay, obj);
+   evas_object_move(sd->underlay, sd->x, sd->y);
+   evas_object_resize(sd->underlay, sd->w, sd->h);
+   evas_object_clip_set(sd->underlay, sd->clip);
+   evas_object_color_set(sd->underlay, 0, 0, 0, 0);
+   evas_object_lower(sd->underlay);
+   evas_object_show(sd->underlay);
+
+   sd->stacking = evas_object_rectangle_add(evas_object_evas_get(obj));
+   evas_object_smart_member_add(sd->stacking, obj);
+   evas_object_move(sd->stacking, sd->x, sd->y);
+   evas_object_resize(sd->stacking, sd->w, sd->h);
+   evas_object_clip_set(sd->stacking, sd->clip);
+   
    evas_object_smart_data_set(obj, sd);
    
    sd->lat = 0;
    sd->lon = 0;
-   sd->zoom = 2.0 / 1000.0;
+   sd->zoom = 0.2;
    
    sd->conf.lat = sd->lat;
    sd->conf.lon = sd->lon;
@@ -528,7 +470,9 @@ _e_nav_smart_del(Evas_Object *obj)
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
+   evas_object_del(sd->underlay);
    evas_object_del(sd->clip);
+   evas_object_del(sd->stacking);
    evas_object_del(sd->event);
    evas_object_del(sd->overlay);
    if (sd->cur.momentum_timer) ecore_timer_del(sd->cur.momentum_timer);
@@ -554,7 +498,9 @@ _e_nav_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    if (!sd) return;
    sd->x = x;
    sd->y = y;
+   evas_object_move(sd->underlay, sd->x, sd->y);
    evas_object_move(sd->clip, sd->x, sd->y);
+   evas_object_move(sd->stacking, sd->x, sd->y);
    evas_object_move(sd->overlay, sd->x, sd->y);
    evas_object_move(sd->event, sd->x, sd->y);
    _e_nav_update(obj);
@@ -569,7 +515,9 @@ _e_nav_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    if (!sd) return;
    sd->w = w;
    sd->h = h;
+   evas_object_resize(sd->underlay, sd->w, sd->h);
    evas_object_resize(sd->clip, sd->w, sd->h);
+   evas_object_resize(sd->stacking, sd->w, sd->h);
    evas_object_resize(sd->overlay, sd->w, sd->h);
    evas_object_resize(sd->event, sd->w, sd->h);
    _e_nav_update(obj);
@@ -1157,4 +1105,120 @@ _e_nav_cb_timer_moveng_pause(void *data)
 		  1.0);
    sd->moveng.pause_timer = NULL;
    return 0;
+}
+
+static void
+_e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source)
+{
+   E_Smart_Data *sd;
+   
+   sd = data;
+     {
+	double x = 0, y = 0, z;
+	
+	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
+	printf("GO %3.38f\n", y);
+	z = 0.1 + ((sqrt(sqrt(sqrt(0.2))) - 0.1) * y);
+	z = z * z;
+	z = z * z;
+	z = z * z;
+	printf("  z = %3.8f\n", z);
+	e_nav_zoom_set(sd->obj, z, 0.2);
+     }
+}
+
+static void
+_e_nav_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, const char *source)
+{
+   E_Smart_Data *sd;
+   
+   sd = data;
+     {
+	double x = 0, y = 0;
+	
+	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
+	printf("START %3.3f\n", y);
+     }
+}
+
+static void
+_e_nav_cb_signal_drag_stop(void *data, Evas_Object *obj, const char *emission, const char *source)
+{
+   E_Smart_Data *sd;
+   
+   sd = data;
+     {
+	double x = 0, y = 0;
+	
+	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
+	printf("STOP %3.3f\n", y);
+     }
+}
+
+/* nav world internal calls - move to the end later */
+static void
+_e_nav_world_item_nav_realize(E_Nav_World_Item *nwi)
+{
+   E_Smart_Data *sd;
+
+   if (nwi->item) return;
+   
+   sd = evas_object_smart_data_get(nwi->obj);
+   nwi->item = nwi->add.func(nwi->add.data, evas_object_evas_get(nwi->obj), sd->dir);
+   evas_object_smart_member_add(nwi->item, nwi->obj);
+   evas_object_clip_set(nwi->item, sd->clip);
+   /* FIXME: get stacking right - hack for now */
+   if (nwi->type == E_NAV_WORLD_ITEM_TYPE_WALLPAPER)
+     evas_object_stack_above(nwi->item, sd->clip);
+   else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_ITEM)
+     evas_object_stack_below(nwi->item, sd->stacking);
+   else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_OVERLAY)
+     evas_object_stack_above(nwi->item, sd->stacking);
+   evas_object_show(nwi->item);
+}
+
+static void
+_e_nav_world_item_nav_unrealize(E_Nav_World_Item *nwi)
+{
+   if (!nwi->item) return;
+   evas_object_del(nwi->item);
+   nwi->item = NULL;
+}
+
+static void
+_e_nav_world_item_free(E_Nav_World_Item *nwi)
+{
+   _e_nav_world_item_nav_unrealize(nwi);
+   free(nwi);
+}
+
+static void
+_e_nav_world_item_move_resize(E_Nav_World_Item *nwi)
+{
+   E_Smart_Data *sd;
+   double x, y, w, h;
+   
+   sd = evas_object_smart_data_get(nwi->obj);
+   if (nwi->scale)
+     {
+	x = nwi->geom.x - (nwi->geom.w / 2.0) - sd->lat;
+	y = nwi->geom.y - (nwi->geom.h / 2.0) - sd->lon;
+	w = nwi->geom.w;
+	h = nwi->geom.h;
+	x = sd->x + (sd->w / 2) + (x / sd->zoom);
+	y = sd->y + (sd->h / 2) + (y / sd->zoom);
+	w = w / sd->zoom;
+	h = h / sd->zoom;
+     }
+   else
+     {
+	x = nwi->geom.x - sd->lat;
+	y = nwi->geom.y - sd->lon;
+	w = nwi->geom.w;
+	h = nwi->geom.h;
+	x = (sd->x + (sd->w / 2) + (x / sd->zoom)) - (w / 2.0);
+	y = (sd->y + (sd->h / 2) + (y / sd->zoom)) - (h / 2.0);
+     }
+   evas_object_move(nwi->item, x, y);
+   evas_object_resize(nwi->item, w, h);
 }

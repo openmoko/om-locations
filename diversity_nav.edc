@@ -16,6 +16,50 @@ collections {
       /* the main object here */
       name: "modules/diversity_nav/main";
       parts {
+	 part { name: "zoom_base";
+	    type: RECT;
+	    mouse_events: 0;
+	    description {
+	       state: "default" 0.0;
+	       color: 0 0 0 0;
+	       min: 48 0;
+	       align: 0.0 0.5;
+	       rel1 {
+		  offset: 0 48;
+	       }
+	       rel2 {
+		  to: "zoom_length";
+		  relative: 0.0 0.0;
+		  offset: 0 -1;
+	       }
+	    }
+	 }
+	 part {
+	    name: "e.dragable.zoom";
+	    type: RECT;
+	    mouse_events: 1;
+	    dragable {
+	       x: 0 0 0;
+	       y: 1 1 0;
+	       confine: "zoom_base";
+	    }
+	    description {
+	       state: "default" 0.0;
+	       min: 48 48;
+	       fixed: 1 1;
+	       rel1 {
+		  relative: 0.5  0.5;
+		  offset:   0    0;
+		  to: "zoom_base";
+	       }
+	       rel2 {
+		  relative: 0.5  0.5;
+		  offset:   0    0;
+		  to: "zoom_base";
+	       }
+	       color: 255 200 100 255;
+	    }
+	 }
 	 part { name: "zoom_length";
 	    mouse_events: 0;
 	    description { state: "default" 0.0;

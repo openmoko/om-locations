@@ -102,6 +102,9 @@ _e_mod_nav_init(E_Module *m)
    e_nav_world_item_scale_set(nwi, 0);
    e_nav_world_item_update(nwi);
 
+   e_nav_zoom_set(nav, 0.0001, 0.0);
+   e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
+   
    evas_object_move(nav, zone->x, zone->y);
    evas_object_resize(nav, zone->w, zone->h);
    evas_object_show(nav);
