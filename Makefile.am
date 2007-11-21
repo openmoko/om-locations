@@ -22,7 +22,8 @@ EXTRA_DIST = $(files_DATA) \
 	     images/module_icon.png \
 	     images/logo.png \
 	     images/measure_64px.png \
-	     images/city.png
+	     images/city.png \
+	     images/zoom.png
 
 %.edj: %.edc
 	$(EDJE_CC) $(EDJE_FLAGS) $< $@

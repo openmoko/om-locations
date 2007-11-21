@@ -2,6 +2,7 @@
 images {
    image: "measure_64px.png" COMP;
    image: "city.png" COMP;
+   image: "zoom.png" COMP;
 }
 
 /* define any fonts we specifically want to use (totally optional) */
@@ -36,7 +37,6 @@ collections {
 	 }
 	 part {
 	    name: "e.dragable.zoom";
-	    type: RECT;
 	    mouse_events: 1;
 	    dragable {
 	       x: 0 0 0;
@@ -57,7 +57,7 @@ collections {
 		  offset:   0    0;
 		  to: "zoom_base";
 	       }
-	       color: 255 200 100 255;
+	       image.normal: "zoom.png";
 	    }
 	 }
 	 part { name: "zoom_length";
