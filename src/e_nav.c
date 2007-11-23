@@ -274,9 +274,6 @@ e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
    /*       2.0 == 1pixel == 2 degrees lat/lon */
    /*       5.0 == 1pixel == 5 degrees lat/lon */
    y = (zoom - 0.000001) / (0.2 - 0.000001);
-   y = sqrt(y);
-   y = sqrt(y);
-   y = sqrt(y);
    edje_object_part_drag_value_set(sd->overlay, "e.dragable.zoom", 0.0, y);
    if (when == 0.0)
      {
@@ -1117,10 +1114,7 @@ _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const 
 	double x = 0, y = 0, z;
 	
 	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
-	z = 0.1 + ((sqrt(sqrt(sqrt(0.2))) - 0.1) * y);
-	z = z * z;
-	z = z * z;
-	z = z * z;
+	z = 0.000001 + ((0.2 - 0.000001) * y);
 	e_nav_zoom_set(sd->obj, z, 0.2);
      }
 }
