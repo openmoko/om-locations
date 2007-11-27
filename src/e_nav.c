@@ -778,11 +778,21 @@ _e_nav_overlay_update(Evas_Object *obj)
    int latd, latm, lats, lond, lonm, lons;
    
    sd = evas_object_smart_data_get(obj);
+   /* magic numbers here:
+    * we know the earth is 40,000km in circumference. each km is 1000 meters.
+    * the little legend in the overlay theme i KNOW is 64 pixels long, and
+    * the world is 360 degrees around, so what we are doing here
+    * is caluclating how many meters 1 pixel covers and multiplying it by 64
+    * to see how long the legend bar is and then display it */
    z = ((1000.0 * 40000.0 * 64.0) / 360.0) * sd->zoom;
+   /* if its more than 1000m lon - display the length in Km */
    if (z > 1000.0)
      snprintf(buf, sizeof(buf), "%1.2fKm", z / 1000.0);
    else
+     /* otherwise in meters */
      snprintf(buf, sizeof(buf), "%1.2fm", z);
+   /* and set the text that is there to what we snprintf'd into the buffer
+    * aboe */
    edje_object_part_text_set(sd->overlay, "e.text.zoom", buf);
    
    lat = sd->lat;
