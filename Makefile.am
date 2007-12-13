@@ -31,5 +31,5 @@ EXTRA_DIST = $(files_DATA) \
 clean-local:
 	rm -rf *.edj *~
 	
-uninstall:
+uninstall-hook:
 	rm -rf $(datadir)

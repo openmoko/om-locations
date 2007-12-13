@@ -13,7 +13,17 @@ module_la_SOURCES = e_mod_main.h \
 		    e_mod_nav.h \
 		    e_mod_nav.c \
 		    e_nav.h \
-		    e_nav.c
+		    e_nav.c \
+		    e_spiralmenu.h \
+		    e_spiralmenu.c \
+		    e_nav_item_ap.h \
+		    e_nav_item_ap.c \
+		    e_nav_item_neo_me.h \
+		    e_nav_item_neo_me.c \
+		    e_nav_item_neo_other.h \
+		    e_nav_item_neo_other.c \
+		    e_nav_item_link.h \
+		    e_nav_item_link.c
 		    
 module_la_LIBADD = @e_libs@
 module_la_LDFLAGS = -module -avoid-version
