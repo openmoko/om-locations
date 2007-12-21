@@ -23,7 +23,9 @@ module_la_SOURCES = e_mod_main.h \
 		    e_nav_item_neo_other.h \
 		    e_nav_item_neo_other.c \
 		    e_nav_item_link.h \
-		    e_nav_item_link.c
+		    e_nav_item_link.c \
+                    e_nav_dbus.c \
+                    e_nav_dbus.h
 		    
 module_la_LIBADD = @e_libs@
 module_la_LDFLAGS = -module -avoid-version

@@ -1,13 +1,17 @@
+#include <E_DBus.h>
 #include <e.h>
 #include "e_nav.h"
 #include "e_nav_item_neo_other.h"
 #include "e_spiralmenu.h"
+#include "e_nav_dbus.h"
+
 
 typedef struct _Neo_Other_Data Neo_Other_Data;
 
 struct _Neo_Other_Data
 {
    const char             *name;
+   Object_Proxy           *proxy;
 };
 
 static Evas_Object *
@@ -101,7 +105,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
-e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double lat, double lon)
+e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, Object_Proxy* proxy, double lat, double lon)
 {
    Evas_Object *o;
    Neo_Other_Data *neod;
@@ -110,6 +114,7 @@ e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double l
     * evas object */
    neod = calloc(1, sizeof(Neo_Other_Data));
    if (!neod) return NULL;
+   neod->proxy = proxy;
    o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/neo/other");
    edje_object_part_text_set(o, "e.text.name", "???");

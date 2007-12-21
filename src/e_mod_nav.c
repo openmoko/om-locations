@@ -1,3 +1,4 @@
+#include <E_DBus.h>
 #include <e.h>
 #include "e_mod_nav.h"
 #include "e_nav.h"
@@ -6,6 +7,7 @@
 #include "e_nav_item_neo_me.h"
 #include "e_nav_item_neo_other.h"
 #include "e_nav_item_link.h"
+#include "e_nav_dbus.h"
 
 /* FIXME: need objects:
  * 
@@ -188,7 +190,14 @@ _e_mod_nav_init(E_Module *m)
    e_nav_world_item_scale_set(nwi, 1);
    e_nav_world_item_update(nwi);
    evas_object_show(nwi);
-   
+
+    World_Proxy* proxy = world_proxy_fill(); 
+    if(proxy==NULL) {
+        printf("!! proxy==NULL\n");
+        return;
+    }
+    proxy->viewport_add_func(121.000000, -25.000000, 122.000000, -24.000000);  
+ 
    /* test AP object */
    nwi = e_nav_world_item_ap_add(nav, e_module_dir_get(mod),
 				 151.220000, 33.874000);
@@ -197,10 +206,10 @@ _e_mod_nav_init(E_Module *m)
    e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);
 
    /* test NEO OTHER object */
-   nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod),
+   nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod), NULL,
 				     151.215000, 33.871000);
    e_nav_world_item_neo_other_name_set(nwi, "Sean");
-   nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod),
+   nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod), NULL,
 				     151.213000, 33.874000);
    e_nav_world_item_neo_other_name_set(nwi, "Olv");
    
@@ -226,3 +235,13 @@ _e_mod_nav_shutdown(void)
    evas_object_del(nav);
    nav = NULL;
 }
+
+void e_nav_object_add(Object_Proxy* proxy)
+{
+   Evas_Object *nwi;
+   // get type, position, geometry, etc. infomation
+   // add a world item
+   //nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod), proxy,
+     //                151.215000, 33.871000); 
+} 
+
