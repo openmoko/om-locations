@@ -100,6 +100,16 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
    free(neod);
 }
 
+void e_nav_world_item_neo_me_position_change(Evas_Object* evasObj, double lat, double lon)
+{
+    if(evasObj==NULL) {
+        printf("EvasObj==NULL\n");
+        return;
+    }
+    e_nav_world_item_geometry_set(evasObj, lat, lon, 0, 0);
+    e_nav_world_item_update(evasObj);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
 e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lat, double lon)

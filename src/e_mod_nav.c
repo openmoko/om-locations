@@ -117,6 +117,19 @@ map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
    evas_object_image_fill_set(obj, 0, 0, w, h);
 }
 
+/*
+unsigned int hash_from_key_fn(const void* key)
+{
+    // frome key string(object path) to value
+
+}
+
+int hash_compare_func(const void *data1, const void *data2)
+{
+
+}
+*/
+
 void
 _e_mod_nav_init(E_Module *m)
 {
@@ -191,20 +204,16 @@ _e_mod_nav_init(E_Module *m)
    e_nav_world_item_update(nwi);
    evas_object_show(nwi);
 
-    World_Proxy* proxy = world_proxy_fill(); 
-    if(proxy==NULL) {
-        printf("!! proxy==NULL\n");
-        return;
-    }
-    proxy->viewport_add_func(121.000000, -25.000000, 122.000000, -24.000000);  
- 
+   e_nav_dbus_init();    
+   viewport_add(121.000000, -25.000000, 122.000000, -24.000000);
+
    /* test AP object */
-   nwi = e_nav_world_item_ap_add(nav, e_module_dir_get(mod),
+   nwi = e_nav_world_item_ap_add(nav, e_module_dir_get(mod), NULL,
 				 151.220000, 33.874000);
    e_nav_world_item_ap_essid_set(nwi, "Office");
    e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE);
    e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);
-
+    
    /* test NEO OTHER object */
    nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod), NULL,
 				     151.215000, 33.871000);
@@ -214,10 +223,12 @@ _e_mod_nav_init(E_Module *m)
    e_nav_world_item_neo_other_name_set(nwi, "Olv");
    
    /* test NEO ME object */
+    /*
    nwi = e_nav_world_item_neo_me_add(nav, e_module_dir_get(mod),
 				     151.210000, 33.870000);
    e_nav_world_item_neo_me_name_set(nwi, "Me");
-   
+   */
+
    /* start off at a zoom level and location instantly */
    e_nav_zoom_set(nav, 0.0001, 0.0);
    e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
@@ -236,12 +247,65 @@ _e_mod_nav_shutdown(void)
    nav = NULL;
 }
 
-void e_nav_object_add(Object_Proxy* proxy)
+
+// when we zoom in and zoom out or move the map, we should change the current viewport
+// when zoom in, we double size the viewport, when zoom out, we half the size of the viewport
+// when move the map or the user move his position, we change the coordinate of the left-up corner and the buttom-down corner
+void change_viewport()
+{
+
+}
+
+// we can have more than one viewport, and we can change to the viewport we want to see
+// use a list to manage viewport
+void e_nav_viewport_add(Viewport_Proxy* proxy)
+{
+    
+}
+
+void e_nav_viewport_del()
+{
+
+}
+
+void e_nav_neo_me_add(Bard_Proxy *proxy, double lat, double lon )
+{
+    Evas_Object *nwi;
+    nwi = e_nav_world_item_neo_me_add(nav,  e_module_dir_get(mod), lat, lon);
+    e_nav_world_item_neo_me_name_set(nwi, "Me");
+    proxy->object = nwi;
+
+}
+
+void e_nav_object_del(const char* obj_path)
+{
+    Evas_Object *nwi = get_e_nav_object(obj_path);
+    if(nwi) {
+        evas_object_del(nwi);
+    }
+    remove_e_nav_object(obj_path);
+    printf("Delete object\n");    
+}
+
+void e_nav_object_add(Object_Proxy* proxy, int type, double lat, double lon)
 {
    Evas_Object *nwi;
-   // get type, position, geometry, etc. infomation
-   // add a world item
-   //nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod), proxy,
-     //                151.215000, 33.871000); 
+   int object_type = type;
+   
+   if(object_type==DIVERSITY_ITEM_TYPE_AP) {
+       nwi = e_nav_world_item_ap_add(nav,  e_module_dir_get(mod), proxy, lat, lon);
+       e_nav_world_item_ap_essid_set(nwi, "Office");
+       e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE);
+       e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);
+       proxy->object = nwi;
+   }
+   else if(object_type == DIVERSITY_ITEM_TYPE_NEO_OTHER){
+       nwi = e_nav_world_item_neo_other_add(nav,  e_module_dir_get(mod), proxy, lat, lon);
+       e_nav_world_item_neo_other_name_set(nwi, "Sean");
+       proxy->object = nwi;
+   }
+    add_e_nav_object(proxy->object_path, nwi);
+
 } 
+
 

@@ -1,7 +1,10 @@
+#include <E_DBus.h>
 #include <e.h>
 #include "e_nav.h"
 #include "e_nav_item_ap.h"
 #include "e_spiralmenu.h"
+#include "e_nav_dbus.h"
+
 
 typedef struct _AP_Data AP_Data;
 
@@ -12,6 +15,7 @@ struct _AP_Data
    E_Nav_Item_Ap_Key_Type  key_type;
    unsigned char           freed : 1;
    unsigned char           active : 1;
+   Object_Proxy           *proxy;
 };
 
 static Evas_Object *
@@ -55,6 +59,11 @@ static void
 _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    printf("cb2\n");
+   AP_Data *apd;
+   apd = evas_object_data_get(src_obj, "nav_world_item_ap_data");
+   if (!apd) return;
+   printf("join in ap: %s\n", apd->proxy->object_path);
+   e_nav_connect_ap(apd->proxy->object_path); 
    e_spiralmenu_deactivate(obj);
 }
 
@@ -99,7 +108,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
-e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, double lat, double lon)
+e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, Object_Proxy* proxy, double lat, double lon)
 {
    Evas_Object *o;
    AP_Data *apd;
@@ -108,6 +117,7 @@ e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, double lat, dou
     * evas object */
    apd = calloc(1, sizeof(AP_Data));
    if (!apd) return NULL;
+   apd->proxy = proxy;
    o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/access_point");
    edje_object_part_text_set(o, "e.text.name", "???");
