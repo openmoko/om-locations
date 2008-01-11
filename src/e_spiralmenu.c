@@ -174,7 +174,6 @@ e_spiralmenu_activate(Evas_Object *obj)
      }
    if (sd->animator) return;
    sd->animator = ecore_animator_add(_e_spiralmenu_cb_animator, obj);
-   printf("ACT\n");
 }
 
 void
@@ -196,7 +195,6 @@ e_spiralmenu_deactivate(Evas_Object *obj)
      }
    if (sd->animator) return;
    sd->animator = ecore_animator_add(_e_spiralmenu_cb_animator, obj);
-   printf("DEACT\n");
 }
 
 void
@@ -471,10 +469,6 @@ _e_spiralmenu_update(Evas_Object *obj)
 			      x + (w / 2) + xx - (ww / 2), 
 			      y + (h / 2) + yy - (hh / 2));
 	     evas_object_resize(si->item_obj, ww, hh);
-	     printf("MI %i %i %ix%i\n", 
-		    x + (w / 2) + xx - (ww / 2), 
-		    y + (h / 2) + yy - (hh / 2),
-		    ww, hh);
 	     evas_object_show(si->item_obj);
 	     r += p;
 	  }

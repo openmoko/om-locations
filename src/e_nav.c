@@ -769,7 +769,6 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
      {
 	if (dist > 40)
 	  {
-	     printf("momentum %3.3f\n", zoomout);
 	     e_nav_coord_set(obj, lat - ((vx2 - vx1) * (sd->zoom * 5.0)),
 			     lon - ((vy2 - vy1) * (sd->zoom * 5.0)),
 			     2.0 + (zoomout / 16.0));
@@ -1187,7 +1186,6 @@ _e_nav_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, 
 	double x = 0, y = 0;
 	
 	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
-	printf("START %3.3f\n", y);
      }
 }
 
@@ -1201,7 +1199,6 @@ _e_nav_cb_signal_drag_stop(void *data, Evas_Object *obj, const char *emission, c
 	double x = 0, y = 0;
 	
 	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
-	printf("STOP %3.3f\n", y);
      }
 }
 

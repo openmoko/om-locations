@@ -15,7 +15,10 @@ EAPI E_Module_Api e_modapi =
 EAPI void *
 e_modapi_init(E_Module *m) 
 {
-   bindtextdomain(PACKAGE, LOCALEDIR);
+   char buf[PATH_MAX];
+   
+   snprintf(buf, sizeof(buf), "%s/locale", e_module_dir_get(m));
+   bindtextdomain(PACKAGE, buf);
    bind_textdomain_codeset(PACKAGE, "UTF-8");
    
    _e_mod_nav_init(m);
@@ -39,13 +42,3 @@ e_modapi_save(E_Module *m)
    /* called to save config - none currently */
    return 1; /* 1 for success, 0 for failure */
 }
-
-/* this is now deprecated - leaving in as a #if for now, will go soon */
-#if E_MODULE_API_VERSION <= 6
-EAPI int
-e_modapi_about(E_Module *m) 
-{
-   e_module_dialog_show(m, D_("Diversity"), D_("Navigator"));
-   return 1;
-}
-#endif

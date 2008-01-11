@@ -191,7 +191,7 @@ _e_mod_nav_init(E_Module *m)
    evas_object_show(nwi);
    
    nwi = evas_object_image_add(evas);
-   evas_object_image_file_set(nwi, "/home/raster/sydney_city_map.png", NULL);
+   evas_object_image_file_set(nwi, "/tmp/sydney_city_map.png", NULL);
    evas_object_image_smooth_scale_set(nwi, 0);
    evas_object_event_callback_add(nwi, EVAS_CALLBACK_RESIZE, map_resize, NULL);
    e_nav_world_item_add(nav, nwi);

@@ -5,6 +5,7 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.guess config.h.in \
 
 SUBDIRS = src po maps
 
+EDJE_CC = @edje_cc@
 EDJE_FLAGS = -v \
 -id $(top_srcdir)/images \
 -fd $(top_srcdir)/fonts
