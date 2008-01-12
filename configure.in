@@ -68,4 +68,5 @@ src/Makefile
 po/Makefile
 maps/Makefile
 maps/sat/Makefile
+maps/osm/Makefile
 ],[])

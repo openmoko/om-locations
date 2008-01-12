@@ -15,12 +15,23 @@
 #define DIVERSITY_OBJECT_DBUS_PATH      "/org/openmoko/diversity/object"
 #define DIVERSITY_OBJECT_DBUS_INTERFACE      "org.openmoko.diversity.object"
 
-
+typedef enum _DiversityObjectType DiversityObjectType;
+enum _DiversityObjectType {
+        DIVERSITY_OBJECT_TYPE_OBJECT,
+        DIVERSITY_OBJECT_TYPE_VIEWPORT,
+        DIVERSITY_OBJECT_TYPE_TAG,
+        DIVERSITY_OBJECT_TYPE_BARD,
+        DIVERSITY_OBJECT_TYPE_AP,
+        DIVERSITY_OBJECT_TYPE_MAP,
+        NUM_DIVERSITY_OBJECT_TYPES,
+};
+/*
 enum DIVERSITY_ITEM_TYPE {
     DIVERSITY_ITEM_TYPE_AP,
     DIVERSITY_ITEM_TYPE_NEO_ME,
     DIVERSITY_ITEM_TYPE_NEO_OTHER
 };
+*/
 
 static E_DBus_Connection* e_conn=NULL;
 int e_nav_dbus_init();
@@ -83,7 +94,10 @@ int add_e_nav_object(const char *obj_path, Evas_Object* o);
 
 // call back functions
 void e_nav_neo_me_add(Bard_Proxy *proxy, double lat, double lon );
-void e_nav_object_add(Object_Proxy* proxy, int type, double lat, double lon);
+void e_nav_ap_added(Object_Proxy* proxy, double lat, double lon);
+void e_nav_neo_other_added(Object_Proxy* proxy, double lat, double lon);
+
+//void e_nav_object_add(Object_Proxy* proxy, int type, double lat, double lon);
 void e_nav_object_del(const char* obj_path);
 
 #endif

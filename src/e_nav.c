@@ -57,6 +57,8 @@ struct _E_Smart_Data
    
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
+
+   const char      *mapset;
    
    /* these are the CONFIGURED state - what the user or API has ASKED the
     * nav to do. there are other "current" values that are used for
@@ -119,9 +121,11 @@ static void _e_nav_update(Evas_Object *obj);
 static void _e_nav_overlay_update(Evas_Object *obj);
 static int _e_nav_momentum_calc(Evas_Object *obj, double t);
 static E_Nav_Tileset *_e_nav_tileset_add(Evas_Object *obj);
+static E_Nav_Tileset *_e_nav_tileset_osm_add(Evas_Object *obj);
 static void _e_nav_tileset_del(E_Nav_Tileset *nt);
 static void _e_nav_wallpaper_update(Evas_Object *obj);
 static void _e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt);
+static void _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt);
 static int _e_nav_cb_animator_momentum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
 
@@ -149,7 +153,7 @@ e_nav_add(Evas *e)
 }
 
 void
-e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
+e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir, const char *maps)
 {
    E_Smart_Data *sd;
    E_Nav_Tileset *nt;
@@ -157,7 +161,7 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-
+   sd->mapset = maps;
    sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->event, obj);
    evas_object_move(sd->event, sd->x, sd->y);
@@ -190,8 +194,11 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    edje_object_signal_callback_add(sd->overlay, "drag,step", "*", _e_nav_cb_signal_drag_stop, sd);
    edje_object_signal_callback_add(sd->overlay, "drag,set", "*", _e_nav_cb_signal_drag_stop, sd);
    
-
-   nt = _e_nav_tileset_add(obj);
+   if(sd->mapset=="OpenStreet"){   
+       nt = _e_nav_tileset_osm_add(obj);
+   } else  {
+       nt = _e_nav_tileset_add(obj);
+   }
 //   nt = _e_nav_tileset_add(obj);
 //   nt->map = "map";
 //   nt->format = "png";
@@ -664,7 +671,7 @@ _e_nav_cb_event_mouse_wheel(void *data, Evas *evas, Evas_Object *obj, void *even
    if (ev->direction == 0)
      {
 	if (ev->z > 0) e_nav_zoom_set(data, sd->conf.zoom * 2.0, 1.0);
-	else e_nav_zoom_set(data, sd->conf.zoom / 2.0, 1.0);
+       else e_nav_zoom_set(data, sd->conf.zoom / 2.0, 1.0);
      }
 }
 
@@ -797,6 +804,7 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
 static void
 _e_nav_update(Evas_Object *obj)
 {
+
    E_Smart_Data *sd;
    Evas_List *l;
    
@@ -812,6 +820,7 @@ _e_nav_update(Evas_Object *obj)
      }
    
    _e_nav_overlay_update(obj);
+
 }
 
 static void
@@ -922,6 +931,25 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
 }
 
 static E_Nav_Tileset *
+_e_nav_tileset_osm_add(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   E_Nav_Tileset *nt;
+   
+   sd = evas_object_smart_data_get(obj);
+   nt = calloc(1, sizeof(E_Nav_Tileset));
+   if (!nt) return;
+   
+   sd->tilesets = evas_list_append(sd->tilesets, nt);
+   nt->obj = obj;
+   nt->min_level = 3;
+   nt->max_level = 14;
+   nt->map = "osm";
+   nt->format = "png";
+   return nt;
+}
+
+static E_Nav_Tileset *
 _e_nav_tileset_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
@@ -967,13 +995,163 @@ _e_nav_wallpaper_update(Evas_Object *obj)
    Evas_List *l;
    
    sd = evas_object_smart_data_get(obj);
+   int tilesetsCount=0;
    for (l = sd->tilesets; l; l = l->next)
      {
 	E_Nav_Tileset *nt;
 	
 	nt = l->data;
-	_e_nav_wallpaper_update_tileset(nt);
+            tilesetsCount++;
+        if(sd->mapset=="OpenStreet"){   
+	    _e_nav_wallpaper_update_tileset_osm(nt);
+        } 
+        else {
+	    _e_nav_wallpaper_update_tileset(nt);
+        }
+
      }
+}
+
+static void
+_e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt)
+{
+   E_Smart_Data *sd;
+   int i, j;
+   int level, tiles_x, tiles_y, tiles_w, tiles_h, tiles_ox, tiles_oy;
+   int wtilesx, wtilesy;
+   double tpx, tpy;
+   double span, tw;
+   Evas_Coord x, y, xx, yy;
+   const char *mapdir, *mapset, *mapformat;
+   char mapbuf[PATH_MAX];
+   enum {
+      MODE_NONE,
+	MODE_RESET,
+	MODE_ORIGIN,
+	MODE_RESIZE,
+	MODE_MOVE
+   };
+   int mode = MODE_NONE;
+
+   sd = evas_object_smart_data_get(nt->obj);
+   snprintf(mapbuf, sizeof(mapbuf), "%s/maps", sd->dir);
+   mapdir = mapbuf;
+   mapset = nt->map;   // "osm"
+   mapformat = nt->format;  // "png"
+   span = 360.0 / sd->zoom; /* world width is 'span' pixels */
+   level = 1;
+   if      (span >  256*1024*16) level = 14; /* 384x192 */
+   else if (span >  256*1024) level =  10; /* 192x96 */
+   else if (span >  245*64) level =  6; /* 64x64 */
+   //else if (span >   5400) level =  4; /* 48x24 */
+   //else if (span >   2700) level =  3; /* 24x12 */
+   else if (span >   256 * 8) level =  3; /* 4x4 */
+   if (level < nt->min_level) level = nt->min_level;
+   else if (level > nt->max_level) level = nt->max_level;
+   
+   wtilesx = 2 << (level - 1);  // 8 
+   wtilesy = 1 << (level - 1);   // 4  
+   tw = span / ((double)wtilesx);   // tile width and height "150" pixels needed by one image --  225 pixels
+   
+   tiles_w = 1 + (((double)sd->w + tw) / tw);   // "2" (mininum)
+   tiles_h = 1 + (((double)sd->h + tw) / tw);   // "2" (mininum)
+
+   tpx = ((180.0 + sd->lat - ((sd->w * sd->zoom) / 2)) * wtilesx) / 360.0;
+   tpy = ((90.0 + sd->lon - ((sd->h * sd->zoom) / 2)) * wtilesy) / 180.0;
+   tiles_ox = (int)tpx;
+   tiles_oy = (int)tpy;
+   tiles_x = -tw * (tpx - tiles_ox);  // offset
+   tiles_y = -tw * (tpy - tiles_oy);  // offset
+
+   if ((nt->tiles.ow != tiles_w) || (nt->tiles.oh != tiles_h) ||
+       (nt->level != level))
+     mode = MODE_RESET;               // zoom in or zoom out to change level, or need more tiles. 
+   else if ((nt->tiles.ox != tiles_ox) || (nt->tiles.oy != tiles_oy))
+     mode = MODE_ORIGIN;                  // move fix point to origin point
+   else if (tw != nt->tiles.tilesize)  // zoom in or zoom out
+     mode = MODE_RESIZE;
+   else if ((tiles_x != nt->tiles.offset_x) || (tiles_y != nt->tiles.offset_y))
+     mode = MODE_MOVE;               // just move a little
+     
+   if (mode == MODE_NONE) return;
+
+   if (mode == MODE_RESET)
+     {
+	if (nt->tiles.objs)
+	  {
+	     for (j = 0; j < nt->tiles.oh; j++)
+	       {
+		  for (i = 0; i < nt->tiles.ow; i++)
+		    evas_object_del(nt->tiles.objs[(j * nt->tiles.ow) + i]);
+	       }
+	     free(nt->tiles.objs);
+	  }
+     }
+   nt->tiles.ow = tiles_w;
+   nt->tiles.oh = tiles_h;
+   nt->level = level;
+   nt->tiles.ox = tiles_ox;
+   nt->tiles.oy = tiles_oy;
+   nt->tiles.tilesize = tw;
+   nt->tiles.offset_x = tiles_x;
+   nt->tiles.offset_y = tiles_y;
+   
+   if (mode == MODE_RESET)
+       nt->tiles.objs = malloc(tiles_w * tiles_h * sizeof(Evas_Object *));
+
+   if (nt->tiles.objs)
+   {
+	for (j = 0; j < nt->tiles.oh; j++)
+	  {
+	     y = (j * nt->tiles.tilesize);
+	     yy = ((j + 1) * nt->tiles.tilesize);
+	     for (i = 0; i < nt->tiles.ow; i++)
+	       {
+		  Evas_Object *o;
+		  char buf[PATH_MAX];
+		  
+		  if (mode == MODE_RESET)
+		    {
+		       o = evas_object_image_add(evas_object_evas_get(nt->obj));
+		       nt->tiles.objs[(j * nt->tiles.ow) + i] = o;
+		       evas_object_smart_member_add(o, nt->obj);
+		       evas_object_clip_set(o, sd->clip);
+		       evas_object_pass_events_set(o, 1);   // no event happens on the object
+		       evas_object_stack_below(o, sd->clip);
+		       evas_object_image_smooth_scale_set(o, 0);  // no smooth scale algorithm
+		    }
+		  else
+		    o = nt->tiles.objs[(j * nt->tiles.ow) + i];
+		  
+		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN))
+		    {
+		       snprintf(buf, sizeof(buf), "%s/%s/osm-%i-%i-%i.%s",
+				mapdir, mapset,
+				nt->level, 
+				i + nt->tiles.ox,
+				j + nt->tiles.oy,
+				mapformat);
+		       evas_object_image_file_set(o, buf, NULL);
+		       if (evas_object_image_load_error_get(o) == EVAS_LOAD_ERROR_NONE){
+                          evas_object_show(o);
+		       } else {
+			 evas_object_hide(o);
+                       }
+		    }
+		  x = (i * nt->tiles.tilesize);
+		  xx = ((i + 1) * nt->tiles.tilesize);
+		  evas_object_move(o, 
+				   sd->x + nt->tiles.offset_x + x,
+				   sd->y + nt->tiles.offset_y + y);
+		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN) ||
+		      (mode == MODE_RESIZE))
+		    {
+		       evas_object_resize(o, xx - x, yy - y);
+		       evas_object_image_fill_set(o, 0, 0, xx - x, yy - y);
+		    }
+	       }
+	  }
+   }
 }
 
 static void
@@ -1039,7 +1217,7 @@ _e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt)
      mode = MODE_MOVE;
      
    if (mode == MODE_NONE) return;
-   
+
    if (mode == MODE_RESET)
      {
 	// reallac entirely move and resize
@@ -1062,7 +1240,7 @@ _e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt)
    nt->tiles.tilesize = tw;
    nt->tiles.offset_x = tiles_x;
    nt->tiles.offset_y = tiles_y;
-   
+
    if (mode == MODE_RESET)
      nt->tiles.objs = malloc(tiles_w * tiles_h * sizeof(Evas_Object *));
    

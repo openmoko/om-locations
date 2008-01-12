@@ -89,18 +89,7 @@ Object_Proxy *object_proxy_new(char* path, E_DBus_Connection *connection)
     e_nav_object_signal_handler_add(proxy->connection, proxy->object_path,  DIVERSITY_OBJECT_DBUS_INTERFACE, "GeometryChanged", on_object_geometry_changed);
     return proxy;
 }
-/*
-void object_geometry_get(double *x, double *y, double *w, double *h)
-{
-    printf("Object Geometry Get\n");
-    
-}
 
-void object_geometry_set(double x, double y, double w, double h)
-{
-    printf("Object Geometry Set\n");
-}
-*/
 void self_get()
 {
    if(e_conn) {
@@ -231,6 +220,39 @@ void viewport_remove(World_Proxy *proxy, char* object_path)
     dbus_message_unref(msg); 
 }
 
+void object_type_get_reply(void *data, DBusMessage *reply, DBusError *error)
+{
+    int type;
+    if (dbus_error_is_set(error))
+    {
+        printf("Type Get reply Error: %s - %s\n", error->name, error->message);
+        return;
+    }
+
+    dbus_message_get_args(reply, error, DBUS_TYPE_INT32, &type, DBUS_TYPE_INVALID);
+    printf("Object type: %d\n", type);
+    Object_Proxy* proxy = (Object_Proxy*)data;
+    if(type==DIVERSITY_OBJECT_TYPE_AP) { 
+        //e_nav_object_add(proxy, lat, lon);  // hard code 
+    }
+    else if(type==DIVERSITY_OBJECT_TYPE_OBJECT) {
+
+    }
+}
+
+void object_type_get(Object_Proxy *proxy)
+{
+    DBusMessage *msg;
+    msg = dbus_message_new_method_call(
+        DIVERSITY_DBUS_SERVICE,  
+        proxy->object_path,
+        DIVERSITY_OBJECT_DBUS_INTERFACE, 
+        "TypeGet"    
+    );
+    e_dbus_message_send(e_conn, msg, object_type_get_reply, -1, proxy);     
+    dbus_message_unref(msg); 
+}
+
 static void on_viewport_object_added(void *data, DBusMessage *msg)
 {
     DBusError err;
@@ -251,6 +273,9 @@ static void on_viewport_object_added(void *data, DBusMessage *msg)
         if(proxy==NULL) {
             return;
         }
+        // get type
+        object_type_get(proxy);
+
         //  Test: New object in UI and show on the map
         srand(getpid());  
         printf("%f, %f\n", drand48(), drand48());
@@ -269,8 +294,9 @@ static void on_viewport_object_added(void *data, DBusMessage *msg)
         else {
            lon = lon-drand48();
         }
+        // get type
         
-        e_nav_object_add(proxy, DIVERSITY_ITEM_TYPE_AP, lat, lon); 
+        //e_nav_object_add(proxy, DIVERSITY_ITEM_TYPE_AP, lat, lon);  // hard code 
     }
 }
 
