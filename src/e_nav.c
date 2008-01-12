@@ -1012,6 +1012,21 @@ _e_nav_wallpaper_update(Evas_Object *obj)
      }
 }
 
+#define URI "curl http://%s.tile.openstreetmap.org/%d/%d/%d.png -o %s"
+void osm_download(int level, int x, int y, const char* path)
+{
+    char cmd[256];
+    int i,j;
+    i=x;
+    j=pow(2, level-2) + y;
+    if(level< 10)
+        snprintf(cmd, sizeof(cmd), URI, "b", level, i, j, path);
+    else 
+        snprintf(cmd, sizeof(cmd), URI, "c", level, i, j, path);
+    system(cmd);
+    printf("Download file: %s\n", path);
+}
+
 static void
 _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt)
 {
@@ -1135,7 +1150,13 @@ _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt)
 		       if (evas_object_image_load_error_get(o) == EVAS_LOAD_ERROR_NONE){
                           evas_object_show(o);
 		       } else {
-			 evas_object_hide(o);
+                            printf("Level %d file not in local\n", nt->level);
+                            // not in local(cache)
+                            // ask backend to give me url
+                            if(level==6 || level==10 || level==14) 
+                               osm_download(nt->level,  i+nt->tiles.ox,  j+nt->tiles.oy, buf);                           
+                            // download several images to show    ;   this will be thread?  or system(curl &)
+			 //evas_object_hide(o);
                        }
 		    }
 		  x = (i * nt->tiles.tilesize);
