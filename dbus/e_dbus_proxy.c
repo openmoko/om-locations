@@ -36,7 +36,6 @@
 #include <Ecore.h>
 #include <Ecore_Data.h>
 
- 
 #ifdef MERGED_UPSTREAM
 #include "e_dbus_private.h"
 #else
@@ -209,9 +208,11 @@ e_dbus_proxy_destroy(E_DBus_Proxy *proxy)
   if (proxy->pending_calls)
     ecore_hash_destroy(proxy->pending_calls);
 
-  if (proxy->signal_handlers) {
+  if (proxy->signal_handlers)
+  {
     ecore_list_first_goto(proxy->signal_handlers);
-    while ((sig = ecore_list_next(proxy->signal_handlers))) {
+    while ((sig = ecore_list_next(proxy->signal_handlers)))
+    {
       e_dbus_signal_handler_del(proxy->manager->e_connection, sig->sh);
       free(sig);
     }
@@ -344,7 +345,8 @@ e_dbus_proxy_call(E_DBus_Proxy *proxy, DBusMessage *message, E_DBus_Callback_Fun
   if (!e_dbus_proxy_end_call(proxy, call, &reply))
     return 0;
 
-  if (cb_func) {
+  if (cb_func)
+  {
     dbus_error_init(&error);
 
     if (dbus_set_error_from_message(&error, reply))
@@ -352,8 +354,19 @@ e_dbus_proxy_call(E_DBus_Proxy *proxy, DBusMessage *message, E_DBus_Callback_Fun
     else
       cb_func(data, reply, NULL);
 
-      dbus_error_free(&error);
+    dbus_error_free(&error);
   }
+#ifdef DEBUG
+  else
+  {
+    dbus_error_init(&error);
+
+    if (dbus_set_error_from_message(&error, reply))
+      printf("proxy call returns error: %s\n", error.message);
+
+    dbus_error_free(&error);
+  }
+#endif
 
   dbus_message_unref(reply);
 
@@ -415,7 +428,8 @@ e_dbus_proxy_begin_call_with_timeout(E_DBus_Proxy *proxy, DBusMessage *message, 
     notify->free_func = free_func;
   }
 
-  if (!dbus_connection_send_with_reply(proxy->manager->connection, message, &pending, timeout)) {
+  if (!dbus_connection_send_with_reply(proxy->manager->connection, message, &pending, timeout))
+  {
     free(notify);
 
     return NULL;
@@ -450,7 +464,8 @@ e_dbus_proxy_end_call(E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call, DBusMessage 
     return 0;
 
   dbus_pending_call_block(pending);
-  if (reply) {
+  if (reply)
+  {
     *reply = dbus_pending_call_steal_reply(pending);
     assert(*reply);
   }
@@ -480,7 +495,8 @@ e_dbus_proxy_connect_signal(E_DBus_Proxy *proxy, const char *signal_name, E_DBus
                                       cb_signal,
                                       data);
 
-  if (!sig->sh) {
+  if (!sig->sh)
+  {
     free(sig);
 
     return;
