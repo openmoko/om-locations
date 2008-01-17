@@ -3,6 +3,7 @@ MAINTAINERCLEANFILES = Makefile.in
 
 INCLUDES = -I. \
 	 -I$(top_srcdir) \
+	 -I$(top_srcdir)/dbus \
 	 -I$(includedir) \
 	 @e_cflags@
 
@@ -27,7 +28,7 @@ module_la_SOURCES = e_mod_main.h \
                     e_nav_dbus.c \
                     e_nav_dbus.h
 		    
-module_la_LIBADD = @e_libs@
+module_la_LIBADD = @e_libs@ ../dbus/libedbus-proxy.la
 module_la_LDFLAGS = -module -avoid-version
 module_la_DEPENDENCIES = $(top_builddir)/config.h
 
