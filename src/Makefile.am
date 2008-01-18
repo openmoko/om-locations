@@ -31,7 +31,6 @@ diversity_nav_SOURCES =		\
 	e_nav_dbus.c
 		    
 diversity_nav_LDADD = $(EFL_LIBS) $(EDBUS_LIBS) ../dbus/libedbus-proxy.la
-diversity_nav_DEPENDENCIES = $(top_builddir)/config.h
 
 clean-local:
 	rm -rf *~
