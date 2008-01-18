@@ -21,6 +21,8 @@
 /* create (and destroy) a nav object on the desktop bg */
 /* setup and teardown */
 static Evas_Object *nav = NULL;
+static void add_city(Evas* evas, double lat, double lon, const char* cityname);
+static void test_map(Evas* evas);
 
 static Evas_Object *
 theme_obj_new(Evas *e, const char *custom_dir, const char *group)
@@ -123,7 +125,7 @@ _e_mod_nav_init(Evas *evas)
    e_nav_theme_source_set(nav, THEME_PATH, "sat");
 
    /* testing items */
-   
+   test_map(evas); 
    nwi = theme_obj_new(evas, THEME_PATH, "modules/diversity_nav/city");
    evas_object_event_callback_add(nwi, EVAS_CALLBACK_MOUSE_DOWN,
 				  city_mouse_cb_down,
@@ -136,7 +138,6 @@ _e_mod_nav_init(Evas *evas)
 				 32, 32);
    e_nav_world_item_scale_set(nwi, 0);
    e_nav_world_item_update(nwi);
-   printf("Update Sydney\n");
    evas_object_show(nwi);
    
    nwi = theme_obj_new(evas, THEME_PATH,
@@ -188,7 +189,7 @@ _e_mod_nav_init(Evas *evas)
 
    nwi = e_nav_world_item_ap_add(nav, THEME_PATH, NULL,
 				 151.220000, 33.874000);
-   e_nav_world_item_ap_essid_set(nwi, "Office");
+   e_nav_world_item_ap_essid_set(nwi, "OpenMoko");
    e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE);
    e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);
     
@@ -207,15 +208,14 @@ _e_mod_nav_init(Evas *evas)
    */
 
    /* start off at a zoom level and location instantly */
-   //e_nav_zoom_set(nav, 0.0001, 0.0);
-   e_nav_zoom_set(nav, 0.1, 0.0);
+   e_nav_zoom_set(nav, 0.0001, 0.0);
+   //e_nav_zoom_set(nav, 0.2, 0.0);
    e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
-   
+            
    /* put the nav object somewhere useful at a decent size and show it */
    evas_object_move(nav, 0, 0);
    evas_output_size_get(evas, &w, &h);
    evas_object_resize(nav, w, h);
-     printf("Zone X=%d, Y=%d, W=%d, H=%d\n", 0, 0, w, h);
    evas_object_show(nav);
 }
 
@@ -227,6 +227,31 @@ _e_mod_nav_shutdown(void)
    nav = NULL;
 }
 
+// for test
+static void test_map(Evas* evas)
+{
+    add_city(evas, -0.087891, -51.495065, "London");
+    add_city(evas, 33.178711, -68.989925, "Mypmahck");
+    add_city(evas, 116.28, -39.54, "Beijing");
+    add_city(evas, -122.32974, -47.6035, "Seattle");
+}
+
+static void add_city(Evas* evas, double lat, double lon, const char* cityname)
+{
+  Evas_Object*  nwi = theme_obj_new(evas, THEME_PATH, "modules/diversity_nav/city");
+   evas_object_event_callback_add(nwi, EVAS_CALLBACK_MOUSE_DOWN,
+                                  city_mouse_cb_down,
+                                  THEME_PATH);
+   edje_object_part_text_set(nwi, "e.text.name", cityname);
+   e_nav_world_item_add(nav, nwi);
+   e_nav_world_item_type_set(nwi, E_NAV_WORLD_ITEM_TYPE_ITEM);
+   e_nav_world_item_geometry_set(nwi,
+                                 lat, lon,
+                                 32, 32);
+   e_nav_world_item_scale_set(nwi, 0);
+   e_nav_world_item_update(nwi);
+    evas_object_show(nwi);
+}
 
 // when we zoom in and zoom out or move the map, we should change the current viewport
 // when zoom in, we double size the viewport, when zoom out, we half the size of the viewport
@@ -264,7 +289,6 @@ void e_nav_object_del(const char* obj_path)
         evas_object_del(nwi);
     }
     remove_e_nav_object(obj_path);
-    printf("Delete object\n");    
 }
 
 void e_nav_ap_added(Object_Proxy* proxy, double lat, double lon)
@@ -287,26 +311,4 @@ void e_nav_neo_other_added(Object_Proxy* proxy, double lat, double lon)
     add_e_nav_object(proxy->object_path, nwi);
 }
 
-/*
-void e_nav_object_add(Object_Proxy* proxy, int type, double lat, double lon)
-{
-   Evas_Object *nwi;
-   int object_type = type;
-   
-   if(object_type==DIVERSITY_ITEM_TYPE_AP) {
-       nwi = e_nav_world_item_ap_add(nav,  THEME_PATH, proxy, lat, lon);
-       e_nav_world_item_ap_essid_set(nwi, "Office");
-       e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE);
-       e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);
-       proxy->object = nwi;
-   }
-   else if(object_type == DIVERSITY_ITEM_TYPE_NEO_OTHER){
-       nwi = e_nav_world_item_neo_other_add(nav,  THEME_PATH, proxy, lat, lon);
-       e_nav_world_item_neo_other_name_set(nwi, "Sean");
-       proxy->object = nwi;
-   }
-    add_e_nav_object(proxy->object_path, nwi);
-
-} 
-*/
 

@@ -1,4 +1,8 @@
 #include "e_nav.h"
+#include "e_list.h"
+
+#define LAT_LIMIT       (85.05)
+#define RADIANS(d) ((d) * M_PI / 180.0)
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -124,7 +128,7 @@ static E_Nav_Tileset *_e_nav_tileset_osm_add(Evas_Object *obj);
 static void _e_nav_tileset_del(E_Nav_Tileset *nt);
 static void _e_nav_wallpaper_update(Evas_Object *obj);
 static void _e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt);
-static void _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt);
+static void _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt, int jumpLevel);
 static int _e_nav_cb_animator_momentum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
 
@@ -136,6 +140,7 @@ static void _e_nav_world_item_free(E_Nav_World_Item *nwi);
 static void _e_nav_world_item_move_resize(E_Nav_World_Item *nwi);
 
 static void _e_nav_world_item_cb_item_del(void *data, Evas *evas, Evas_Object *obj, void *event);
+static double mercator_project(double y);
 
 static Evas_Smart *_e_smart = NULL;
 
@@ -176,6 +181,7 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir, const char *map
    evas_object_move(sd->overlay, sd->x, sd->y);
    evas_object_resize(sd->overlay, sd->w, sd->h);
    evas_object_clip_set(sd->overlay, sd->clip);
+
    evas_object_show(sd->overlay);
 
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_DOWN,
@@ -218,7 +224,6 @@ e_nav_coord_set(Evas_Object *obj, double lat, double lon, double when)
    else if (lat > 180.0) lat = 180.0;
    if (lon < -90.0) lon = -90.0;
    else if (lon > 90.0) lon = 90.0;
- 
    if (when == 0.0)
      {
 	sd->cur.target.lat_lon_time = 0.0;
@@ -808,7 +813,7 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
 			0.1);
 	e_nav_zoom_set(obj, 
 		       sd->moveng.start.zoom * (1.0 + zoomout),
-		       0.5);
+	       0.5);
      }
 }
 
@@ -1014,7 +1019,7 @@ _e_nav_wallpaper_update(Evas_Object *obj)
 	nt = l->data;
             tilesetsCount++;
         if(sd->mapset=="OpenStreet"){   
-	    _e_nav_wallpaper_update_tileset_osm(nt);
+	    _e_nav_wallpaper_update_tileset_osm(nt, 0);
         } 
         else {
 	    _e_nav_wallpaper_update_tileset(nt);
@@ -1023,23 +1028,31 @@ _e_nav_wallpaper_update(Evas_Object *obj)
      }
 }
 
-#define URI "curl http://%s.tile.openstreetmap.org/%d/%d/%d.png -o %s"
-void osm_download(int level, int x, int y, const char* path)
+#define URI "curl http://%s.tile.openstreetmap.org/%d/%d/%d.png -o %s &"
+static void osm_download(int level, int x, int y, const char* path)
 {
     char cmd[256];
-    int i,j;
-    i=x;
-    j=pow(2, level-2) + y;
     if(level< 10)
-        snprintf(cmd, sizeof(cmd), URI, "b", level, i, j, path);
+        snprintf(cmd, sizeof(cmd), URI, "b", level, x, y, path);
     else 
-        snprintf(cmd, sizeof(cmd), URI, "c", level, i, j, path);
+        snprintf(cmd, sizeof(cmd), URI, "c", level, x, y, path);
     system(cmd);
+     // we need to know curl fail, use libcurl
     printf("Download file: %s\n", path);
 }
 
+
+static double mercator_project(double lat)
+{
+    lat = RADIANS(lat);
+    double  tmp = log(tan(lat) + 1.0 / cos(lat));
+    double y =  tmp / M_PI * 90.0;
+    return y;
+} 
+
+
 static void
-_e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt)
+_e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt, int jumpLevel)
 {
    E_Smart_Data *sd;
    int i, j;
@@ -1066,24 +1079,64 @@ _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt)
    mapformat = nt->format;  // "png"
    span = 360.0 / sd->zoom; /* world width is 'span' pixels */
    level = 1;
-   if      (span >  256*1024*16) level = 14; /* 384x192 */
-   else if (span >  256*1024) level =  10; /* 192x96 */
-   else if (span >  245*64) level =  6; /* 64x64 */
-   //else if (span >   5400) level =  4; /* 48x24 */
-   //else if (span >   2700) level =  3; /* 24x12 */
-   else if (span >   256 * 8) level =  3; /* 4x4 */
+   if(!jumpLevel) {
+       if      (span >  256*1024*16) level = 14; /* 16384 x 16384*/
+       else if (span >  256*1024*8) level =  13; /* 8192 x 8192*/
+       else if (span >  256*1024*4) level =  12; /* 4096x4096 */
+       else if (span >  256*1024*2) level =  11; /* 2048x2048 */
+       else if (span >  256*1024) level =  10; /* 1024x1024 */
+       else if (span >  256*512) level =  9; /* 512x512 */
+       else if (span >  256*256) level =  8; /* 256x256 */
+       else if (span >  256*128) level =  7; /* 128x128 */
+       else if (span >  256*64) level =  6; /* 64x64 */
+       else if (span >  256*32) level =  5; /* 32x32 */
+       else if (span >  256*16) level =  4; /* 16x16 */
+       else if (span >   256 * 8) level =  3; /* 8x8 */
+       else level=3;
+   }
+   else {
+       if      (span >  256*1024*16) level = 14; 
+       else if (span >  256*1024) level =  10; // 1024x1024 
+       else if (span >  256*64) level =  6; // 64x64 
+       else if (span >   256 * 8) level =  3; // 8x8 
+       else level=3;
+
+       if(span <256*64) {
+           span=360/0.2; sd->zoom=0.2;
+           level=3;
+       }
+       else if(span>256*64 && span<256*1024) {
+           span=256*64; sd->zoom=360.0/span;
+           level=6;
+       }
+       else if(span>256*1024 && span<256*1024*16) {
+           span=256*1024; sd->zoom=360.0/span;
+           level=10;
+       }
+       else {
+           span=256*1024*16; sd->zoom=360.0/span;
+           level=14;
+       }
+   }
+
+
    if (level < nt->min_level) level = nt->min_level;
    else if (level > nt->max_level) level = nt->max_level;
    
-   wtilesx = 2 << (level - 1);  // 8 
-   wtilesy = 1 << (level - 1);   // 4  
-   tw = span / ((double)wtilesx);   // tile width and height "150" pixels needed by one image --  225 pixels
+   wtilesx = 2 << (level - 1);   
+   wtilesy = 2 << (level - 1);    
+   tw = span / ((double)wtilesx);   
+  
+   tiles_w = 1 + (((double)sd->w + tw) / tw);   
+   tiles_h = 1 + (((double)sd->h + tw) / tw);   
+   tpx = ((180.0 + sd->lat - ((sd->w * sd->zoom) / 2)) * wtilesx) / 360.0;  
    
-   tiles_w = 1 + (((double)sd->w + tw) / tw);   // "2" (mininum)
-   tiles_h = 1 + (((double)sd->h + tw) / tw);   // "2" (mininum)
+   double mercatorY = mercator_project(-sd->lon); 
+   if( (sd->lon < LAT_LIMIT) && (sd->lon > -LAT_LIMIT)) 
+     tpy = ((180.0 + ((-mercatorY)*2) - ((sd->h * sd->zoom) / 2 )) * wtilesy) / 360.0;   
+   else
+     tpy = (180.0 + (sd->lon * 2) - ((sd->h * sd->zoom) / 2 )) * (wtilesy / 360.0);   
 
-   tpx = ((180.0 + sd->lat - ((sd->w * sd->zoom) / 2)) * wtilesx) / 360.0;
-   tpy = ((90.0 + sd->lon - ((sd->h * sd->zoom) / 2)) * wtilesy) / 180.0;
    tiles_ox = (int)tpx;
    tiles_oy = (int)tpy;
    tiles_x = -tw * (tpx - tiles_ox);  // offset
@@ -1142,9 +1195,9 @@ _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt)
 		       nt->tiles.objs[(j * nt->tiles.ow) + i] = o;
 		       evas_object_smart_member_add(o, nt->obj);
 		       evas_object_clip_set(o, sd->clip);
-		       evas_object_pass_events_set(o, 1);   // no event happens on the object
+		       evas_object_pass_events_set(o, 1);   
 		       evas_object_stack_below(o, sd->clip);
-		       evas_object_image_smooth_scale_set(o, 0);  // no smooth scale algorithm
+		       evas_object_image_smooth_scale_set(o, 0); 
 		    }
 		  else
 		    o = nt->tiles.objs[(j * nt->tiles.ow) + i];
@@ -1158,23 +1211,27 @@ _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt)
 				j + nt->tiles.oy,
 				mapformat);
 		       evas_object_image_file_set(o, buf, NULL);
-		       if (evas_object_image_load_error_get(o) == EVAS_LOAD_ERROR_NONE){
-                          evas_object_show(o);
+                        int load_result = evas_object_image_load_error_get(o);
+		       if (load_result == EVAS_LOAD_ERROR_NONE){
+                          evas_object_show(o);      // no error on load
 		       } else {
-                            printf("Level %d file not in local\n", nt->level);
-                            // not in local(cache)
-                            // ask backend to give me url
-                            if(level==6 || level==10 || level==14) 
+                            printf("load error: %d for level %d\n", load_result, nt->level);
+                            if(!jumpLevel)
                                osm_download(nt->level,  i+nt->tiles.ox,  j+nt->tiles.oy, buf);                           
-                            // download several images to show    ;   this will be thread?  or system(curl &)
-			 //evas_object_hide(o);
+                            else {
+                               if(level==6 || level==10 || level==14) {
+                                   osm_download(nt->level,  i+nt->tiles.ox,  j+nt->tiles.oy, buf);                           
+                               }
+                            }
+                            evas_object_image_file_set(o, buf, NULL);
+			    evas_object_show(o);
                        }
 		    }
 		  x = (i * nt->tiles.tilesize);
 		  xx = ((i + 1) * nt->tiles.tilesize);
 		  evas_object_move(o, 
 				   sd->x + nt->tiles.offset_x + x,
-				   sd->y + nt->tiles.offset_y + y);
+				   sd->y + nt->tiles.offset_y + y);  
 		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN) ||
 		      (mode == MODE_RESIZE))
 		    {
@@ -1440,8 +1497,14 @@ _e_nav_world_item_move_resize(E_Nav_World_Item *nwi)
      }
    else
      {
-	x = nwi->geom.x - sd->lat;
-	y = nwi->geom.y - sd->lon;
+        x = nwi->geom.x - sd->lat;
+        if(sd->mapset=="OpenStreet"){
+	    y = mercator_project(nwi->geom.y) - mercator_project(sd->lon);
+            y = y * 2;      //  This is for OSM or google map
+        }
+        else {
+            y = nwi->geom.y - sd->lon;
+        }
 	w = nwi->geom.w;
 	h = nwi->geom.h;
 	x = (sd->x + (sd->w / 2) + (x / sd->zoom)) - (w / 2.0);
