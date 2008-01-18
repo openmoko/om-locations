@@ -811,9 +811,10 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
 			sd->moveng.start.lon +
 			((sd->moveng.start.y - y) * sd->zoom),
 			0.1);
-	e_nav_zoom_set(obj, 
-		       sd->moveng.start.zoom * (1.0 + zoomout),
-	       0.5);
+             // marked for not show zoom flitter effect 
+	//e_nav_zoom_set(obj, 
+	//	       sd->moveng.start.zoom * (1.0 + zoomout),
+	  //       0.5);
      }
 }
 
