@@ -3,7 +3,7 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.guess config.h.in \
 		       config.sub configure depcomp install-sh ltmain.sh \
 		       missing config.rpath mkinstalldirs 
 
-SUBDIRS = dbus src po maps
+SUBDIRS = dbus src po maps images
 
 EDJE_CC = @edje_cc
 EDJE_FLAGS = -v \
@@ -12,23 +12,20 @@ EDJE_FLAGS = -v \
 
 filesdir = $(pkgdatadir)
 files_DATA = diversity_nav.edj
-	     
-EXTRA_DIST = $(files_DATA) \
-	     diversity_nav.edc \
-	     e-module-diversity_nav.edc \
-	     fonts/Vera.ttf \
-	     fonts/VeraBd.ttf \
-	     images/module_icon.png \
-	     images/logo.png \
-	     images/measure_64px.png \
-	     images/city.png \
-	     images/zoom.png
+
+applicationsdir = $(datadir)/applications
+applications_DATA = diversity-nav.desktop
+
+EXTRA_DIST =				\
+	$(files_DATA)			\
+	$(applications_DATA)		\
+	diversity_nav.edc		\
+	e-module-diversity_nav.edc	\
+	fonts/Vera.ttf			\
+	fonts/VeraBd.ttf
 
 %.edj: %.edc
 	$(EDJE_CC) $(EDJE_FLAGS) $< $@
 	
 clean-local:
 	rm -rf *.edj *~
-	
-uninstall-hook:
-	rm -rf $(datadir)

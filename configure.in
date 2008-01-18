@@ -47,9 +47,11 @@ PKG_CHECK_MODULES(EDBUS, edbus)
 
 AC_OUTPUT([
 Makefile
+diversity-nav.desktop
 src/Makefile
 dbus/Makefile
 po/Makefile
+images/Makefile
 maps/Makefile
 maps/sat/Makefile
 maps/osm/Makefile

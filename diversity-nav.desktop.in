@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Diversity Nav.
+TryExec=@PACKAGE_TARNAME@
+GenericName=Diversity Navigation
+Comment=Diversity Navigation
+StartupNotify=false
+Exec=@PACKAGE_TARNAME@
+Icon=@PACKAGE_TARNAME@
+Terminal=false
+Type=Application
+Categories=ENLIGHTENMENT;Network;GPS;
