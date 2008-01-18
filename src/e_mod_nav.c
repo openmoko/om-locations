@@ -1,7 +1,5 @@
-#include <E_DBus.h>
-#include <e.h>
-#include "e_mod_nav.h"
 #include "e_nav.h"
+#include "e_mod_nav.h"
 #include "e_spiralmenu.h"
 #include "e_nav_item_ap.h"
 #include "e_nav_item_neo_me.h"
@@ -22,9 +20,7 @@
 
 /* create (and destroy) a nav object on the desktop bg */
 /* setup and teardown */
-static E_Module *mod = NULL;
 static Evas_Object *nav = NULL;
-static Evas *evas = NULL;
 
 static Evas_Object *
 theme_obj_new(Evas *e, const char *custom_dir, const char *group)
@@ -32,7 +28,7 @@ theme_obj_new(Evas *e, const char *custom_dir, const char *group)
    Evas_Object *o;
    
    o = edje_object_add(e);
-   if (!e_theme_edje_object_set(o, "base/theme/modules/diversity_nav", group))
+   if (!e_nav_edje_object_set(o, "diversity_nav", group))
      {
 	if (custom_dir)
 	  {
@@ -118,26 +114,20 @@ map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
 }
 
 void
-_e_mod_nav_init(E_Module *m)
+_e_mod_nav_init(Evas *evas)
 {
-   E_Zone *zone;
    Evas_Object *nwi;
-   
-   mod = m; /* save the module handle */
-   zone = e_util_container_zone_number_get(0, 0); /* get the first zone */
-   if (!zone) return;
-   evas = zone->container->bg_evas;
+   int w, h;
    
    nav = e_nav_add(evas);
-   e_nav_theme_source_set(nav, e_module_dir_get(mod), "OpenStreet");
+   e_nav_theme_source_set(nav, THEME_PATH, "sat");
 
    /* testing items */
    
-   nwi = theme_obj_new(evas, e_module_dir_get(mod),
-		       "modules/diversity_nav/city");
+   nwi = theme_obj_new(evas, THEME_PATH, "modules/diversity_nav/city");
    evas_object_event_callback_add(nwi, EVAS_CALLBACK_MOUSE_DOWN,
 				  city_mouse_cb_down,
-				  e_module_dir_get(mod));
+				  THEME_PATH);
    edje_object_part_text_set(nwi, "e.text.name", "Sydney");
    e_nav_world_item_add(nav, nwi);
    e_nav_world_item_type_set(nwi, E_NAV_WORLD_ITEM_TYPE_ITEM);
@@ -149,11 +139,11 @@ _e_mod_nav_init(E_Module *m)
    printf("Update Sydney\n");
    evas_object_show(nwi);
    
-   nwi = theme_obj_new(evas, e_module_dir_get(mod),
+   nwi = theme_obj_new(evas, THEME_PATH,
 		       "modules/diversity_nav/city");
    evas_object_event_callback_add(nwi, EVAS_CALLBACK_MOUSE_DOWN,
 				  city_mouse_cb_down,
-				  e_module_dir_get(mod));
+				  THEME_PATH);
    edje_object_part_text_set(nwi, "e.text.name", "Taipei");
    e_nav_world_item_add(nav, nwi);
    e_nav_world_item_type_set(nwi, E_NAV_WORLD_ITEM_TYPE_ITEM);
@@ -164,11 +154,11 @@ _e_mod_nav_init(E_Module *m)
    e_nav_world_item_update(nwi);
    evas_object_show(nwi);
    
-   nwi = theme_obj_new(evas, e_module_dir_get(mod),
+   nwi = theme_obj_new(evas, THEME_PATH,
 		       "modules/diversity_nav/city");
    evas_object_event_callback_add(nwi, EVAS_CALLBACK_MOUSE_DOWN,
 				  city_mouse_cb_down,
-				  e_module_dir_get(mod));
+				  THEME_PATH);
    edje_object_part_text_set(nwi, "e.text.name", "Kings Cross");
    e_nav_world_item_add(nav, nwi);
    e_nav_world_item_type_set(nwi, E_NAV_WORLD_ITEM_TYPE_ITEM);
@@ -196,22 +186,22 @@ _e_mod_nav_init(E_Module *m)
    e_nav_dbus_init();    
    viewport_add(-180.000000, -90.000000, 180.000000, 90.000000);  // whole world viewport hard code
 
-   nwi = e_nav_world_item_ap_add(nav, e_module_dir_get(mod), NULL,
+   nwi = e_nav_world_item_ap_add(nav, THEME_PATH, NULL,
 				 151.220000, 33.874000);
    e_nav_world_item_ap_essid_set(nwi, "Office");
    e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE);
    e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);
     
-   nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod), NULL,
+   nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH, NULL,
 				     151.215000, 33.871000);
    e_nav_world_item_neo_other_name_set(nwi, "Sean");
-   nwi = e_nav_world_item_neo_other_add(nav, e_module_dir_get(mod), NULL,
+   nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH, NULL,
 				     151.213000, 33.874000);
    e_nav_world_item_neo_other_name_set(nwi, "Olv");
    
    /* test NEO ME object */
     /*
-   nwi = e_nav_world_item_neo_me_add(nav, e_module_dir_get(mod),
+   nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
 				     151.210000, 33.870000);
    e_nav_world_item_neo_me_name_set(nwi, "Me");
    */
@@ -222,9 +212,10 @@ _e_mod_nav_init(E_Module *m)
    e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
    
    /* put the nav object somewhere useful at a decent size and show it */
-   evas_object_move(nav, zone->x, zone->y);
-   evas_object_resize(nav, zone->w, zone->h);
-     printf("Zone X=%d, Y=%d, W=%d, H=%d\n", zone->x, zone->y, zone->w, zone->h);
+   evas_object_move(nav, 0, 0);
+   evas_output_size_get(evas, &w, &h);
+   evas_object_resize(nav, w, h);
+     printf("Zone X=%d, Y=%d, W=%d, H=%d\n", 0, 0, w, h);
    evas_object_show(nav);
 }
 
@@ -260,7 +251,7 @@ void e_nav_viewport_del()
 void e_nav_neo_me_add(Bard_Proxy *proxy, double lat, double lon )
 {
     Evas_Object *nwi;
-    nwi = e_nav_world_item_neo_me_add(nav,  e_module_dir_get(mod), lat, lon);
+    nwi = e_nav_world_item_neo_me_add(nav,  THEME_PATH, lat, lon);
     e_nav_world_item_neo_me_name_set(nwi, "Me");
     proxy->object = nwi;
 
@@ -279,7 +270,7 @@ void e_nav_object_del(const char* obj_path)
 void e_nav_ap_added(Object_Proxy* proxy, double lat, double lon)
 {
     Evas_Object *nwi;
-    nwi = e_nav_world_item_ap_add(nav,  e_module_dir_get(mod), proxy, lat, lon);
+    nwi = e_nav_world_item_ap_add(nav,  THEME_PATH, proxy, lat, lon);
     e_nav_world_item_ap_essid_set(nwi, "Office");   // hard code
     e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE); // hard code
     e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);  // hard code
@@ -290,7 +281,7 @@ void e_nav_ap_added(Object_Proxy* proxy, double lat, double lon)
 void e_nav_neo_other_added(Object_Proxy* proxy, double lat, double lon)
 {
     Evas_Object *nwi;
-    nwi = e_nav_world_item_neo_other_add(nav,  e_module_dir_get(mod), proxy, lat, lon);
+    nwi = e_nav_world_item_neo_other_add(nav,  THEME_PATH, proxy, lat, lon);
     e_nav_world_item_neo_other_name_set(nwi, "Sean");   // hard code  
     proxy->object = nwi;
     add_e_nav_object(proxy->object_path, nwi);
@@ -303,14 +294,14 @@ void e_nav_object_add(Object_Proxy* proxy, int type, double lat, double lon)
    int object_type = type;
    
    if(object_type==DIVERSITY_ITEM_TYPE_AP) {
-       nwi = e_nav_world_item_ap_add(nav,  e_module_dir_get(mod), proxy, lat, lon);
+       nwi = e_nav_world_item_ap_add(nav,  THEME_PATH, proxy, lat, lon);
        e_nav_world_item_ap_essid_set(nwi, "Office");
        e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE);
        e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);
        proxy->object = nwi;
    }
    else if(object_type == DIVERSITY_ITEM_TYPE_NEO_OTHER){
-       nwi = e_nav_world_item_neo_other_add(nav,  e_module_dir_get(mod), proxy, lat, lon);
+       nwi = e_nav_world_item_neo_other_add(nav,  THEME_PATH, proxy, lat, lon);
        e_nav_world_item_neo_other_name_set(nwi, "Sean");
        proxy->object = nwi;
    }

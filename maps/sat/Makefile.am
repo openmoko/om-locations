@@ -1,5 +1,5 @@
 MAINTAINERCLEANFILES = Makefile.in
-filesdir = $(datadir)/maps/sat
+filesdir = $(pkgdatadir)/maps/sat
 
 files_DATA = \
 w-1-0-0.jpg \

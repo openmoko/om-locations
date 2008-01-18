@@ -1,5 +1,4 @@
-#include <E_DBus.h>
-#include <e.h>
+#include "e_nav.h"
 #include <assert.h>
 #include "e_nav_dbus.h"
 

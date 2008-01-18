@@ -1,4 +1,3 @@
-#include <e.h>
 #include "e_nav.h"
 
 /* navigator object */
@@ -433,6 +432,18 @@ e_nav_world_item_nav_get(Evas_Object *item)
    return nwi->obj;
 }
 
+int
+e_nav_edje_object_set(Evas_Object *o, const char *category, const char *group)
+{
+   char buf[PATH_MAX];
+   int ok;
+   
+   snprintf(buf, sizeof(buf), "%s/%s.edj", THEME_PATH, category);
+   ok = edje_object_file_set(o, buf, group);
+
+   return ok;
+}
+
 /* internal calls */
 static void
 _e_nav_smart_init(void)
@@ -484,7 +495,7 @@ _e_nav_smart_add(Evas_Object *obj)
    evas_object_move(sd->underlay, sd->x, sd->y);
    evas_object_resize(sd->underlay, sd->w, sd->h);
    evas_object_clip_set(sd->underlay, sd->clip);
-   evas_object_color_set(sd->underlay, 0, 0, 0, 0);
+   evas_object_color_set(sd->underlay, 180, 180, 180, 255);
    evas_object_lower(sd->underlay);
    evas_object_show(sd->underlay);
 
@@ -681,7 +692,7 @@ _e_nav_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
    Evas_Object *o;
    
    o = edje_object_add(e);
-   if (!e_theme_edje_object_set(o, "base/theme/modules/diversity_nav", group))
+   if (!e_nav_edje_object_set(o, "diversity_nav", group))
      {
 	if (custom_dir)
 	  {

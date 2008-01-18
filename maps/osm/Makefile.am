@@ -1,5 +1,5 @@
 MAINTAINERCLEANFILES = Makefile.in
-filesdir = $(datadir)/maps/osm
+filesdir = $(pkgdatadir)/maps/osm
 
 files_DATA = \
 osm-3-0-0.png \

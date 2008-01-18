@@ -1,5 +1,4 @@
-#include <e.h>
-#include <math.h>
+#include "e_nav.h"
 #include "e_spiralmenu.h"
 
 /* navigator object */
@@ -389,7 +388,7 @@ _e_spiralmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
    Evas_Object *o;
    
    o = edje_object_add(e);
-   if (!e_theme_edje_object_set(o, "base/theme/modules/diversity_nav", group))
+   if (!e_nav_edje_object_set(o, "diversity_nav", group))
      {
 	if (custom_dir)
 	  {

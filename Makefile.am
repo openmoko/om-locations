@@ -10,10 +10,8 @@ EDJE_FLAGS = -v \
 -id $(top_srcdir)/images \
 -fd $(top_srcdir)/fonts
 
-filesdir = $(datadir)
-files_DATA = module.desktop \
-	     e-module-diversity_nav.edj \
-	     diversity_nav.edj
+filesdir = $(pkgdatadir)
+files_DATA = diversity_nav.edj
 	     
 EXTRA_DIST = $(files_DATA) \
 	     diversity_nav.edc \

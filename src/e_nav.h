@@ -1,6 +1,19 @@
 #ifndef E_NAV_H
 #define E_NAV_H
 
+#include "config.h"
+#include <Ecore.h>
+#include <Evas.h>
+#include <Ecore_Data.h>
+#include <Ecore_Evas.h>
+#include <Edje.h>
+#include <E_DBus.h>
+#include <limits.h>
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 /* handy defines */
 #define NAV_UNIT_M / ((40000.0 * 1000.0) / 360.0)
 #define NAV_UNIT_KM / (40000.0 / 360.0)
@@ -39,5 +52,7 @@ void                   e_nav_world_item_scale_set(Evas_Object *item, Evas_Bool s
 Evas_Bool              e_nav_world_item_scale_get(Evas_Object *item);
 void                   e_nav_world_item_update(Evas_Object *item);
 Evas_Object           *e_nav_world_item_nav_get(Evas_Object *item);
+
+int                    e_nav_edje_object_set(Evas_Object *o, const char *category, const char *group);
 
 #endif

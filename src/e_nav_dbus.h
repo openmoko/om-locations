@@ -1,6 +1,8 @@
 #ifndef E_NAV_DBUS_H 
 #define E_NAV_DBUS_H
 
+#include <limits.h>
+
 #define DIVERSITY_DBUS_BUS              DBUS_BUS_SESSION
 #define DIVERSITY_DBUS_SERVICE          "org.openmoko.diversity"
 #define DIVERSITY_DBUS_PATH             "/org/openmoko/diversity"
