@@ -422,7 +422,6 @@ e_dbus_proxy_begin_call_with_timeout(E_DBus_Proxy *proxy, DBusMessage *message, 
       return NULL;
 
     notify->proxy = proxy;
-    notify->call_id = call_id;
     notify->cb_func = cb_func;
     notify->data = data;
     notify->free_func = free_func;
@@ -438,7 +437,10 @@ e_dbus_proxy_begin_call_with_timeout(E_DBus_Proxy *proxy, DBusMessage *message, 
   call_id = ++proxy->serial_number;
 
   if (notify)
+  {
+    notify->call_id = call_id;
     dbus_pending_call_set_notify(pending, async_proxy_call, notify, free);
+  }
 
   ecore_hash_set(proxy->pending_calls, (void *) call_id, pending);
 
