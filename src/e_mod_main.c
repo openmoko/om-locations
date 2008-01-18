@@ -46,46 +46,52 @@ e_modapi_save(E_Module *m)
 }
 #else /* AS_MODULE */
 
-int
-shutdown(void *data, int type, void *event)
+static void
+on_delete_request(Ecore_Evas *ee)
 {
-   ecore_main_loop_quit();
+   _e_mod_nav_shutdown();
 
-   return 1;
+   ecore_main_loop_quit();
+}
+
+static void
+on_show_or_resize(Ecore_Evas *ee)
+{
+   Evas *evas;
+
+   _e_mod_nav_shutdown();
+   evas = ecore_evas_get(ee);
+   _e_mod_nav_init(evas);
 }
 
 int
 main(int argc, char **argv)
 {
-   Ecore_Evas *ecore_evas;
-   Evas *evas;
+   Ecore_Evas *ee;
 
    bindtextdomain(PACKAGE, LOCALEDIR);
    bind_textdomain_codeset(PACKAGE, "UTF-8");
 
-   if (!ecore_init()) return -1;
-   if (!ecore_evas_init()) return -1;
-   if (!edje_init()) return -1;
+   if (!ecore_init()) { printf("failed to init ecore\n"); return -1; }
+   if (!ecore_evas_init()) { printf("failed to init ecore_evas\n"); return -1; }
+   if (!edje_init()) { printf("failed to init edje\n"); return -1; }
 
    ecore_app_args_set(argc, (const char **) argv);
-   ecore_event_handler_add(ECORE_EVENT_SIGNAL_EXIT, shutdown, NULL);
 
-   ecore_evas = ecore_evas_software_x11_new(NULL, 0, 0, 0, 480, 640);
-   if (!ecore_evas) return -1;
+   ee = ecore_evas_software_x11_new(NULL, 0, 0, 0, 480, 640);
+   if (!ee) { printf("failed to get ecore_evas\n"); return -1; }
 
-   ecore_evas_title_set(ecore_evas, PACKAGE_NAME);
-   ecore_evas_callback_delete_request_set(ecore_evas, (void (*)(Ecore_Evas *)) shutdown);
-   ecore_evas_size_min_set(ecore_evas, 480, 640);
-   ecore_evas_size_max_set(ecore_evas, 480, 640);
+   ecore_evas_title_set(ee, PACKAGE_NAME);
+   ecore_evas_callback_delete_request_set(ee, on_delete_request);
+   ecore_evas_callback_show_set(ee, on_show_or_resize);
+   ecore_evas_callback_resize_set(ee, on_show_or_resize);
 
-   evas = ecore_evas_get(ecore_evas);
-   _e_mod_nav_init(evas);
-
-   ecore_evas_show(ecore_evas);
+   ecore_evas_show(ee);
 
    ecore_main_loop_begin();
 
-   _e_mod_nav_shutdown();
+   ecore_evas_free(ee);
+
    edje_shutdown();
    ecore_evas_shutdown();
    ecore_shutdown();
