@@ -36,6 +36,7 @@ extern "C" {
    typedef struct E_DBus_Proxy_Call E_DBus_Proxy_Call;
 
    typedef void (*E_DBus_Proxy_Call_Func) (void *user_data, E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call_id);
+   typedef void (*E_DBus_Proxy_Free_Func) (void *data);
 
    EAPI E_DBus_Proxy *e_dbus_proxy_new_for_name(E_DBus_Connection *connection,
                                                 const char *name,
@@ -72,14 +73,14 @@ extern "C" {
                                                                 DBusMessage *message,
                                                                 E_DBus_Proxy_Call_Func cb_func,
                                                                 void *data,
-                                                                E_DBus_Free_Func free_func,
+                                                                E_DBus_Proxy_Free_Func free_func,
                                                                 int timeout);
 
    EAPI E_DBus_Proxy_Call *e_dbus_proxy_begin_call(E_DBus_Proxy *proxy,
                                                    DBusMessage *message,
                                                    E_DBus_Proxy_Call_Func cb_func,
                                                    void *data,
-                                                   E_DBus_Free_Func free_func);
+                                                   E_DBus_Proxy_Free_Func free_func);
 
    EAPI int e_dbus_proxy_end_call(E_DBus_Proxy *proxy,
                                   E_DBus_Proxy_Call *call,
