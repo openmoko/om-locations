@@ -6,6 +6,7 @@
 #include "e_nav_item_neo_other.h"
 #include "e_nav_item_link.h"
 #include "e_nav_dbus.h"
+#include "e_nav_tileset.h"
 
 /* FIXME: need objects:
  * 
@@ -118,11 +119,11 @@ map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
 void
 _e_mod_nav_init(Evas *evas)
 {
-   Evas_Object *nwi;
+   Evas_Object *nwi, *nt;
    int w, h;
    
    nav = e_nav_add(evas);
-   e_nav_theme_source_set(nav, THEME_PATH, "sat");
+   e_nav_theme_source_set(nav, THEME_PATH);
 
    /* testing items */
    test_map(evas); 
@@ -200,6 +201,9 @@ _e_mod_nav_init(Evas *evas)
 				     151.213000, 33.874000);
    e_nav_world_item_neo_other_name_set(nwi, "Olv");
    
+   nt = e_nav_tileset_add(nav, E_NAV_TILESET_FORMAT_OSM, "/tmp");
+   e_nav_tileset_smooth_set(nt, 1);
+   evas_object_show(nt);
    /* test NEO ME object */
     /*
    nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
@@ -208,8 +212,7 @@ _e_mod_nav_init(Evas *evas)
    */
 
    /* start off at a zoom level and location instantly */
-   e_nav_zoom_set(nav, 0.0001, 0.0);
-   //e_nav_zoom_set(nav, 0.2, 0.0);
+   e_nav_zoom_set(nav, 80000, 0.0);
    e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
             
    /* put the nav object somewhere useful at a decent size and show it */

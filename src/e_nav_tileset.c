@@ -55,10 +55,7 @@ static Evas_Smart *_e_smart = NULL;
    if (!sd) return ret \
    if (strcmp(evas_object_type_get(obj), "e_nav_tileset")) return ret
 
-#define M_EARTH_RADIUS	(6371.0 * 1000.0)
-#define M_LOG2		(0.693147181)
 #define TILE_VALID(lv, num) ((num) >= 0 && (num) < (1 << lv))
-#define RADIANS(d) ((d) * M_PI / 180.0)
 
 Evas_Object *
 e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir)
@@ -207,7 +204,7 @@ e_nav_tileset_scale_set(Evas_Object *obj, double scale)
    if (scale < 0.0001)
      scale = 0.0001;
 
-   perimeter = cos(RADIANS(sd->lat)) * M_EARTH_RADIUS;
+   perimeter = cos(RADIANS(sd->lat)) * M_EARTH_RADIUS * M_PI * 2;
    tiles = perimeter / scale / sd->size;
    
    level = log((double) tiles) / M_LOG2;
@@ -229,7 +226,7 @@ e_nav_tileset_scale_get(Evas_Object *obj)
    else
      pixels = (1 << sd->level);
 
-   perimeter = cos(RADIANS(sd->lat)) * M_EARTH_RADIUS;
+   perimeter = cos(RADIANS(sd->lat)) * M_EARTH_RADIUS * M_PI * 2;
 
    return perimeter / pixels;
 }
@@ -536,6 +533,13 @@ _e_nav_tileset_update(Evas_Object *obj)
    
    if (!sd->tiles.objs)
      return;
+
+   /*
+   printf("(%d, %d), (%d, %d), (%d, %d), level %d, tilesize %f\n",
+		   tiles_ox, tiles_oy,
+		   tiles_ow, tiles_oh,
+		   offset_x, offset_y, sd->level, tilesize);
+		   */
 
    for (j = 0; j < sd->tiles.oh; j++)
      {

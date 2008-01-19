@@ -1,11 +1,8 @@
 #include "e_nav.h"
-
-#define LAT_LIMIT       (85.05)
-#define RADIANS(d) ((d) * M_PI / 180.0)
+#include "e_nav_tileset.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
-typedef struct _E_Nav_Tileset E_Nav_Tileset;
 typedef struct _E_Nav_World E_Nav_World;
 typedef struct _E_Nav_World_Block E_Nav_World_Block;
 typedef struct _E_Nav_World_Item E_Nav_World_Item;
@@ -16,20 +13,6 @@ typedef enum _E_Nav_Movengine_Action
    E_NAV_MOVEENGINE_STOP,
    E_NAV_MOVEENGINE_GO
 } E_Nav_Movengine_Action;
-
-struct _E_Nav_Tileset
-{
-   Evas_Object *obj;
-   const char *map;
-   const char *format;
-   int min_level, max_level, level;
-   struct {
-      double tilesize;
-      Evas_Coord offset_x, offset_y;
-      int ox, oy, ow, oh;
-      Evas_Object **objs;
-   } tiles;
-};
 
 struct _E_Nav_World_Item
 {
@@ -60,13 +43,11 @@ struct _E_Smart_Data
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
 
-   const char      *mapset;
-   
    /* these are the CONFIGURED state - what the user or API has ASKED the
     * nav to do. there are other "current" values that are used for
     * animation etc. */
    double           lat, lon;
-   double           zoom;
+   double           zoom; /* meters per pixel */
    
    struct {
       double           lat, lon;
@@ -97,7 +78,7 @@ struct _E_Smart_Data
       } history[20];
       Ecore_Timer   *pause_timer;
    } moveng;
-   
+
    Evas_List *tilesets;
 };
 
@@ -122,14 +103,11 @@ static void _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Ev
 static void _e_nav_update(Evas_Object *obj);
 static void _e_nav_overlay_update(Evas_Object *obj);
 static int _e_nav_momentum_calc(Evas_Object *obj, double t);
-static E_Nav_Tileset *_e_nav_tileset_add(Evas_Object *obj);
-static E_Nav_Tileset *_e_nav_tileset_osm_add(Evas_Object *obj);
-static void _e_nav_tileset_del(E_Nav_Tileset *nt);
 static void _e_nav_wallpaper_update(Evas_Object *obj);
-static void _e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt);
-static void _e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt, int jumpLevel);
 static int _e_nav_cb_animator_momentum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
+static void _e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *x, double *y);
+static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lat, double *lon);
 
 static void _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source);
 static void _e_nav_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, const char *source);
@@ -139,9 +117,11 @@ static void _e_nav_world_item_free(E_Nav_World_Item *nwi);
 static void _e_nav_world_item_move_resize(E_Nav_World_Item *nwi);
 
 static void _e_nav_world_item_cb_item_del(void *data, Evas *evas, Evas_Object *obj, void *event);
-static double mercator_project(double y);
 
 static Evas_Smart *_e_smart = NULL;
+
+#define E_NAV_ZOOM_MAX (M_EARTH_RADIUS / 50)
+#define E_NAV_ZOOM_MIN 0.5
 
 #define SMART_CHECK(obj, ret) \
    sd = evas_object_smart_data_get(obj); \
@@ -156,15 +136,13 @@ e_nav_add(Evas *e)
 }
 
 void
-e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir, const char *maps)
+e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 {
    E_Smart_Data *sd;
-   E_Nav_Tileset *nt;
    
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-   sd->mapset = maps;
    sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->event, obj);
    evas_object_move(sd->event, sd->x, sd->y);
@@ -198,15 +176,6 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir, const char *map
    edje_object_signal_callback_add(sd->overlay, "drag,step", "*", _e_nav_cb_signal_drag_stop, sd);
    edje_object_signal_callback_add(sd->overlay, "drag,set", "*", _e_nav_cb_signal_drag_stop, sd);
    
-   if(sd->mapset=="OpenStreet"){   
-       nt = _e_nav_tileset_osm_add(obj);
-   } else  {
-       nt = _e_nav_tileset_add(obj);
-   }
-//   nt = _e_nav_tileset_add(obj);
-//   nt->map = "map";
-//   nt->format = "png";
-//   nt->max_level = 5;
    _e_nav_wallpaper_update(obj);
    _e_nav_overlay_update(obj);
 }
@@ -274,12 +243,10 @@ e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
    double t, y;
    
    SMART_CHECK(obj, ;);
-   if (zoom > 0.2) zoom = 0.2;
-   else if (zoom < 0.000001) zoom = 0.000001;
-   /* zoom: 1.0 == 1pixel == 1 degree lat/lon */
-   /*       2.0 == 1pixel == 2 degrees lat/lon */
-   /*       5.0 == 1pixel == 5 degrees lat/lon */
-   y = (zoom - 0.000001) / (0.2 - 0.000001);
+   if (zoom > E_NAV_ZOOM_MAX) zoom = E_NAV_ZOOM_MAX;
+   else if (zoom < E_NAV_ZOOM_MIN) zoom = E_NAV_ZOOM_MIN;
+
+   y = (zoom - E_NAV_ZOOM_MIN) / (E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN);
    y = sqrt(sqrt(y));
    edje_object_part_drag_value_set(sd->overlay, "e.dragable.zoom", 0.0, y);
    if (when == 0.0)
@@ -452,8 +419,13 @@ e_nav_edje_object_set(Evas_Object *o, const char *category, const char *group)
 void
 e_nav_world_tileset_add(Evas_Object *obj, Evas_Object *nt)
 {
-   /* TODO */
-   evas_object_del(nt);
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+   sd->tilesets = evas_list_prepend(sd->tilesets, nt);
+   evas_object_smart_member_add(nt, sd->obj);
+   evas_object_clip_set(nt, sd->clip);
+   evas_object_stack_below(nt, sd->clip);
 }
 
 /* internal calls */
@@ -521,7 +493,7 @@ _e_nav_smart_add(Evas_Object *obj)
    
    sd->lat = 0;
    sd->lon = 0;
-   sd->zoom = 0.2;
+   sd->zoom = E_NAV_ZOOM_MAX;
    
    sd->conf.lat = sd->lat;
    sd->conf.lon = sd->lon;
@@ -557,7 +529,13 @@ _e_nav_smart_del(Evas_Object *obj)
 						     sd->world_items);
 	  }
      }
-   while (sd->tilesets) _e_nav_tileset_del(sd->tilesets->data);
+   while (sd->tilesets)
+     {
+	evas_object_del(sd->tilesets->data);
+	sd->tilesets = evas_list_remove_list(sd->tilesets,
+					     sd->tilesets);
+     }
+
    free(sd);
 }
                     
@@ -565,6 +543,7 @@ static void
 _e_nav_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
+   Evas_List *l;
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
@@ -575,6 +554,10 @@ _e_nav_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    evas_object_move(sd->stacking, sd->x, sd->y);
    evas_object_move(sd->overlay, sd->x, sd->y);
    evas_object_move(sd->event, sd->x, sd->y);
+
+   for (l = sd->tilesets; l; l = l->next)
+     evas_object_move(l->data, sd->x, sd->y);
+   
    _e_nav_update(obj);
 }
 
@@ -582,6 +565,7 @@ static void
 _e_nav_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    E_Smart_Data *sd;
+   Evas_List *l;
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
@@ -592,6 +576,10 @@ _e_nav_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    evas_object_resize(sd->stacking, sd->w, sd->h);
    evas_object_resize(sd->overlay, sd->w, sd->h);
    evas_object_resize(sd->event, sd->w, sd->h);
+
+   for (l = sd->tilesets; l; l = l->next)
+     evas_object_resize(l->data, sd->w, sd->h);
+
    _e_nav_update(obj);
 }
 
@@ -725,7 +713,7 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
    int i, count;
    Evas_Coord vx1, vy1, vx2, vy2;
    Evas_Coord dist;
-   double plat, plon, lat, lon;
+   double lat, lon;
    double zoomout = 0.0;
 
    sd = evas_object_smart_data_get(obj);
@@ -757,8 +745,6 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
 	     count++;
 	  }
      }
-   plat = sd->lat + ((x - (sd->x + (sd->w / 2))) * sd->zoom);
-   plon = sd->lon + ((y - (sd->y + (sd->h / 2))) * sd->zoom);
    lat = sd->lat;
    lon = sd->lon;
    if (action == E_NAV_MOVEENGINE_START)
@@ -797,10 +783,15 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
    
    if (action == E_NAV_MOVEENGINE_STOP)
      {
+	double lat_off, lon_off;
+
 	if (dist > 40)
 	  {
-	     e_nav_coord_set(obj, lat - ((vx2 - vx1) * (sd->zoom * 5.0)),
-			     lon - ((vy2 - vy1) * (sd->zoom * 5.0)),
+	     _e_nav_from_offsets(obj, (vx2 - vx1) * 5.0,
+				      (vy2 - vy1) * 5.0,
+				      &lat_off, &lon_off);
+	     e_nav_coord_set(obj, lat - lat_off,
+			     lon - lon_off,
 			     2.0 + (zoomout / 16.0));
 	  }
 	else
@@ -812,16 +803,25 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
      }
    else
      {
+	double lat_off, lon_off;
+
+	_e_nav_from_offsets(obj,
+			    sd->moveng.start.x - x,
+			    sd->moveng.start.y - y,
+			    &lat_off, &lon_off);
+	/*
+	printf("mouse moved (%d, %d) pixels, which is (%f, %f) under %fm/px\n",
+	      sd->moveng.start.x - x, sd->moveng.start.y - y,
+	      lat_off, lon_off, sd->zoom);
+	      */
+
 	e_nav_coord_set(obj, 
-			sd->moveng.start.lat +
-			((sd->moveng.start.x - x) * sd->zoom),
-			sd->moveng.start.lon +
-			((sd->moveng.start.y - y) * sd->zoom),
+			sd->moveng.start.lat + lat_off,
+			sd->moveng.start.lon + lon_off,
 			0.1);
-             // marked for not show zoom flitter effect 
-	//e_nav_zoom_set(obj, 
-	//	       sd->moveng.start.zoom * (1.0 + zoomout),
-	  //       0.5);
+	e_nav_zoom_set(obj, 
+		       sd->moveng.start.zoom * (1.0 + zoomout),
+		       0.5);
      }
 }
 
@@ -857,13 +857,8 @@ _e_nav_overlay_update(Evas_Object *obj)
    int latd, latm, lats, lond, lonm, lons;
    
    sd = evas_object_smart_data_get(obj);
-   /* magic numbers here:
-    * we know the earth is 40,000km in circumference. each km is 1000 meters.
-    * the little legend in the overlay theme i KNOW is 64 pixels long, and
-    * the world is 360 degrees around, so what we are doing here
-    * is caluclating how many meters 1 pixel covers and multiplying it by 64
-    * to see how long the legend bar is and then display it */
-   z = ((1000.0 * 40000.0 * 64.0) / 360.0) * sd->zoom;
+   /* the little legend in the overlay theme i KNOW is 64 pixels lon */
+   z = 64.0 * sd->zoom;
    /* if its more than 1000m lon - display the length in Km */
    if (z > 1000.0)
      snprintf(buf, sizeof(buf), "%1.2fKm", z / 1000.0);
@@ -954,64 +949,6 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
    return done;
 }
 
-static E_Nav_Tileset *
-_e_nav_tileset_osm_add(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   E_Nav_Tileset *nt;
-   
-   sd = evas_object_smart_data_get(obj);
-   nt = calloc(1, sizeof(E_Nav_Tileset));
-   if (!nt) return;
-   
-   sd->tilesets = evas_list_append(sd->tilesets, nt);
-   nt->obj = obj;
-   nt->min_level = 3;
-   nt->max_level = 14;
-   nt->map = "osm";
-   nt->format = "png";
-   return nt;
-}
-
-static E_Nav_Tileset *
-_e_nav_tileset_add(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   E_Nav_Tileset *nt;
-   
-   sd = evas_object_smart_data_get(obj);
-   nt = calloc(1, sizeof(E_Nav_Tileset));
-   if (!nt) return;
-   
-   sd->tilesets = evas_list_append(sd->tilesets, nt);
-   nt->obj = obj;
-   nt->min_level = 1;
-   nt->max_level = 3;
-   nt->map = "sat";
-   nt->format = "jpg";
-   return nt;
-}
-
-static void
-_e_nav_tileset_del(E_Nav_Tileset *nt)
-{
-   E_Smart_Data *sd;
-   int i, j;
-   
-   sd = evas_object_smart_data_get(nt->obj);
-   sd->tilesets = evas_list_remove(sd->tilesets, nt);
-   if (nt->tiles.objs)
-     {
-	for (j = 0; j < nt->tiles.oh; j++)
-	  {
-	     for (i = 0; i < nt->tiles.ow; i++)
-	       evas_object_del(nt->tiles.objs[(j * nt->tiles.ow) + i]);
-	  }
-	free(nt->tiles.objs);
-     }
-   free(nt);
-}
-
 static void
 _e_nav_wallpaper_update(Evas_Object *obj)
 {
@@ -1019,379 +956,13 @@ _e_nav_wallpaper_update(Evas_Object *obj)
    Evas_List *l;
    
    sd = evas_object_smart_data_get(obj);
-   int tilesetsCount=0;
    for (l = sd->tilesets; l; l = l->next)
      {
-	E_Nav_Tileset *nt;
-	
-	nt = l->data;
-            tilesetsCount++;
-        if(sd->mapset=="OpenStreet"){   
-	    _e_nav_wallpaper_update_tileset_osm(nt, 0);
-        } 
-        else {
-	    _e_nav_wallpaper_update_tileset(nt);
-        }
+	Evas_Object *nt = l->data;
 
-     }
-}
-
-#define URI "curl http://%s.tile.openstreetmap.org/%d/%d/%d.png -o %s &"
-static void osm_download(int level, int x, int y, const char* path)
-{
-    char cmd[256];
-    if(level< 10)
-        snprintf(cmd, sizeof(cmd), URI, "b", level, x, y, path);
-    else 
-        snprintf(cmd, sizeof(cmd), URI, "c", level, x, y, path);
-    system(cmd);
-     // we need to know curl fail, use libcurl
-    printf("Download file: %s\n", path);
-}
-
-
-static double mercator_project(double lat)
-{
-    lat = RADIANS(lat);
-    double  tmp = log(tan(lat) + 1.0 / cos(lat));
-    double y =  tmp / M_PI * 90.0;
-    return y;
-} 
-
-
-static void
-_e_nav_wallpaper_update_tileset_osm(E_Nav_Tileset *nt, int jumpLevel)
-{
-   E_Smart_Data *sd;
-   int i, j;
-   int level, tiles_x, tiles_y, tiles_w, tiles_h, tiles_ox, tiles_oy;
-   int wtilesx, wtilesy;
-   double tpx, tpy;
-   double span, tw;
-   Evas_Coord x, y, xx, yy;
-   const char *mapdir, *mapset, *mapformat;
-   char mapbuf[PATH_MAX];
-   enum {
-      MODE_NONE,
-	MODE_RESET,
-	MODE_ORIGIN,
-	MODE_RESIZE,
-	MODE_MOVE
-   };
-   int mode = MODE_NONE;
-
-   sd = evas_object_smart_data_get(nt->obj);
-   snprintf(mapbuf, sizeof(mapbuf), "%s/maps", sd->dir);
-   mapdir = mapbuf;
-   mapset = nt->map;   // "osm"
-   mapformat = nt->format;  // "png"
-   span = 360.0 / sd->zoom; /* world width is 'span' pixels */
-   level = 1;
-   if(!jumpLevel) {
-       if      (span >  256*1024*16) level = 14; /* 16384 x 16384*/
-       else if (span >  256*1024*8) level =  13; /* 8192 x 8192*/
-       else if (span >  256*1024*4) level =  12; /* 4096x4096 */
-       else if (span >  256*1024*2) level =  11; /* 2048x2048 */
-       else if (span >  256*1024) level =  10; /* 1024x1024 */
-       else if (span >  256*512) level =  9; /* 512x512 */
-       else if (span >  256*256) level =  8; /* 256x256 */
-       else if (span >  256*128) level =  7; /* 128x128 */
-       else if (span >  256*64) level =  6; /* 64x64 */
-       else if (span >  256*32) level =  5; /* 32x32 */
-       else if (span >  256*16) level =  4; /* 16x16 */
-       else if (span >   256 * 8) level =  3; /* 8x8 */
-       else level=3;
-   }
-   else {
-       if      (span >  256*1024*16) level = 14; 
-       else if (span >  256*1024) level =  10; // 1024x1024 
-       else if (span >  256*64) level =  6; // 64x64 
-       else if (span >   256 * 8) level =  3; // 8x8 
-       else level=3;
-
-       if(span <256*64) {
-           span=360/0.2; sd->zoom=0.2;
-           level=3;
-       }
-       else if(span>256*64 && span<256*1024) {
-           span=256*64; sd->zoom=360.0/span;
-           level=6;
-       }
-       else if(span>256*1024 && span<256*1024*16) {
-           span=256*1024; sd->zoom=360.0/span;
-           level=10;
-       }
-       else {
-           span=256*1024*16; sd->zoom=360.0/span;
-           level=14;
-       }
-   }
-
-
-   if (level < nt->min_level) level = nt->min_level;
-   else if (level > nt->max_level) level = nt->max_level;
-   
-   wtilesx = 2 << (level - 1);   
-   wtilesy = 2 << (level - 1);    
-   tw = span / ((double)wtilesx);   
-  
-   tiles_w = 1 + (((double)sd->w + tw) / tw);   
-   tiles_h = 1 + (((double)sd->h + tw) / tw);   
-   tpx = ((180.0 + sd->lat - ((sd->w * sd->zoom) / 2)) * wtilesx) / 360.0;  
-   
-   double mercatorY = mercator_project(-sd->lon); 
-   if( (sd->lon < LAT_LIMIT) && (sd->lon > -LAT_LIMIT)) 
-     tpy = ((180.0 + ((-mercatorY)*2) - ((sd->h * sd->zoom) / 2 )) * wtilesy) / 360.0;   
-   else
-     tpy = (180.0 + (sd->lon * 2) - ((sd->h * sd->zoom) / 2 )) * (wtilesy / 360.0);   
-
-   tiles_ox = (int)tpx;
-   tiles_oy = (int)tpy;
-   tiles_x = -tw * (tpx - tiles_ox);  // offset
-   tiles_y = -tw * (tpy - tiles_oy);  // offset
-
-   if ((nt->tiles.ow != tiles_w) || (nt->tiles.oh != tiles_h) ||
-       (nt->level != level))
-     mode = MODE_RESET;               // zoom in or zoom out to change level, or need more tiles. 
-   else if ((nt->tiles.ox != tiles_ox) || (nt->tiles.oy != tiles_oy))
-     mode = MODE_ORIGIN;                  // move fix point to origin point
-   else if (tw != nt->tiles.tilesize)  // zoom in or zoom out
-     mode = MODE_RESIZE;
-   else if ((tiles_x != nt->tiles.offset_x) || (tiles_y != nt->tiles.offset_y))
-     mode = MODE_MOVE;               // just move a little
-     
-   if (mode == MODE_NONE) return;
-
-   if (mode == MODE_RESET)
-     {
-	if (nt->tiles.objs)
-	  {
-	     for (j = 0; j < nt->tiles.oh; j++)
-	       {
-		  for (i = 0; i < nt->tiles.ow; i++)
-		    evas_object_del(nt->tiles.objs[(j * nt->tiles.ow) + i]);
-	       }
-	     free(nt->tiles.objs);
-	  }
-     }
-   nt->tiles.ow = tiles_w;
-   nt->tiles.oh = tiles_h;
-   nt->level = level;
-   nt->tiles.ox = tiles_ox;
-   nt->tiles.oy = tiles_oy;
-   nt->tiles.tilesize = tw;
-   nt->tiles.offset_x = tiles_x;
-   nt->tiles.offset_y = tiles_y;
-   
-   if (mode == MODE_RESET)
-       nt->tiles.objs = malloc(tiles_w * tiles_h * sizeof(Evas_Object *));
-
-   if (nt->tiles.objs)
-   {
-	for (j = 0; j < nt->tiles.oh; j++)
-	  {
-	     y = (j * nt->tiles.tilesize);
-	     yy = ((j + 1) * nt->tiles.tilesize);
-	     for (i = 0; i < nt->tiles.ow; i++)
-	       {
-		  Evas_Object *o;
-		  char buf[PATH_MAX];
-		  
-		  if (mode == MODE_RESET)
-		    {
-		       o = evas_object_image_add(evas_object_evas_get(nt->obj));
-		       nt->tiles.objs[(j * nt->tiles.ow) + i] = o;
-		       evas_object_smart_member_add(o, nt->obj);
-		       evas_object_clip_set(o, sd->clip);
-		       evas_object_pass_events_set(o, 1);   
-		       evas_object_stack_below(o, sd->clip);
-		       evas_object_image_smooth_scale_set(o, 0); 
-		    }
-		  else
-		    o = nt->tiles.objs[(j * nt->tiles.ow) + i];
-		  
-		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN))
-		    {
-		       snprintf(buf, sizeof(buf), "%s/%s/osm-%i-%i-%i.%s",
-				mapdir, mapset,
-				nt->level, 
-				i + nt->tiles.ox,
-				j + nt->tiles.oy,
-				mapformat);
-		       evas_object_image_file_set(o, buf, NULL);
-                        int load_result = evas_object_image_load_error_get(o);
-		       if (load_result == EVAS_LOAD_ERROR_NONE){
-                          evas_object_show(o);      // no error on load
-		       } else {
-                            printf("load error: %d for level %d\n", load_result, nt->level);
-                            if(!jumpLevel)
-                               osm_download(nt->level,  i+nt->tiles.ox,  j+nt->tiles.oy, buf);                           
-                            else {
-                               if(level==6 || level==10 || level==14) {
-                                   osm_download(nt->level,  i+nt->tiles.ox,  j+nt->tiles.oy, buf);                           
-                               }
-                            }
-                            evas_object_image_file_set(o, buf, NULL);
-			    evas_object_show(o);
-                       }
-		    }
-		  x = (i * nt->tiles.tilesize);
-		  xx = ((i + 1) * nt->tiles.tilesize);
-		  evas_object_move(o, 
-				   sd->x + nt->tiles.offset_x + x,
-				   sd->y + nt->tiles.offset_y + y);  
-		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN) ||
-		      (mode == MODE_RESIZE))
-		    {
-		       evas_object_resize(o, xx - x, yy - y);
-		       evas_object_image_fill_set(o, 0, 0, xx - x, yy - y);
-		    }
-	       }
-	  }
-   }
-}
-
-static void
-_e_nav_wallpaper_update_tileset(E_Nav_Tileset *nt)
-{
-   E_Smart_Data *sd;
-   int i, j;
-   int level, tiles_x, tiles_y, tiles_w, tiles_h, tiles_ox, tiles_oy;
-   int wtilesx, wtilesy;
-   double tpx, tpy;
-   double span, tw;
-   Evas_Coord x, y, xx, yy;
-   const char *mapdir, *mapset, *mapformat;
-   char mapbuf[PATH_MAX];
-   enum {
-      MODE_NONE,
-	MODE_RESET,
-	MODE_ORIGIN,
-	MODE_RESIZE,
-	MODE_MOVE
-   };
-   int mode = MODE_NONE;
-   
-   sd = evas_object_smart_data_get(nt->obj);
-
-   snprintf(mapbuf, sizeof(mapbuf), "%s/maps", sd->dir);
-   
-   mapdir = mapbuf;
-   mapset = nt->map;
-   mapformat = nt->format;
-   
-   span = 360.0 / sd->zoom; /* world width is 'span' pixels */
-   level = 1;
-   if      (span >  43200) level =  7; /* 384x192 */
-   else if (span >  21600) level =  6; /* 192x96 */
-   else if (span >  10800) level =  5; /* 96x48 */
-   else if (span >   5400) level =  4; /* 48x24 */
-   else if (span >   2700) level =  3; /* 24x12 */
-   else if (span >   1350) level =  2; /* 12x6 */
-   if (level < nt->min_level) level = nt->min_level;
-   else if (level > nt->max_level) level = nt->max_level;
-   
-   wtilesx = 6 << (level - 1);
-   wtilesy = 3 << (level - 1);
-   tw = span / ((double)wtilesx);
-   tiles_w = 1 + (((double)sd->w + tw) / tw);
-   tiles_h = 1 + (((double)sd->h + tw) / tw);
-   tpx = ((180.0 + sd->lat - ((sd->w * sd->zoom) / 2)) * wtilesx) / 360.0;
-   tpy = ((90.0 + sd->lon - ((sd->h * sd->zoom) / 2)) * wtilesy) / 180.0;
-   tiles_ox = (int)tpx;
-   tiles_oy = (int)tpy;
-   tiles_x = -tw * (tpx - tiles_ox);
-   tiles_y = -tw * (tpy - tiles_oy);
-
-   if ((nt->tiles.ow != tiles_w) || (nt->tiles.oh != tiles_h) ||
-       (nt->level != level))
-     mode = MODE_RESET;
-   else if ((nt->tiles.ox != tiles_ox) || (nt->tiles.oy != tiles_oy))
-     mode = MODE_ORIGIN;
-   else if (tw != nt->tiles.tilesize)
-     mode = MODE_RESIZE;
-   else if ((tiles_x != nt->tiles.offset_x) || (tiles_y != nt->tiles.offset_y))
-     mode = MODE_MOVE;
-     
-   if (mode == MODE_NONE) return;
-
-   if (mode == MODE_RESET)
-     {
-	// reallac entirely move and resize
-	if (nt->tiles.objs)
-	  {
-	     for (j = 0; j < nt->tiles.oh; j++)
-	       {
-		  for (i = 0; i < nt->tiles.ow; i++)
-		    evas_object_del(nt->tiles.objs[(j * nt->tiles.ow) + i]);
-	       }
-	     free(nt->tiles.objs);
-	  }
-     }
-   
-   nt->tiles.ow = tiles_w;
-   nt->tiles.oh = tiles_h;
-   nt->level = level;
-   nt->tiles.ox = tiles_ox;
-   nt->tiles.oy = tiles_oy;
-   nt->tiles.tilesize = tw;
-   nt->tiles.offset_x = tiles_x;
-   nt->tiles.offset_y = tiles_y;
-
-   if (mode == MODE_RESET)
-     nt->tiles.objs = malloc(tiles_w * tiles_h * sizeof(Evas_Object *));
-   
-   if (nt->tiles.objs)
-     {
-	for (j = 0; j < nt->tiles.oh; j++)
-	  {
-	     y = (j * nt->tiles.tilesize);
-	     yy = ((j + 1) * nt->tiles.tilesize);
-	     for (i = 0; i < nt->tiles.ow; i++)
-	       {
-		  Evas_Object *o;
-		  char buf[PATH_MAX];
-		  
-		  if (mode == MODE_RESET)
-		    {
-		       o = evas_object_image_add(evas_object_evas_get(nt->obj));
-		       nt->tiles.objs[(j * nt->tiles.ow) + i] = o;
-		       evas_object_smart_member_add(o, nt->obj);
-		       evas_object_clip_set(o, sd->clip);
-		       evas_object_pass_events_set(o, 1);
-		       evas_object_stack_below(o, sd->clip);
-		       evas_object_image_smooth_scale_set(o, 0);
-		    }
-		  else
-		    o = nt->tiles.objs[(j * nt->tiles.ow) + i];
-		  
-		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN))
-		    {
-		       snprintf(buf, sizeof(buf), "%s/%s/w-%i-%i-%i.%s",
-				mapdir, mapset,
-				nt->level, 
-				i + nt->tiles.ox,
-				j + nt->tiles.oy,
-				mapformat);
-		       evas_object_image_file_set(o, buf, NULL);
-		       if (evas_object_image_load_error_get(o) == EVAS_LOAD_ERROR_NONE)
-			 evas_object_show(o);
-		       else
-			 evas_object_hide(o);
-		    }
-		  x = (i * nt->tiles.tilesize);
-		  xx = ((i + 1) * nt->tiles.tilesize);
-		  evas_object_move(o, 
-				   sd->x + nt->tiles.offset_x + x,
-				   sd->y + nt->tiles.offset_y + y);
-		  if ((mode == MODE_RESET) || (mode == MODE_ORIGIN) ||
-		      (mode == MODE_RESIZE))
-		    {
-		       evas_object_resize(o, xx - x, yy - y);
-		       evas_object_image_fill_set(o, 0, 0, xx - x, yy - y);
-		    }
-	       }
-	  }
+	e_nav_tileset_center_set(nt, sd->lat, -sd->lon);
+	e_nav_tileset_scale_set(nt, sd->zoom);
+	e_nav_tileset_update(nt);
      }
 }
 
@@ -1436,6 +1007,55 @@ _e_nav_cb_timer_moveng_pause(void *data)
 }
 
 static void
+_e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *x, double *y)
+{
+   E_Smart_Data *sd;
+   double lon1, lat1, lon2, lat2;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     {
+	if (x) *x = 0.0;
+	if (y) *y = 0.0;
+	return;
+     }
+
+   lat1 = RADIANS(sd->lat);
+   lon1 = RADIANS(sd->lon);
+
+   lat2 = RADIANS(lat);
+   lon2 = RADIANS(lon);
+
+   if (x)
+     *x = (lat2 - lat1) * cos(lon1) * M_EARTH_RADIUS / sd->zoom;
+   if (y)
+     *y = (lon2 - lon1) * M_EARTH_RADIUS / sd->zoom;
+}
+
+static void
+_e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lat, double *lon)
+{
+   E_Smart_Data *sd;
+   double distx, disty;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     {
+	if (lat) *lat = 0.0;
+	if (lon) *lon = 0.0;
+	return;
+     }
+
+   distx = x * sd->zoom / (cos(RADIANS(sd->lon)) * M_EARTH_RADIUS);
+   disty = y * sd->zoom / M_EARTH_RADIUS;
+
+   if (lat)
+     *lat = DEGREES(distx);
+   if (lon)
+     *lon = DEGREES(disty);
+}
+
+static void
 _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source)
 {
    E_Smart_Data *sd;
@@ -1446,7 +1066,8 @@ _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const 
 	
 	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
 	y = (y * y) * (y * y);
-	z = 0.000001 + ((0.2 - 0.000001) * y);
+
+	z = E_NAV_ZOOM_MIN + ((E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN) * y);
 	e_nav_zoom_set(sd->obj, z, 0.2);
      }
 }
@@ -1494,29 +1115,29 @@ _e_nav_world_item_move_resize(E_Nav_World_Item *nwi)
    if (nwi->type == E_NAV_WORLD_ITEM_TYPE_LINKED) return;
    if (nwi->scale)
      {
-	x = nwi->geom.x - (nwi->geom.w / 2.0) - sd->lat;
-	y = nwi->geom.y - (nwi->geom.h / 2.0) - sd->lon;
-	w = nwi->geom.w;
-	h = nwi->geom.h;
-	x = sd->x + (sd->w / 2) + (x / sd->zoom);
-	y = sd->y + (sd->h / 2) + (y / sd->zoom);
-	w = w / sd->zoom;
-	h = h / sd->zoom;
+	x = nwi->geom.x - (nwi->geom.w / 2.0);
+	y = nwi->geom.y - (nwi->geom.h / 2.0);
+	_e_nav_to_offsets(nwi->obj, x, y, &x, &y);
+
+	w = nwi->geom.x + (nwi->geom.w / 2.0);
+	h = nwi->geom.y + (nwi->geom.h / 2.0);
+	_e_nav_to_offsets(nwi->obj, w, h, &w, &h);
+
+	w = w - x;
+	h = h - y;
+
+	x = (sd->x + (sd->w / 2) + x);
+	y = (sd->y + (sd->h / 2) + y);
      }
    else
      {
-        x = nwi->geom.x - sd->lat;
-        if(sd->mapset=="OpenStreet"){
-	    y = mercator_project(nwi->geom.y) - mercator_project(sd->lon);
-            y = y * 2;      //  This is for OSM or google map
-        }
-        else {
-            y = nwi->geom.y - sd->lon;
-        }
+	_e_nav_to_offsets(nwi->obj, nwi->geom.x, nwi->geom.y, &x, &y);
+
 	w = nwi->geom.w;
 	h = nwi->geom.h;
-	x = (sd->x + (sd->w / 2) + (x / sd->zoom)) - (w / 2.0);
-	y = (sd->y + (sd->h / 2) + (y / sd->zoom)) - (h / 2.0);
+
+	x = (sd->x + (sd->w / 2) + x) - (w / 2.0);
+	y = (sd->y + (sd->h / 2) + y) - (h / 2.0);
      }
    evas_object_move(nwi->item, x, y);
    evas_object_resize(nwi->item, w, h);
