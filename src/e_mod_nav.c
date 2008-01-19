@@ -186,7 +186,6 @@ _e_mod_nav_init(Evas *evas)
    evas_object_show(nwi);
 
    e_nav_dbus_init();    
-   viewport_add(-180.000000, -90.000000, 180.000000, 90.000000);  // whole world viewport hard code
 
    nwi = e_nav_world_item_ap_add(nav, THEME_PATH, NULL,
 				 151.220000, 33.874000);
@@ -255,63 +254,3 @@ static void add_city(Evas* evas, double lat, double lon, const char* cityname)
    e_nav_world_item_update(nwi);
     evas_object_show(nwi);
 }
-
-// when we zoom in and zoom out or move the map, we should change the current viewport
-// when zoom in, we double size the viewport, when zoom out, we half the size of the viewport
-// when move the map or the user move his position, we change the coordinate of the left-up corner and the buttom-down corner
-void change_viewport()
-{
-
-}
-
-// we can have more than one viewport, and we can change to the viewport we want to see
-// use a list to manage viewport
-void e_nav_viewport_add(Viewport_Proxy* proxy)
-{
-    
-}
-
-void e_nav_viewport_del()
-{
-
-}
-
-void e_nav_neo_me_add(Bard_Proxy *proxy, double lat, double lon )
-{
-    Evas_Object *nwi;
-    nwi = e_nav_world_item_neo_me_add(nav,  THEME_PATH, lat, lon);
-    e_nav_world_item_neo_me_name_set(nwi, "Me");
-    proxy->object = nwi;
-
-}
-
-void e_nav_object_del(const char* obj_path)
-{
-    Evas_Object *nwi = get_e_nav_object(obj_path);
-    if(nwi) {
-        evas_object_del(nwi);
-    }
-    remove_e_nav_object(obj_path);
-}
-
-void e_nav_ap_added(Object_Proxy* proxy, double lat, double lon)
-{
-    Evas_Object *nwi;
-    nwi = e_nav_world_item_ap_add(nav,  THEME_PATH, proxy, lat, lon);
-    e_nav_world_item_ap_essid_set(nwi, "Office");   // hard code
-    e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE); // hard code
-    e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);  // hard code
-    proxy->object = nwi; 
-    add_e_nav_object(proxy->object_path, nwi);
-}
-
-void e_nav_neo_other_added(Object_Proxy* proxy, double lat, double lon)
-{
-    Evas_Object *nwi;
-    nwi = e_nav_world_item_neo_other_add(nav,  THEME_PATH, proxy, lat, lon);
-    e_nav_world_item_neo_other_name_set(nwi, "Sean");   // hard code  
-    proxy->object = nwi;
-    add_e_nav_object(proxy->object_path, nwi);
-}
-
-

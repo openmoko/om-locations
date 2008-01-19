@@ -31,7 +31,6 @@ typedef enum _E_Nav_World_Item_Type
 
 /* object management */
 Evas_Object    *e_nav_add(Evas *e);
-//void            e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir);
 void            e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir);
 
     

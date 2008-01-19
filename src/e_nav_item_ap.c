@@ -1,8 +1,6 @@
 #include "e_nav.h"
 #include "e_nav_item_ap.h"
 #include "e_spiralmenu.h"
-#include "e_nav_dbus.h"
-
 
 typedef struct _AP_Data AP_Data;
 
@@ -60,9 +58,6 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    AP_Data *apd;
    apd = evas_object_data_get(src_obj, "nav_world_item_ap_data");
    if (!apd) return;
-   printf("join in ap: %s\n", apd->proxy->object_path);
-   e_nav_connect_ap(apd->proxy->object_path); 
-   e_spiralmenu_deactivate(obj);
 }
 
 static void
