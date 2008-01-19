@@ -55,4 +55,6 @@ Evas_Object           *e_nav_world_item_nav_get(Evas_Object *item);
 
 int                    e_nav_edje_object_set(Evas_Object *o, const char *category, const char *group);
 
+/* world tilesets */
+void                   e_nav_world_tileset_add(Evas_Object *obj, Evas_Object *nt);
 #endif

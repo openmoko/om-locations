@@ -1,5 +1,4 @@
 #include "e_nav.h"
-#include "e_list.h"
 
 #define LAT_LIMIT       (85.05)
 #define RADIANS(d) ((d) * M_PI / 180.0)
@@ -447,6 +446,14 @@ e_nav_edje_object_set(Evas_Object *o, const char *category, const char *group)
    ok = edje_object_file_set(o, buf, group);
 
    return ok;
+}
+
+/* world tilesets */
+void
+e_nav_world_tileset_add(Evas_Object *obj, Evas_Object *nt)
+{
+   /* TODO */
+   evas_object_del(nt);
 }
 
 /* internal calls */
