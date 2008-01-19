@@ -3,7 +3,6 @@
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
-typedef struct _E_Nav_World E_Nav_World;
 typedef struct _E_Nav_World_Block E_Nav_World_Block;
 typedef struct _E_Nav_World_Item E_Nav_World_Item;
 

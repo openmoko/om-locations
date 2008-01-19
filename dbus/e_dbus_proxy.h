@@ -99,6 +99,12 @@ extern "C" {
                                             E_DBus_Signal_Cb cb_signal,
                                             void *data);
 
+   EAPI DBusMessage *e_dbus_proxy_simple_call(E_DBus_Proxy *proxy,
+                                              const char *method,
+                                              DBusError *error,
+                                              int first_arg_type,
+                                              ...);
+
 #ifdef __cplusplus
 }
 #endif

@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #include <E_DBus.h>
 #include <dbus/dbus.h>
@@ -530,9 +531,83 @@ e_dbus_proxy_disconnect_signal(E_DBus_Proxy *proxy, const char *signal_name, E_D
 
   if (sig)
   {
-      ecore_list_remove(proxy->signal_handlers);
+    ecore_list_remove(proxy->signal_handlers);
 
-      e_dbus_signal_handler_del(proxy->manager->e_connection, sig->sh);
-      free(sig);
+    e_dbus_signal_handler_del(proxy->manager->e_connection, sig->sh);
+    free(sig);
   }
+}
+
+typedef struct
+{
+  DBusError *error;
+  DBusMessage *reply;
+} E_DBus_Proxy_Simple_Call;
+
+static void
+simple_proxy_call(void *user_data, void *method_return, DBusError *error)
+{
+  E_DBus_Proxy_Simple_Call *simple_call = user_data;
+
+  if (error)
+    dbus_move_error(error, simple_call->error);
+  else
+    simple_call->reply = dbus_message_ref(method_return);
+}
+
+EAPI DBusMessage *
+e_dbus_proxy_simple_call(E_DBus_Proxy *proxy, const char *method, DBusError *error, int first_arg_type, ...)
+{
+  va_list args;
+  DBusMessage *message;
+  E_DBus_Proxy_Simple_Call simple_call;
+  int type;
+
+  message = e_dbus_proxy_new_method_call(proxy, method);
+  if (!message)
+    return 0;
+
+  va_start(args, first_arg_type);
+
+  type = first_arg_type;
+  if (!dbus_message_append_args_valist(message, type, args))
+    goto fail;
+
+  simple_call.error = error;
+
+  if (!e_dbus_proxy_call(proxy, message, simple_proxy_call, &simple_call))
+    goto fail;
+
+  if (dbus_error_is_set(error))
+    goto fail;
+
+  /* skip INs */
+  while (type != DBUS_TYPE_INVALID)
+  {
+    va_arg(args, void *);
+    type = va_arg(args, int);
+  }
+
+  type = va_arg(args, int);
+  dbus_message_get_args_valist(simple_call.reply, error, type, args);
+
+  va_end(args);
+  dbus_message_unref(message);
+
+  if (dbus_error_is_set(error))
+  {
+    dbus_message_unref(simple_call.reply);
+
+    return NULL;
+  }
+  else
+  {
+    return simple_call.reply;
+  }
+
+fail:
+  va_end(args);
+  dbus_message_unref(message);
+
+  return 0;
 }

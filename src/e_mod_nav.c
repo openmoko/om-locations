@@ -22,6 +22,9 @@
 /* create (and destroy) a nav object on the desktop bg */
 /* setup and teardown */
 static Evas_Object *nav = NULL;
+static E_Nav_World *world = NULL;
+static E_Nav_Viewport *view = NULL;
+
 static void add_city(Evas* evas, double lat, double lon, const char* cityname);
 static void test_map(Evas* evas);
 
@@ -116,6 +119,23 @@ map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
    evas_object_image_fill_set(obj, 0, 0, w, h);
 }
 
+static Evas_Object *
+osm_tileset_add(Evas_Object *nav)
+{
+   Evas_Object *nt;
+
+   nt = e_nav_tileset_add(nav, E_NAV_TILESET_FORMAT_OSM, "/tmp");
+   e_nav_tileset_smooth_set(nt, 1);
+
+   if (world)
+	view = e_nav_world_viewport_add(world, -180.0, -90.0, 180.0, 90.0);
+
+   if (view)
+     e_nav_tileset_proxy_set(nt, e_nav_viewport_atlas_proxy_get(view));
+
+   return nt;
+}
+
 void
 _e_mod_nav_init(Evas *evas)
 {
@@ -124,6 +144,12 @@ _e_mod_nav_init(Evas *evas)
    
    nav = e_nav_add(evas);
    e_nav_theme_source_set(nav, THEME_PATH);
+
+   e_nav_dbus_init();
+   world = e_nav_world_new();
+
+   nt = osm_tileset_add(nav);
+   evas_object_show(nt);
 
    /* testing items */
    test_map(evas); 
@@ -185,8 +211,6 @@ _e_mod_nav_init(Evas *evas)
    e_nav_world_item_update(nwi);
    evas_object_show(nwi);
 
-   e_nav_dbus_init();    
-
    nwi = e_nav_world_item_ap_add(nav, THEME_PATH, NULL,
 				 151.220000, 33.874000);
    e_nav_world_item_ap_essid_set(nwi, "OpenMoko");
@@ -200,15 +224,10 @@ _e_mod_nav_init(Evas *evas)
 				     151.213000, 33.874000);
    e_nav_world_item_neo_other_name_set(nwi, "Olv");
    
-   nt = e_nav_tileset_add(nav, E_NAV_TILESET_FORMAT_OSM, "/tmp");
-   e_nav_tileset_smooth_set(nt, 1);
-   evas_object_show(nt);
    /* test NEO ME object */
-    /*
    nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
 				     151.210000, 33.870000);
    e_nav_world_item_neo_me_name_set(nwi, "Me");
-   */
 
    /* start off at a zoom level and location instantly */
    e_nav_zoom_set(nav, 80000, 0.0);
@@ -225,6 +244,20 @@ void
 _e_mod_nav_shutdown(void)
 {
    if (!nav) return;
+
+   if (world)
+     {
+	if (view)
+	  {
+	     e_nav_world_viewport_remove(world, view);
+	     view = NULL;
+	  }
+	e_nav_world_destroy(world);
+	world = NULL;
+     }
+
+   e_nav_dbus_shutdown();
+
    evas_object_del(nav);
    nav = NULL;
 }
