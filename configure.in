@@ -45,6 +45,8 @@ AC_SUBST(edje_cc)
 	
 PKG_CHECK_MODULES(EDBUS, edbus)
 
+CFLAGS="-Wall $CFLAGS"
+
 AC_OUTPUT([
 Makefile
 diversity-nav.desktop

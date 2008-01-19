@@ -1,5 +1,6 @@
 #include "e_nav.h"
 #include "e_mod_nav.h"
+#include <libintl.h>
 
 #ifdef AS_MODULE
 #include "e_mod_main.h"

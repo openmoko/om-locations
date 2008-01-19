@@ -399,7 +399,7 @@ e_nav_world_item_nav_get(Evas_Object *item)
    E_Nav_World_Item *nwi;
    
    nwi = evas_object_data_get(item, "nav_world_item");
-   if (!nwi) return;
+   if (!nwi) return NULL;
    return nwi->obj;
 }
 
@@ -971,7 +971,6 @@ _e_nav_cb_animator_momentum(void *data)
 {
    Evas_Object *obj;
    E_Smart_Data *sd;
-   double t, v;
    int done = 0;
    
    obj = data;

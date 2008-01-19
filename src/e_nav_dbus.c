@@ -1,10 +1,18 @@
 #include "e_nav.h"
 #include <assert.h>
 #include "e_nav_dbus.h"
+#include "e_nav_item_neo_me.h"
 
 Ecore_Hash *hash_table = NULL;   // store neo_other and ap objects
 World_Proxy *worldProxy = NULL;   // singleton?
 Bard_Proxy *bardProxy = NULL;     // singleton?
+
+static E_DBus_Connection* e_conn=NULL;
+static void on_current_position_changed(void *data, DBusMessage *msg);
+static void on_viewport_object_added(void *data, DBusMessage *msg);
+static void on_viewport_object_removed(void *data, DBusMessage *msg);
+static void on_object_geometry_changed(void *data, DBusMessage *msg);
+
 
 void object_geometry_get(double *x, double *y, double *w, double *h);
 void object_geometry_set(double x, double y, double w, double h);
@@ -230,7 +238,6 @@ void object_type_get_reply(void *data, DBusMessage *reply, DBusError *error)
 
     dbus_message_get_args(reply, error, DBUS_TYPE_INT32, &type, DBUS_TYPE_INVALID);
     printf("Object type: %d\n", type);
-    Object_Proxy* proxy = (Object_Proxy*)data;
     if(type==DIVERSITY_OBJECT_TYPE_AP) { 
         //e_nav_object_add(proxy, lat, lon);  // hard code 
     }
@@ -276,8 +283,6 @@ static void on_viewport_object_added(void *data, DBusMessage *msg)
         object_type_get(proxy);
 
         //  Test: New object in UI and show on the map
-        srand(getpid());  
-        printf("%f, %f\n", drand48(), drand48());
         double lat=122.0, lon=23.0;
         int i=rand()/2;
         if(i==1) {
@@ -396,7 +401,7 @@ void remove_e_nav_object(const char* obj_path)
 
 int add_e_nav_object(const char *obj_path, Evas_Object* o)
 {
-     return ecore_hash_set(hash_table, obj_path, o);
+     return ecore_hash_set(hash_table, (void *) obj_path, o);
 }
 
 int e_nav_dbus_init()
@@ -409,7 +414,7 @@ int e_nav_dbus_init()
     worldProxy = world_proxy_new();
     if(worldProxy==NULL) {
         printf("!! worldProxy==NULL\n");
-        return;
+        return 0;
     }
     self_get();
     if(e_conn) {

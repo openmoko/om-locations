@@ -35,14 +35,8 @@ enum DIVERSITY_ITEM_TYPE {
 };
 */
 
-static E_DBus_Connection* e_conn=NULL;
 int e_nav_dbus_init();
 void get_e_dbus_connection(E_DBus_Connection **conn);
-
-static void on_current_position_changed(void *data, DBusMessage *msg);
-static void on_viewport_object_added(void *data, DBusMessage *msg);
-static void on_viewport_object_removed(void *data, DBusMessage *msg);
-static void on_object_geometry_changed(void *data, DBusMessage *msg);
 
 
 typedef struct _Bard_Proxy  Bard_Proxy;
