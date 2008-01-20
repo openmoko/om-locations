@@ -636,7 +636,39 @@ mercator_project(double lon, double lat, double *x, double *y)
 }
 
 static void
-_e_nav_tileset_update(Evas_Object *obj)
+_e_nav_tileset_tile_get(Evas_Object *obj, Evas_Object *tile, int x, int y)
+{
+   E_Smart_Data *sd;
+   char buf[PATH_MAX];
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd) return;
+
+   snprintf(buf, sizeof(buf), "%s/%s_%i_%i_%i.%s",
+			   sd->dir, sd->map,
+			   sd->level, x, y,
+			   sd->suffix);
+
+   evas_object_image_file_set(tile, buf, NULL);
+   if (evas_object_image_load_error_get(tile) == EVAS_LOAD_ERROR_NONE)
+      evas_object_show(tile);
+   else
+   {
+      job_submit(obj, x, y, 0);
+      evas_object_hide(tile);
+   }
+}
+
+enum {
+   MODE_NONE,
+   MODE_RESET,
+   MODE_ORIGIN,
+   MODE_RESIZE,
+   MODE_MOVE
+};
+
+static int
+_e_nav_tileset_check(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    int i, j;
@@ -645,31 +677,15 @@ _e_nav_tileset_update(Evas_Object *obj)
    int num_tiles;
    double tilesize;
    double tpx, tpy;
-   Evas_Coord x, y, xx, yy;
-   const char *mapdir, *mapset, *mapformat;
-   char mapbuf[PATH_MAX];
-   enum {
-      MODE_NONE,
-      MODE_RESET,
-      MODE_ORIGIN,
-      MODE_RESIZE,
-      MODE_MOVE
-   };
    int mode = MODE_NONE;
    
    sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
+   if (!sd) return MODE_NONE;
 
-   snprintf(mapbuf, sizeof(mapbuf), "%s/maps", sd->dir);
-   
-   mapdir = mapbuf;
-   mapset = sd->map;
-   mapformat = sd->suffix;
-   
    num_tiles = (1 << sd->level);
 
    tilesize = sd->span / num_tiles;
-   if (tilesize < 1.0) return;
+   if (tilesize < 1.0) return MODE_NONE;
 
    tiles_ow = 1 + (((double)sd->w + tilesize) / tilesize);
    tiles_oh = 1 + (((double)sd->h + tilesize) / tilesize);
@@ -687,7 +703,7 @@ _e_nav_tileset_update(Evas_Object *obj)
    offset_y = -tilesize * (tpy - tiles_oy);
 
    if ((sd->tiles.ow != tiles_ow) || (sd->tiles.oh != tiles_oh) ||
-       (sd->tiles.ospan != sd->span) || (sd->tiles.olevel != sd->level))
+       (sd->tiles.olevel != sd->level))
      mode = MODE_RESET;
    else if ((sd->tiles.ox != tiles_ox) || (sd->tiles.oy != tiles_oy))
      mode = MODE_ORIGIN;
@@ -696,11 +712,8 @@ _e_nav_tileset_update(Evas_Object *obj)
    else if ((offset_x != sd->tiles.offset_x) || (offset_y != sd->tiles.offset_y))
      mode = MODE_MOVE;
      
-   if (mode == MODE_NONE) return;
-
    if (mode == MODE_RESET)
      {
-	// reallac entirely move and resize
 	if (sd->tiles.objs)
 	  {
 	     for (j = 0; j < sd->tiles.oh; j++)
@@ -716,23 +729,22 @@ _e_nav_tileset_update(Evas_Object *obj)
 	       }
 	     free(sd->tiles.objs);
 	  }
-     }
-   
-   sd->tiles.ospan = sd->span;
-   sd->tiles.olevel = sd->level;
-   sd->tiles.ow = tiles_ow;
-   sd->tiles.oh = tiles_oh;
-   sd->tiles.ox = tiles_ox;
-   sd->tiles.oy = tiles_oy;
-   sd->tiles.tilesize = tilesize;
-   sd->tiles.offset_x = offset_x;
-   sd->tiles.offset_y = offset_y;
 
-   if (mode == MODE_RESET)
-     sd->tiles.objs = calloc(tiles_ow * tiles_oh, sizeof(Evas_Object *));
-   
-   if (!sd->tiles.objs)
-     return;
+	sd->tiles.objs = calloc(tiles_ow * tiles_oh, sizeof(Evas_Object *));
+     }
+
+   if (mode != MODE_NONE)
+     {
+	sd->tiles.ospan = sd->span;
+	sd->tiles.olevel = sd->level;
+	sd->tiles.ow = tiles_ow;
+	sd->tiles.oh = tiles_oh;
+	sd->tiles.ox = tiles_ox;
+	sd->tiles.oy = tiles_oy;
+	sd->tiles.tilesize = tilesize;
+	sd->tiles.offset_x = offset_x;
+	sd->tiles.offset_y = offset_y;
+     }
 
    /*
    printf("(%d, %d), (%d, %d), (%d, %d), level %d, tilesize %f\n",
@@ -740,6 +752,26 @@ _e_nav_tileset_update(Evas_Object *obj)
 		   tiles_ow, tiles_oh,
 		   offset_x, offset_y, sd->level, tilesize);
 		   */
+
+   return mode;
+}
+
+static void
+_e_nav_tileset_update(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   int mode, i, j;
+   Evas_Coord x, y, xx, yy;
+   
+   sd = evas_object_smart_data_get(obj);
+   if (!sd) return;
+
+   mode = _e_nav_tileset_check(obj);
+   if (mode == MODE_NONE)
+     return;
+
+   if (!sd->tiles.objs)
+     return;
 
    for (j = 0; j < sd->tiles.oh; j++)
      {
@@ -752,7 +784,6 @@ _e_nav_tileset_update(Evas_Object *obj)
 	for (i = 0; i < sd->tiles.ow; i++)
 	  {
 	     Evas_Object *o;
-	     char buf[PATH_MAX];
 	    
 	     if (!TILE_VALID(sd->level, sd->tiles.ox + i))
 	       continue;
@@ -772,20 +803,7 @@ _e_nav_tileset_update(Evas_Object *obj)
 	    
 	     if ((mode == MODE_RESET) || (mode == MODE_ORIGIN))
 	       {
-		  snprintf(buf, sizeof(buf), "%s/%s_%i_%i_%i.%s",
-			   mapdir, mapset,
-			   sd->level, 
-			   i + sd->tiles.ox,
-			   j + sd->tiles.oy,
-			   mapformat);
-		  evas_object_image_file_set(o, buf, NULL);
-		  if (evas_object_image_load_error_get(o) == EVAS_LOAD_ERROR_NONE)
-		    evas_object_show(o);
-		  else
-		    {
-		       job_submit(obj, i + sd->tiles.ox, j + sd->tiles.oy, 0);
-		       evas_object_hide(o);
-		    }
+		  _e_nav_tileset_tile_get(obj, o, sd->tiles.ox + i, sd->tiles.oy + j);
 	       }
 	     x = (i * sd->tiles.tilesize);
 	     xx = ((i + 1) * sd->tiles.tilesize);
