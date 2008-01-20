@@ -48,6 +48,10 @@ struct E_DBus_Connection
 };
 #endif
 
+#ifndef DEBUG
+#define DEBUG
+#endif
+
 typedef struct E_DBus_Proxy_Manager E_DBus_Proxy_Manager;
 
 struct E_DBus_Proxy
@@ -330,11 +334,9 @@ e_dbus_proxy_is_method_call(E_DBus_Proxy *proxy, DBusMessage *message)
 }
 
 EAPI int
-e_dbus_proxy_call(E_DBus_Proxy *proxy, DBusMessage *message, E_DBus_Callback_Func cb_func, void *data)
+e_dbus_proxy_call(E_DBus_Proxy *proxy, DBusMessage *message, DBusMessage **reply)
 {
   E_DBus_Proxy_Call *call;
-  DBusMessage *reply;
-  DBusError error;
 
   if (!e_dbus_proxy_is_method_call(proxy, message))
     return 0;
@@ -343,33 +345,31 @@ e_dbus_proxy_call(E_DBus_Proxy *proxy, DBusMessage *message, E_DBus_Callback_Fun
   if (!call)
     return 0;
 
-  if (!e_dbus_proxy_end_call(proxy, call, &reply))
-    return 0;
-
-  if (cb_func)
-  {
-    dbus_error_init(&error);
-
-    if (dbus_set_error_from_message(&error, reply))
-      cb_func(data, NULL, &error);
-    else
-      cb_func(data, reply, NULL);
-
-    dbus_error_free(&error);
-  }
 #ifdef DEBUG
-  else
+  if (!reply)
   {
-    dbus_error_init(&error);
+    DBusMessage *tmp_reply;
+    DBusError error;
 
-    if (dbus_set_error_from_message(&error, reply))
-      printf("proxy call returns error: %s\n", error.message);
+    if (!e_dbus_proxy_end_call(proxy, call, &tmp_reply))
+      return 0;
+
+    dbus_error_init(&error);
+    if (dbus_set_error_from_message(&error, tmp_reply))
+      printf("failed to call %s.%s: %s\n",
+	  dbus_message_get_interface(message),
+	  dbus_message_get_member(message),
+	  error.message);
 
     dbus_error_free(&error);
+    dbus_message_unref(tmp_reply);
   }
+  else if (!e_dbus_proxy_end_call(proxy, call, reply))
+    return 0;
+#else
+  if (!e_dbus_proxy_end_call(proxy, call, reply))
+    return 0;
 #endif
-
-  dbus_message_unref(reply);
 
   return 1;
 }
@@ -472,6 +472,24 @@ e_dbus_proxy_end_call(E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call, DBusMessage 
     *reply = dbus_pending_call_steal_reply(pending);
     assert(*reply);
   }
+  else
+  {
+#ifdef DEBUG
+    DBusMessage *tmp_reply;
+    DBusError error;
+
+    dbus_error_init(&error);
+    tmp_reply = dbus_pending_call_steal_reply(pending);
+    assert(tmp_reply);
+    if (dbus_set_error_from_message(&error, tmp_reply))
+      printf("failed to end call: %s\n", error.message);
+
+    dbus_error_free(&error);
+    dbus_message_unref(tmp_reply);
+#else
+    dbus_pending_call_unref(pending);
+#endif
+  }
 
   ecore_hash_remove(proxy->pending_calls, call);
 
@@ -538,47 +556,37 @@ e_dbus_proxy_disconnect_signal(E_DBus_Proxy *proxy, const char *signal_name, E_D
   }
 }
 
-typedef struct
-{
-  DBusError *error;
-  DBusMessage *reply;
-} E_DBus_Proxy_Simple_Call;
-
-static void
-simple_proxy_call(void *user_data, void *method_return, DBusError *error)
-{
-  E_DBus_Proxy_Simple_Call *simple_call = user_data;
-
-  if (error)
-    dbus_move_error(error, simple_call->error);
-  else
-    simple_call->reply = dbus_message_ref(method_return);
-}
-
-EAPI DBusMessage *
+EAPI int
 e_dbus_proxy_simple_call(E_DBus_Proxy *proxy, const char *method, DBusError *error, int first_arg_type, ...)
 {
+  DBusMessage *message, *reply = NULL;
   va_list args;
-  DBusMessage *message;
-  E_DBus_Proxy_Simple_Call simple_call;
   int type;
+
+  va_start(args, first_arg_type);
 
   message = e_dbus_proxy_new_method_call(proxy, method);
   if (!message)
-    return 0;
+  {
+    dbus_set_error_const(error, DBUS_ERROR_FAILED,
+        "failed to create method call");
 
-  va_start(args, first_arg_type);
+    goto fail;
+  }
 
   type = first_arg_type;
   if (!dbus_message_append_args_valist(message, type, args))
     goto fail;
 
-  simple_call.error = error;
+  if (!e_dbus_proxy_call(proxy, message, &reply))
+  {
+    dbus_set_error_const(error, DBUS_ERROR_FAILED,
+        "failed to do proxy call");
 
-  if (!e_dbus_proxy_call(proxy, message, simple_proxy_call, &simple_call))
     goto fail;
+  }
 
-  if (dbus_error_is_set(error))
+  if (dbus_set_error_from_message(error, reply))
     goto fail;
 
   /* skip INs */
@@ -589,25 +597,50 @@ e_dbus_proxy_simple_call(E_DBus_Proxy *proxy, const char *method, DBusError *err
   }
 
   type = va_arg(args, int);
-  dbus_message_get_args_valist(simple_call.reply, error, type, args);
+  if (!dbus_message_get_args_valist(reply, error, type, args))
+    goto fail;
 
-  va_end(args);
+  /* steal OUTs */
+  while (type != DBUS_TYPE_INVALID)
+  {
+    union {
+      char *str;
+    } *val;
+
+    val = va_arg(args, void *);
+    if (val)
+    {
+      switch (type)
+      {
+        case DBUS_TYPE_STRING:
+        case DBUS_TYPE_OBJECT_PATH:
+          if (val->str)
+            val->str = strdup(val->str);
+          break;
+        default:
+          break;
+      }
+    }
+    type = va_arg(args, int);
+  }
+
+  dbus_message_unref(reply);
   dbus_message_unref(message);
+  va_end(args);
 
-  if (dbus_error_is_set(error))
-  {
-    dbus_message_unref(simple_call.reply);
-
-    return NULL;
-  }
-  else
-  {
-    return simple_call.reply;
-  }
+  return 1;
 
 fail:
+  if (reply)
+    dbus_message_unref(reply);
+  if (message)
+    dbus_message_unref(message);
   va_end(args);
-  dbus_message_unref(message);
+
+  if (error && !dbus_error_is_set(error))
+    dbus_set_error(error, DBUS_ERROR_FAILED,
+                   "failed to call %s.%s",
+                   proxy->interface, method);
 
   return 0;
 }

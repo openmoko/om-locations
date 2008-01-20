@@ -659,7 +659,6 @@ E_Nav_Viewport *
 e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lon2, double lat2)
 {
    E_Nav_Viewport *view;
-   DBusMessage *reply;
    DBusError error;
    char *path;
    double tmp;
@@ -683,16 +682,15 @@ e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lo
      return NULL;
 
    dbus_error_init(&error);
-   reply = e_dbus_proxy_simple_call(world->proxy,
-	 			    "ViewportAdd", &error,
-				    DBUS_TYPE_DOUBLE, &lon1,
-				    DBUS_TYPE_DOUBLE, &lat1,
-				    DBUS_TYPE_DOUBLE, &lon2,
-				    DBUS_TYPE_DOUBLE, &lat2,
-				    DBUS_TYPE_INVALID,
-				    DBUS_TYPE_OBJECT_PATH, &path,
-				    DBUS_TYPE_INVALID);
-   if (!reply)
+   if (!e_dbus_proxy_simple_call(world->proxy,
+				 "ViewportAdd", &error,
+				 DBUS_TYPE_DOUBLE, &lon1,
+				 DBUS_TYPE_DOUBLE, &lat1,
+				 DBUS_TYPE_DOUBLE, &lon2,
+				 DBUS_TYPE_DOUBLE, &lat2,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_OBJECT_PATH, &path,
+				 DBUS_TYPE_INVALID))
      {
 	printf("failed to add viewport: %s\n", error.message);
 	dbus_error_free(&error);
@@ -701,7 +699,7 @@ e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lo
      }
 
    view = e_nav_viewport_new(path);
-   dbus_message_unref(reply);
+   free(path);
 
    return view;
 }
@@ -709,18 +707,13 @@ e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lo
 void
 e_nav_world_viewport_remove(E_Nav_World *world, E_Nav_Viewport *view)
 {
-   DBusMessage *reply;
-
    if (!world || !view) return;
 
-   reply = e_dbus_proxy_simple_call(world->proxy,
-	 			    "ViewportRemove", NULL,
-				    DBUS_TYPE_OBJECT_PATH, &view->path,
-				    DBUS_TYPE_INVALID,
-				    DBUS_TYPE_INVALID);
-
-   if (reply)
-     dbus_message_unref(reply);
+   e_dbus_proxy_simple_call(world->proxy,
+			    "ViewportRemove", NULL,
+			    DBUS_TYPE_OBJECT_PATH, &view->path,
+			    DBUS_TYPE_INVALID,
+			    DBUS_TYPE_INVALID);
 
    e_nav_viewport_destroy(view);
 }

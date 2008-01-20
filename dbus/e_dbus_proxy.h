@@ -63,8 +63,7 @@ extern "C" {
 
    EAPI int e_dbus_proxy_call(E_DBus_Proxy *proxy,
                               DBusMessage *message,
-                              E_DBus_Callback_Func cb_func,
-                              void *data);
+                              DBusMessage **reply);
 
    EAPI void e_dbus_proxy_call_no_reply(E_DBus_Proxy *proxy,
                                         DBusMessage *message);
@@ -99,11 +98,11 @@ extern "C" {
                                             E_DBus_Signal_Cb cb_signal,
                                             void *data);
 
-   EAPI DBusMessage *e_dbus_proxy_simple_call(E_DBus_Proxy *proxy,
-                                              const char *method,
-                                              DBusError *error,
-                                              int first_arg_type,
-                                              ...);
+   EAPI int e_dbus_proxy_simple_call(E_DBus_Proxy *proxy,
+                                     const char *method,
+                                     DBusError *error,
+                                     int first_arg_type,
+                                     ...);
 
 #ifdef __cplusplus
 }
