@@ -105,8 +105,6 @@ static int _e_nav_momentum_calc(Evas_Object *obj, double t);
 static void _e_nav_wallpaper_update(Evas_Object *obj);
 static int _e_nav_cb_animator_momentum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
-static void _e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *x, double *y);
-static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lat, double *lon);
 
 static void _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source);
 static void _e_nav_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, const char *source);
@@ -732,10 +730,10 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
      {
 	double lat_off, lon_off;
 
-	_e_nav_from_offsets(obj,
-			    sd->moveng.start.x - x,
-			    sd->moveng.start.y - y,
-			    &lat_off, &lon_off);
+	e_nav_tileset_from_offsets(sd->tilesets->data,
+				   sd->moveng.start.x - x,
+				   sd->moveng.start.y - y,
+				   &lat_off, &lon_off);
 	e_nav_coord_set(obj, 
 			sd->moveng.start.lat + lat_off,
 			sd->moveng.start.lon + lon_off,
@@ -829,9 +827,10 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
 
 	if (dist > 40)
 	  {
-	     _e_nav_from_offsets(obj, (vx2 - vx1) * 5.0,
-				      (vy2 - vy1) * 5.0,
-				      &lat_off, &lon_off);
+	     e_nav_tileset_from_offsets(sd->tilesets->data,
+					(vx2 - vx1) * 5.0,
+					(vy2 - vy1) * 5.0,
+					&lat_off, &lon_off);
 	     e_nav_coord_set(obj, lat - lat_off,
 			     lon - lon_off,
 			     2.0 + (zoomout / 16.0));
@@ -847,10 +846,10 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
      {
 	double lat_off, lon_off;
 
-	_e_nav_from_offsets(obj,
-			    sd->moveng.start.x - x,
-			    sd->moveng.start.y - y,
-			    &lat_off, &lon_off);
+	e_nav_tileset_from_offsets(sd->tilesets->data,
+				   sd->moveng.start.x - x,
+				   sd->moveng.start.y - y,
+				   &lat_off, &lon_off);
 
 	e_nav_coord_set(obj, 
 			sd->moveng.start.lat + lat_off,
@@ -1043,55 +1042,6 @@ _e_nav_cb_timer_moveng_pause(void *data)
 }
 
 static void
-_e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *x, double *y)
-{
-   E_Smart_Data *sd;
-   double lon1, lat1, lon2, lat2;
-
-   sd = evas_object_smart_data_get(obj);
-   if (!sd)
-     {
-	if (x) *x = 0.0;
-	if (y) *y = 0.0;
-	return;
-     }
-
-   lat1 = RADIANS(sd->lat);
-   lon1 = RADIANS(sd->lon);
-
-   lat2 = RADIANS(lat);
-   lon2 = RADIANS(lon);
-
-   if (x)
-     *x = (lat2 - lat1) * cos(lon1) * M_EARTH_RADIUS / sd->zoom;
-   if (y)
-     *y = (lon2 - lon1) * M_EARTH_RADIUS / sd->zoom;
-}
-
-static void
-_e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lat, double *lon)
-{
-   E_Smart_Data *sd;
-   double distx, disty;
-
-   sd = evas_object_smart_data_get(obj);
-   if (!sd)
-     {
-	if (lat) *lat = 0.0;
-	if (lon) *lon = 0.0;
-	return;
-     }
-
-   distx = x * sd->zoom / (cos(RADIANS(sd->lon)) * M_EARTH_RADIUS);
-   disty = y * sd->zoom / M_EARTH_RADIUS;
-
-   if (lat)
-     *lat = DEGREES(distx);
-   if (lon)
-     *lon = DEGREES(disty);
-}
-
-static void
 _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source)
 {
    E_Smart_Data *sd;
@@ -1153,11 +1103,13 @@ _e_nav_world_item_move_resize(E_Nav_World_Item *nwi)
      {
 	x = nwi->geom.x - (nwi->geom.w / 2.0);
 	y = nwi->geom.y - (nwi->geom.h / 2.0);
-	_e_nav_to_offsets(nwi->obj, x, y, &x, &y);
+	e_nav_tileset_to_offsets(sd->tilesets->data, x, -y, &x, &y);
+	y = -y;
 
 	w = nwi->geom.x + (nwi->geom.w / 2.0);
 	h = nwi->geom.y + (nwi->geom.h / 2.0);
-	_e_nav_to_offsets(nwi->obj, w, h, &w, &h);
+	e_nav_tileset_to_offsets(sd->tilesets->data, w, -h, &w, &h);
+	h = -h;
 
 	w = w - x;
 	h = h - y;
@@ -1167,7 +1119,8 @@ _e_nav_world_item_move_resize(E_Nav_World_Item *nwi)
      }
    else
      {
-	_e_nav_to_offsets(nwi->obj, nwi->geom.x, nwi->geom.y, &x, &y);
+	e_nav_tileset_to_offsets(sd->tilesets->data, nwi->geom.x, -nwi->geom.y, &x, &y);
+	y = -y;
 
 	w = nwi->geom.w;
 	h = nwi->geom.h;

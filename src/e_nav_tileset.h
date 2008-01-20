@@ -31,6 +31,9 @@ double                  e_nav_tileset_scale_get(Evas_Object *obj);
 void                    e_nav_tileset_center_set(Evas_Object *obj, double lon, double lat);
 void                    e_nav_tileset_center_get(Evas_Object *obj, double *lon, double *lat);
 
+void                    e_nav_tileset_to_offsets(Evas_Object *obj, double lon, double lat, double *x, double *y);
+void                    e_nav_tileset_from_offsets(Evas_Object *obj, double x, double y, double *lon, double *lat);
+
 #include <e_dbus_proxy.h>
 void                    e_nav_tileset_proxy_set(Evas_Object *obj, E_DBus_Proxy *proxy);
 E_DBus_Proxy           *e_nav_tileset_proxy_get(Evas_Object *obj);

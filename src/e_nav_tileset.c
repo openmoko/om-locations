@@ -224,6 +224,38 @@ e_nav_tileset_center_get(Evas_Object *obj, double *lon, double *lat)
 }
 
 void
+e_nav_tileset_to_offsets(Evas_Object *obj, double lon, double lat, double *x, double *y)
+{
+   E_Smart_Data *sd;
+   double tmp;
+
+   SMART_CHECK(obj, ;);
+
+   if (x)
+     *x = (lon - sd->lon) * sd->span / 360.0;
+
+   tmp = cos(RADIANS(sd->lat));
+   if (tmp == 0.0)
+     tmp = 0.0000001;
+
+   if (y)
+     *y = (lat - sd->lat) * sd->span / 360.0 / tmp;
+}
+
+void
+e_nav_tileset_from_offsets(Evas_Object *obj, double x, double y, double *lon, double *lat)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (lon)
+     *lon = x * 360.0 / sd->span;
+   if (lat)
+     *lat = y * 360.0 * cos(RADIANS(sd->lat)) / sd->span;
+}
+
+void
 e_nav_tileset_scale_set(Evas_Object *obj, double scale)
 {
    E_Smart_Data *sd;
