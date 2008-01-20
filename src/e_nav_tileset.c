@@ -4,7 +4,9 @@
 #include <math.h>
 
 typedef struct _E_Smart_Data E_Smart_Data;
+typedef struct _E_Nav_Tile_Job E_Nav_Tile_Job;
 
+#define NUM_JOB_SLOTS 5
 struct _E_Smart_Data
 {
    Evas_Object *obj;
@@ -14,6 +16,9 @@ struct _E_Smart_Data
 
    Evas_Object *nav;
    E_DBus_Proxy *proxy;
+
+   E_Nav_Tile_Job *job_slots;
+   Ecore_Hash *jobs;
 
    E_Nav_Tileset_Format format;
    char *dir;
@@ -35,6 +40,14 @@ struct _E_Smart_Data
    } tiles;
 };
 
+struct _E_Nav_Tile_Job
+{
+   int level;
+   int x, y;
+   int id;
+   int timestamp;
+};
+
 static void _e_nav_tileset_smart_init(void);
 static void _e_nav_tileset_smart_add(Evas_Object *obj);
 static void _e_nav_tileset_smart_del(Evas_Object *obj);
@@ -45,6 +58,12 @@ static void _e_nav_tileset_smart_hide(Evas_Object *obj);
 static void _e_nav_tileset_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
 static void _e_nav_tileset_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_nav_tileset_smart_clip_unset(Evas_Object *obj);
+
+static void job_level_set(Evas_Object *obj);
+static unsigned int job_hash(const E_Nav_Tile_Job *job);
+static int job_compare(const E_Nav_Tile_Job *job1, const E_Nav_Tile_Job *job2);
+static int job_submit(Evas_Object *obj, int x, int y, char force);
+static void job_completed_cb(void *data, DBusMessage *message);
 
 static void _e_nav_tileset_update(Evas_Object *obj);
 
@@ -110,7 +129,11 @@ e_nav_tileset_level_set(Evas_Object *obj, int level)
    else if (level < sd->min_level)
      level = sd->min_level;
 
-   sd->level = level;
+   if (sd->level != level)
+     {
+	sd->level = level;
+	job_level_set(obj);
+     }
    sd->span = sd->size << level;
 }
 
@@ -141,20 +164,24 @@ void
 e_nav_tileset_span_set(Evas_Object *obj, int span)
 {
    E_Smart_Data *sd;
-   double level;
+   int level;
    
    SMART_CHECK(obj, ;);
 
-   level = log((double) span / sd->size) / M_LOG2;
+   level = (int) ((log((double) span / sd->size) / M_LOG2) + 0.5);
 
    sd->span = span;
 
-   if (level > (double) sd->max_level)
-     level = (double) sd->max_level;
-   else if (level < (double) sd->min_level)
-     level = (double) sd->min_level;
+   if (level > sd->max_level)
+     level = sd->max_level;
+   else if (level < sd->min_level)
+     level = sd->min_level;
 
-   sd->level = (int) (level + 0.5);
+   if (sd->level != level)
+     {
+	sd->level = level;
+	job_level_set(obj);
+     }
 }
 
 int
@@ -233,7 +260,16 @@ e_nav_tileset_proxy_set(Evas_Object *obj, E_DBus_Proxy *proxy)
    
    SMART_CHECK(obj, ;);
 
+   if (sd->proxy == proxy)
+     return;
+
+   if (sd->proxy)
+     e_dbus_proxy_disconnect_signal(sd->proxy, "OverlayChanged",
+				    job_completed_cb, obj);
+
    sd->proxy = proxy;
+   e_dbus_proxy_connect_signal(sd->proxy, "OverlayChanged",
+			       job_completed_cb, obj);
 }
 
 E_DBus_Proxy *
@@ -295,6 +331,10 @@ _e_nav_tileset_smart_add(Evas_Object *obj)
    evas_object_smart_member_add(sd->dummy, obj);
    evas_object_clip_set(sd->dummy, sd->clip);
 
+   sd->jobs = ecore_hash_new((Ecore_Hash_Cb) job_hash,
+			     (Ecore_Compare_Cb) job_compare);
+   sd->job_slots = calloc(NUM_JOB_SLOTS, sizeof(E_Nav_Tile_Job));
+
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -329,6 +369,12 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
 
    evas_object_del(sd->dummy);
    evas_object_del(sd->clip);
+
+   if (sd->proxy)
+     e_dbus_proxy_disconnect_signal(sd->proxy, "OverlayChanged",
+				    job_completed_cb, obj);
+   ecore_hash_destroy(sd->jobs);
+   free(sd->job_slots);
 
    free(sd);
 }
@@ -409,7 +455,138 @@ _e_nav_tileset_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 } 
 
-inline static void mercator_project(double lon, double lat, double *x, double *y)
+static void
+job_level_set(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd || !sd->proxy) return;
+
+   e_dbus_proxy_simple_call(sd->proxy, "SetLevel",
+			    NULL,
+			    DBUS_TYPE_INT32, &sd->level,
+			    DBUS_TYPE_INVALID,
+			    DBUS_TYPE_INVALID);
+}
+
+static unsigned int
+job_hash(const E_Nav_Tile_Job *job)
+{
+   /* x and y are usually continuous; ignore higer bits */
+   return ((job->level & 0x1f) << 27) |
+	  ((job->y & 0x3ff) << 13) |
+	  (job->x & 0x1ff);
+}
+
+static int
+job_compare(const E_Nav_Tile_Job *job1, const E_Nav_Tile_Job *job2)
+{
+   if (job1->x < job2->x)
+     return -1;
+   else if (job1->x > job2->x)
+     return 1;
+   else if (job1->y < job2->y)
+     return -1;
+   else if (job1->y < job2->y)
+     return 1;
+   else
+      return job1->level - job2->level;
+}
+
+static int
+job_submit(Evas_Object *obj, int x, int y, char force)
+{
+   E_Smart_Data *sd;
+   E_Nav_Tile_Job *job;
+   int id, i;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd || !sd->proxy) return 0;
+
+   printf("submit job for tile (%d,%d)@%d\n", x, y, sd->level);
+
+   for (i = 0; i < NUM_JOB_SLOTS; i++)
+     {
+	job = &sd->job_slots[i];
+	if (!job->id)
+	  break;
+     }
+   if (i == NUM_JOB_SLOTS)
+     {
+	printf("all slots used\n");
+
+	return 0;
+     }
+
+   job->level = sd->level;
+   job->x = x;
+   job->y = y;
+
+   if (ecore_hash_get(sd->jobs, job))
+     {
+	printf("job alredy on the way!\n");
+
+	return 1;
+     }
+
+   if (!e_dbus_proxy_simple_call(sd->proxy, "GetTile",
+				 NULL,
+				 DBUS_TYPE_INT32, &x,
+				 DBUS_TYPE_INT32, &y,
+				 DBUS_TYPE_BOOLEAN, &force,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INT32, &id,
+				 DBUS_TYPE_INVALID))
+     return 0;
+
+   printf("job %d submitted\n", id);
+
+   job->id = id;
+   job->timestamp = 0;
+
+   ecore_hash_set(sd->jobs, job, job);
+
+   return 1;
+}
+
+static void
+job_completed_cb(void *data, DBusMessage *message)
+{
+   E_Smart_Data *sd;
+   E_Nav_Tile_Job *job;
+   int id, status;
+   int i;
+
+   if (!message)
+     return;
+
+   sd = evas_object_smart_data_get(data);
+   if (!sd || !sd->proxy) return;
+
+   if (!dbus_message_get_args(message, NULL,
+			      DBUS_TYPE_INT32, &id,
+			      DBUS_TYPE_INT32, &status,
+			      DBUS_TYPE_INVALID))
+     return;
+
+   for (i = 0; i < NUM_JOB_SLOTS; i++)
+     {
+	job = &sd->job_slots[i];
+	if (job->id == id)
+	  break;
+     }
+   if (i == NUM_JOB_SLOTS)
+     return;
+
+   printf("job %d completed with status %d\n", id, status);
+
+   job->id = 0;
+   ecore_hash_remove(sd->jobs, job);
+}
+
+inline static void
+mercator_project(double lon, double lat, double *x, double *y)
 {
    double tmp;
 
@@ -573,7 +750,10 @@ _e_nav_tileset_update(Evas_Object *obj)
 		  if (evas_object_image_load_error_get(o) == EVAS_LOAD_ERROR_NONE)
 		    evas_object_show(o);
 		  else
-		    evas_object_hide(o);
+		    {
+		       job_submit(obj, i + sd->tiles.ox, j + sd->tiles.oy, 0);
+		       evas_object_hide(o);
+		    }
 	       }
 	     x = (i * sd->tiles.tilesize);
 	     xx = ((i + 1) * sd->tiles.tilesize);
