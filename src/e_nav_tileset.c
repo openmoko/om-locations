@@ -20,16 +20,16 @@ struct _E_Smart_Data
    char *map;
    char *suffix;
    int size;
-   int min_level, max_level, level;
-   double lon, lat;
+   int min_level, max_level;
 
-   Evas_Bool smooth;
-   double smooth_level;
+   double lon, lat;
+   int span;
+   int level;
 
    struct {
       double tilesize;
       Evas_Coord offset_x, offset_y;
-      double olevel;
+      int olevel, ospan;
       int ox, oy, ow, oh;
       Evas_Object **objs;
    } tiles;
@@ -84,11 +84,10 @@ e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir
    sd->min_level = 0;
    sd->max_level = 17;
 
-   sd->level = (double) sd->min_level;
-   sd->lon = sd->lat = 0.0;
-   sd->smooth = 0;
-
    e_nav_world_tileset_add(nav, obj);
+
+   e_nav_tileset_center_set(obj, 0.0, 0.0);
+   e_nav_tileset_level_set(obj, sd->min_level);
 
    return obj;
 }
@@ -100,30 +99,29 @@ e_nav_tileset_update(Evas_Object *obj)
 }
 
 void
-e_nav_tileset_level_set(Evas_Object *obj, double level)
+e_nav_tileset_level_set(Evas_Object *obj, int level)
 {
    E_Smart_Data *sd;
    
    SMART_CHECK(obj, ;);
 
-   if (sd->smooth)
-     sd->smooth_level = level;
+   if (level > sd->max_level)
+     level = sd->max_level;
+   else if (level < sd->min_level)
+     level = sd->min_level;
 
-   if (level > (double) sd->max_level)
-     level = (double) sd->max_level;
-   else if (level < (double) sd->min_level)
-     level = (double) sd->min_level;
-   sd->level = ((int) (level + 0.5));
+   sd->level = level;
+   sd->span = sd->size << level;
 }
 
-double
+int
 e_nav_tileset_level_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
    SMART_CHECK(obj, 0.0;);
 
-   return (sd->smooth) ? sd->smooth_level : (double) sd->level;
+   return sd->level;
 }
 
 void
@@ -137,6 +135,36 @@ e_nav_tileset_levels_list(Evas_Object *obj, int *max_level, int *min_level)
      *max_level = sd->max_level;
    if (min_level)
      *min_level = sd->min_level;
+}
+
+void
+e_nav_tileset_span_set(Evas_Object *obj, int span)
+{
+   E_Smart_Data *sd;
+   double level;
+   
+   SMART_CHECK(obj, ;);
+
+   level = log((double) span / sd->size) / M_LOG2;
+
+   sd->span = span;
+
+   if (level > (double) sd->max_level)
+     level = (double) sd->max_level;
+   else if (level < (double) sd->min_level)
+     level = (double) sd->min_level;
+
+   sd->level = (int) (level + 0.5);
+}
+
+int
+e_nav_tileset_span_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, 0;);
+
+   return sd->span;
 }
 
 void
@@ -169,47 +197,20 @@ e_nav_tileset_center_get(Evas_Object *obj, double *lon, double *lat)
 }
 
 void
-e_nav_tileset_smooth_set(Evas_Object *obj, Evas_Bool smooth)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-
-   if (sd->smooth == smooth)
-     return;
-
-   sd->smooth = smooth;
-   if (smooth)
-     sd->smooth_level = (double) sd->level;
-}
-
-Evas_Bool
-e_nav_tileset_smooth_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0;);
-
-   return sd->smooth;
-}
-
-void
 e_nav_tileset_scale_set(Evas_Object *obj, double scale)
 {
    E_Smart_Data *sd;
-   double perimeter, tiles, level;
+   double perimeter;
    
    SMART_CHECK(obj, ;);
 
+   perimeter = cos(RADIANS(sd->lat)) * M_EARTH_RADIUS * M_PI * 2;
+
+   /* perimeter <= 2^26; limit scale to avoid overflow */
    if (scale < 0.0001)
      scale = 0.0001;
 
-   perimeter = cos(RADIANS(sd->lat)) * M_EARTH_RADIUS * M_PI * 2;
-   tiles = perimeter / scale / sd->size;
-   
-   level = log((double) tiles) / M_LOG2;
-
-   e_nav_tileset_level_set(obj, level);
+   e_nav_tileset_span_set(obj, perimeter / scale);
 }
 
 double
@@ -217,18 +218,12 @@ e_nav_tileset_scale_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    double perimeter;
-   unsigned int pixels;
    
    SMART_CHECK(obj, 0.0;);
 
-   if (sd->smooth)
-     pixels = (unsigned int) pow(2, sd->smooth_level);
-   else
-     pixels = (1 << sd->level);
-
    perimeter = cos(RADIANS(sd->lat)) * M_EARTH_RADIUS * M_PI * 2;
 
-   return perimeter / pixels;
+   return perimeter / sd->span;
 }
 
 void
@@ -464,11 +459,7 @@ _e_nav_tileset_update(Evas_Object *obj)
    
    num_tiles = (1 << sd->level);
 
-   if (sd->smooth)
-     tilesize = pow(2, sd->smooth_level) * sd->size / num_tiles;
-   else
-     tilesize = sd->size;
-
+   tilesize = sd->span / num_tiles;
    if (tilesize < 1.0) return;
 
    tiles_ow = 1 + (((double)sd->w + tilesize) / tilesize);
@@ -487,8 +478,7 @@ _e_nav_tileset_update(Evas_Object *obj)
    offset_y = -tilesize * (tpy - tiles_oy);
 
    if ((sd->tiles.ow != tiles_ow) || (sd->tiles.oh != tiles_oh) ||
-       (sd->smooth && sd->smooth_level != sd->tiles.olevel) ||
-       (!sd->smooth && (double) sd->level != sd->tiles.olevel))
+       (sd->tiles.ospan != sd->span) || (sd->tiles.olevel != sd->level))
      mode = MODE_RESET;
    else if ((sd->tiles.ox != tiles_ox) || (sd->tiles.oy != tiles_oy))
      mode = MODE_ORIGIN;
@@ -519,7 +509,8 @@ _e_nav_tileset_update(Evas_Object *obj)
 	  }
      }
    
-   sd->tiles.olevel = (sd->smooth) ? sd->smooth_level : sd->level;
+   sd->tiles.ospan = sd->span;
+   sd->tiles.olevel = sd->level;
    sd->tiles.ow = tiles_ow;
    sd->tiles.oh = tiles_oh;
    sd->tiles.ox = tiles_ox;

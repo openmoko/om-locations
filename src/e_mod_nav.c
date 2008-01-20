@@ -125,7 +125,6 @@ osm_tileset_add(Evas_Object *nav)
    Evas_Object *nt;
 
    nt = e_nav_tileset_add(nav, E_NAV_TILESET_FORMAT_OSM, "/tmp");
-   e_nav_tileset_smooth_set(nt, 1);
 
    if (world)
 	view = e_nav_world_viewport_add(world, -180.0, -90.0, 180.0, 90.0);
