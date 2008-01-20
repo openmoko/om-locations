@@ -705,6 +705,45 @@ _e_nav_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
 }
 
 static void
+_e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, Evas_Coord y)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (action == E_NAV_MOVEENGINE_START)
+     {
+	sd->moveng.start.x = x;
+	sd->moveng.start.y = y;
+	sd->moveng.start.lat = sd->lat;
+	sd->moveng.start.lon = sd->lon;
+	sd->moveng.start.zoom = sd->conf.zoom;
+
+	e_nav_coord_set(obj, sd->lat, sd->lon, 0.0);
+	e_nav_zoom_set(obj, sd->conf.zoom, 0.5);
+
+	return;
+     }
+   
+   if (action == E_NAV_MOVEENGINE_STOP)
+     {
+	e_nav_coord_set(obj, sd->lat, sd->lon, 0.0);
+     }
+   else
+     {
+	double lat_off, lon_off;
+
+	_e_nav_from_offsets(obj,
+			    sd->moveng.start.x - x,
+			    sd->moveng.start.y - y,
+			    &lat_off, &lon_off);
+	e_nav_coord_set(obj, 
+			sd->moveng.start.lat + lat_off,
+			sd->moveng.start.lon + lon_off,
+			0.0);
+     }
+}
+
+static void
 _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
@@ -714,6 +753,10 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
    Evas_Coord dist;
    double lat, lon;
    double zoomout = 0.0;
+
+   /* TODO provide parameters instead of calling another engine */
+   _e_nav_movengine_plain(obj, action, x, y);
+   return;
 
    sd = evas_object_smart_data_get(obj);
    if (action == E_NAV_MOVEENGINE_START)
@@ -808,11 +851,6 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
 			    sd->moveng.start.x - x,
 			    sd->moveng.start.y - y,
 			    &lat_off, &lon_off);
-	/*
-	printf("mouse moved (%d, %d) pixels, which is (%f, %f) under %fm/px\n",
-	      sd->moveng.start.x - x, sd->moveng.start.y - y,
-	      lat_off, lon_off, sd->zoom);
-	      */
 
 	e_nav_coord_set(obj, 
 			sd->moveng.start.lat + lat_off,
