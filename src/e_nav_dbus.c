@@ -16,7 +16,13 @@ struct _E_Nav_World
 struct _E_Nav_Viewport
 {
    E_DBus_Proxy *proxy;
-   char *path;
+   const char *path;
+};
+
+struct _E_Nav_Bard
+{
+   E_DBus_Proxy *proxy;
+   const char *path;
    E_DBus_Proxy *atlas;
 };
 
@@ -31,13 +37,14 @@ static int initialized = -1;
 #define DIVERSITY_WORLD_DBUS_PATH 		"/org/openmoko/diversity/world"
 #define DIVERSITY_WORLD_DBUS_INTERFACE		"org.openmoko.diversity.world"
 
-#define DIVERSITY_VIEWPORT_DBUS_PATH		"/org/openmoko/diversity/viewport"
 #define DIVERSITY_VIEWPORT_DBUS_INTERFACE	"org.openmoko.diversity.viewport"
-
-#define DIVERSITY_OBJECT_DBUS_PATH		"/org/openmoko/diversity/object"
 #define DIVERSITY_OBJECT_DBUS_INTERFACE		"org.openmoko.diversity.object"
+#define DIVERSITY_BARD_DBUS_INTERFACE		"org.openmoko.diversity.bard"
+#define DIVERSITY_TAG_DBUS_INTERFACE		"org.openmoko.diversity.tag"
 
+#define DIVERSITY_EQUIPMENT_DBUS_INTERFACE	"org.openmoko.diversity.equipment"
 #define DIVERSITY_ATLAS_DBUS_INTERFACE		"org.openmoko.diversity.atlas"
+#define DIVERSITY_SMS_DBUS_INTERFACE		"org.openmoko.diversity.sms"
 
 enum _DiversityObjectType {
 	DIVERSITY_OBJECT_TYPE_OBJECT,
@@ -718,6 +725,34 @@ e_nav_world_viewport_remove(E_Nav_World *world, E_Nav_Viewport *view)
    e_nav_viewport_destroy(view);
 }
 
+E_Nav_Bard *
+e_nav_world_get_self(E_Nav_World *world)
+{
+   E_Nav_Bard *self;
+   DBusError error;
+   char *path;
+
+   if (!world) return NULL;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(world->proxy,
+				 "GetSelf", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_OBJECT_PATH, &path,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to get self: %s\n", error.message);
+	dbus_error_free(&error);
+
+	return NULL;
+     }
+
+   self = e_nav_bard_new(path);
+   free(path);
+
+   return self;
+}
+
 E_Nav_Viewport *
 e_nav_viewport_new(const char *path)
 {
@@ -732,10 +767,6 @@ e_nav_viewport_new(const char *path)
    view = calloc(1, sizeof(E_Nav_Viewport));
    if (!view) return NULL;
 
-   view->path = strdup(path);
-   if (!view->path)
-     goto fail;
-
    view->proxy = e_dbus_proxy_new_for_name(connection,
 					   DIVERSITY_DBUS_SERVICE,
 					   path,
@@ -743,12 +774,11 @@ e_nav_viewport_new(const char *path)
    if (!view->proxy)
      goto fail;
 
+   view->path = e_dbus_proxy_get_path(view->proxy);
+
    return view;
 
 fail:
-   if (view->path)
-     free(view->path);
-
    free(view);
 
    return NULL;
@@ -760,28 +790,81 @@ e_nav_viewport_destroy(E_Nav_Viewport *view)
    if (!view) return;
 
    e_dbus_proxy_destroy(view->proxy);
-   e_dbus_proxy_destroy(view->atlas);
-
-   free(view->path);
 
    free(view);
 }
 
-E_DBus_Proxy *
-e_nav_viewport_atlas_proxy_get(E_Nav_Viewport *view)
+E_Nav_Bard *
+e_nav_bard_new(const char *path)
 {
-   if (!view->atlas)
+   E_Nav_Bard *bard;
+   E_DBus_Connection *connection;
+
+   if (!path) return NULL;
+
+   connection = e_nav_dbus_connection_get();
+   if (!connection) return NULL;
+
+   bard = calloc(1, sizeof(E_Nav_Bard));
+   if (!bard) return NULL;
+
+   bard->proxy = e_dbus_proxy_new_for_name(connection,
+					   DIVERSITY_DBUS_SERVICE,
+					   path,
+					   DIVERSITY_BARD_DBUS_INTERFACE);
+   if (!bard->proxy)
+     goto fail;
+
+   bard->path = e_dbus_proxy_get_path(bard->proxy);
+
+   return bard;
+
+fail:
+   free(bard);
+
+   return NULL;
+}
+
+void
+e_nav_bard_destroy(E_Nav_Bard *bard)
+{
+   if (!bard) return;
+
+   e_dbus_proxy_destroy(bard->proxy);
+   if (bard->atlas)
+      e_dbus_proxy_destroy(bard->atlas);
+
+   free(bard);
+}
+
+E_DBus_Proxy *
+e_nav_bard_equipment_get(E_Nav_Bard *bard, const char *eqp, const char *interface)
+{
+   if (strcmp(eqp, "osm") != 0 ||
+       strcmp(interface, DIVERSITY_ATLAS_DBUS_INTERFACE) != 0)
+     return NULL;
+
+   if (!bard->atlas)
      {
 	E_DBus_Connection *connection;
+	char *path;
 
 	connection = e_nav_dbus_connection_get();
 	if (!connection) return NULL;
 
-	view->atlas = e_dbus_proxy_new_for_name(connection,
-						DIVERSITY_DBUS_SERVICE,
-						view->path,
-						DIVERSITY_ATLAS_DBUS_INTERFACE);
-   }
+	path = malloc(strlen(bard->path) + 1 +
+			strlen("equipments") + 1 + strlen(eqp) + 1);
 
-   return view->atlas;
+	if (!path) return NULL;
+
+	sprintf(path, "%s/equipments/%s", bard->path, eqp);
+
+	bard->atlas = e_dbus_proxy_new_for_name(connection,
+						DIVERSITY_DBUS_SERVICE,
+						path,
+						DIVERSITY_ATLAS_DBUS_INTERFACE);
+	free(path);
+     }
+
+   return bard->atlas;
 }

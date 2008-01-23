@@ -32,7 +32,10 @@ diversity_nav_SOURCES =		\
 	e_nav_item_link.c	\
 	e_nav_dbus.c
 		    
-diversity_nav_LDADD = $(EFL_LIBS) $(EDBUS_LIBS) ../dbus/libedbus-proxy.la
+diversity_nav_LDADD =		\
+	$(EFL_LIBS)		\
+	$(EDBUS_LIBS)		\
+	../dbus/libedbus-proxy.la
 
 clean-local:
 	rm -rf *~

@@ -5,6 +5,7 @@
 
 typedef struct _E_Nav_World E_Nav_World;
 typedef struct _E_Nav_Viewport E_Nav_Viewport;
+typedef struct _E_Nav_Bard E_Nav_Bard;
 
 typedef struct _Object_Proxy Object_Proxy;
 
@@ -17,9 +18,13 @@ void                e_nav_world_destroy(E_Nav_World *world);
 E_DBus_Proxy       *e_nav_world_proxy_get(E_Nav_World *world);
 E_Nav_Viewport     *e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lon2, double lat2);
 void                e_nav_world_viewport_remove(E_Nav_World *world, E_Nav_Viewport *view);
+E_Nav_Bard         *e_nav_world_get_self(E_Nav_World *world);
 
 E_Nav_Viewport     *e_nav_viewport_new(const char *path);
 void                e_nav_viewport_destroy(E_Nav_Viewport *view);
-E_DBus_Proxy       *e_nav_viewport_atlas_proxy_get(E_Nav_Viewport *view);
+
+E_Nav_Bard         *e_nav_bard_new(const char *path);
+void                e_nav_bard_destroy(E_Nav_Bard *bard);
+E_DBus_Proxy       *e_nav_bard_equipment_get(E_Nav_Bard *bard, const char *eqp, const char *interface);
 
 #endif

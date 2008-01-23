@@ -23,7 +23,7 @@
 /* setup and teardown */
 static Evas_Object *nav = NULL;
 static E_Nav_World *world = NULL;
-static E_Nav_Viewport *view = NULL;
+static E_Nav_Bard *self = NULL;
 
 static void add_city(Evas* evas, double lat, double lon, const char* cityname);
 static void test_map(Evas* evas);
@@ -122,15 +122,36 @@ map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
 {
-   Evas_Object *nt;
-
-   nt = e_nav_tileset_add(nav, E_NAV_TILESET_FORMAT_OSM, "/tmp");
+   E_DBus_Proxy *proxy = NULL;
+   Evas_Object *nt = NULL;
 
    if (world)
-	view = e_nav_world_viewport_add(world, -180.0, -90.0, 180.0, 90.0);
+     {
+	self = e_nav_world_get_self(world);
+	if (self)
+	  proxy = e_nav_bard_equipment_get(self,
+		"osm", "org.openmoko.diversity.atlas");
+     }
 
-   if (view)
-     e_nav_tileset_proxy_set(nt, e_nav_viewport_atlas_proxy_get(view));
+
+   if (proxy)
+     {
+	char *path;
+
+	if (e_dbus_proxy_simple_call(proxy, "GetPath",
+				     NULL,
+				     DBUS_TYPE_INVALID,
+				     DBUS_TYPE_STRING, &path,
+				     DBUS_TYPE_INVALID))
+	  {
+	     nt = e_nav_tileset_add(nav,
+		   E_NAV_TILESET_FORMAT_OSM, path);
+	     e_nav_tileset_proxy_set(nt, proxy);
+	     free(path);
+	  }
+	else
+	  e_dbus_proxy_destroy(proxy);
+     }
 
    return nt;
 }
@@ -246,10 +267,10 @@ _e_mod_nav_shutdown(void)
 
    if (world)
      {
-	if (view)
+	if (self)
 	  {
-	     e_nav_world_viewport_remove(world, view);
-	     view = NULL;
+	     e_nav_bard_destroy(self);
+	     self = NULL;
 	  }
 	e_nav_world_destroy(world);
 	world = NULL;

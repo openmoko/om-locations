@@ -301,11 +301,11 @@ e_nav_tileset_proxy_set(Evas_Object *obj, E_DBus_Proxy *proxy)
      return;
 
    if (sd->proxy)
-     e_dbus_proxy_disconnect_signal(sd->proxy, "OverlayChanged",
+     e_dbus_proxy_disconnect_signal(sd->proxy, "TileCompleted",
 				    job_completed_cb, obj);
 
    sd->proxy = proxy;
-   e_dbus_proxy_connect_signal(sd->proxy, "OverlayChanged",
+   e_dbus_proxy_connect_signal(sd->proxy, "TileCompleted",
 			       job_completed_cb, obj);
 }
 
@@ -392,7 +392,7 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
    evas_object_del(sd->clip);
 
    if (sd->proxy)
-     e_dbus_proxy_disconnect_signal(sd->proxy, "OverlayChanged",
+     e_dbus_proxy_disconnect_signal(sd->proxy, "TileCompleted",
 				    job_completed_cb, obj);
    ecore_hash_destroy(sd->jobs);
 
@@ -542,13 +542,13 @@ job_submit(Evas_Object *obj, E_Nav_Tile_Job *job, int force)
 	return 1;
      }
 
-   if (!e_dbus_proxy_simple_call(sd->proxy, "GetTile",
+   if (!e_dbus_proxy_simple_call(sd->proxy, "SubmitTile",
 				 NULL,
 				 DBUS_TYPE_INT32, &job->x,
 				 DBUS_TYPE_INT32, &job->y,
 				 DBUS_TYPE_BOOLEAN, &force,
 				 DBUS_TYPE_INVALID,
-				 DBUS_TYPE_INT32, &id,
+				 DBUS_TYPE_UINT32, &id,
 				 DBUS_TYPE_INVALID))
      {
 	printf("failed to get tile\n");
@@ -580,9 +580,9 @@ job_cancel(Evas_Object *obj, E_Nav_Tile_Job *job)
 
    printf("job %d cancelled\n", job->id);
 
-   e_dbus_proxy_simple_call(sd->proxy, "CancelJob",
+   e_dbus_proxy_simple_call(sd->proxy, "CancelTile",
 			    NULL,
-			    DBUS_TYPE_INT32, &job->id,
+			    DBUS_TYPE_UINT32, &job->id,
 			    DBUS_TYPE_INVALID,
 			    DBUS_TYPE_INVALID);
 
@@ -606,7 +606,7 @@ job_completed_cb(void *data, DBusMessage *message)
    if (!sd || !sd->proxy) return;
 
    if (!dbus_message_get_args(message, NULL,
-			      DBUS_TYPE_INT32, &id,
+			      DBUS_TYPE_UINT32, &id,
 			      DBUS_TYPE_INT32, &status,
 			      DBUS_TYPE_INVALID))
      return;
@@ -704,21 +704,19 @@ _e_nav_tileset_tile_get(Evas_Object *obj, int i, int j)
    job->x = x;
    job->y = y;
 
-   snprintf(buf, sizeof(buf), "%s/%s_%i_%i_%i.%s",
-			   sd->dir, sd->map,
-			   job->level, job->x, job->y,
-			   sd->suffix);
+   snprintf(buf, sizeof(buf), "%s/%s/%d/%d/%d.%s",
+		   sd->dir, sd->map,
+		   job->level, x, y, sd->suffix);
 
    evas_object_image_file_set(job->obj, buf, NULL);
    if (evas_object_image_load_error_get(job->obj) == EVAS_LOAD_ERROR_NONE)
-      evas_object_show(job->obj);
+     {
+	   evas_object_show(job->obj);
+     }
    else
      {
-	     printf("%p load %s failed\n", job->obj, buf);
+	printf("%p load %s failed\n", job->obj, buf);
 	evas_object_hide(job->obj);
-
-	//evas_object_image_file_set(job->obj, "/tmp/error.png", NULL);
-	//evas_object_show(job->obj);
 
 	job_submit(obj, job, 1);
      }
