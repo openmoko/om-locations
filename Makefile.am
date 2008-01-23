@@ -20,7 +20,6 @@ EXTRA_DIST =				\
 	$(files_DATA)			\
 	$(applications_DATA)		\
 	diversity_nav.edc		\
-	e-module-diversity_nav.edc	\
 	fonts/Vera.ttf			\
 	fonts/VeraBd.ttf
 
