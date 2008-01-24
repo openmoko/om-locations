@@ -160,8 +160,9 @@ void
 _e_mod_nav_init(Evas *evas)
 {
    Evas_Object *nwi, *nt;
-   int w, h;
    
+   if (nav) return;
+
    nav = e_nav_add(evas);
    e_nav_theme_source_set(nav, THEME_PATH);
 
@@ -253,11 +254,20 @@ _e_mod_nav_init(Evas *evas)
    e_nav_zoom_set(nav, 80000, 0.0);
    e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
             
-   /* put the nav object somewhere useful at a decent size and show it */
+   _e_mod_nav_update(evas);
+   evas_object_show(nav);
+}
+
+void
+_e_mod_nav_update(Evas *evas)
+{
+   int w, h;
+   
+   if (!nav) return;
+
    evas_object_move(nav, 0, 0);
    evas_output_size_get(evas, &w, &h);
    evas_object_resize(nav, w, h);
-   evas_object_show(nav);
 }
 
 void

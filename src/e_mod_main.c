@@ -56,13 +56,21 @@ on_delete_request(Ecore_Evas *ee)
 }
 
 static void
-on_show_or_resize(Ecore_Evas *ee)
+on_show(Ecore_Evas *ee)
 {
    Evas *evas;
 
-   _e_mod_nav_shutdown();
    evas = ecore_evas_get(ee);
    _e_mod_nav_init(evas);
+}
+
+static void
+on_resize(Ecore_Evas *ee)
+{
+   Evas *evas;
+
+   evas = ecore_evas_get(ee);
+   _e_mod_nav_update(evas);
 }
 
 int
@@ -84,8 +92,8 @@ main(int argc, char **argv)
 
    ecore_evas_title_set(ee, PACKAGE_NAME);
    ecore_evas_callback_delete_request_set(ee, on_delete_request);
-   ecore_evas_callback_show_set(ee, on_show_or_resize);
-   ecore_evas_callback_resize_set(ee, on_show_or_resize);
+   ecore_evas_callback_show_set(ee, on_show);
+   ecore_evas_callback_resize_set(ee, on_resize);
 
    ecore_evas_show(ee);
 
