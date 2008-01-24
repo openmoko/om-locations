@@ -1101,7 +1101,6 @@ static void _e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *
      }
 
    e_nav_tileset_to_offsets(sd->tilesets->data, lat, -lon, x, y);
-   *y = -*y;
 }
 
 static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lat, double *lon)
@@ -1118,6 +1117,7 @@ static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *la
      }
 
    e_nav_tileset_from_offsets(sd->tilesets->data, x, y, lat, lon);
+   *lon = -*lon;
 }
 
 /* nav world internal calls - move to the end later */

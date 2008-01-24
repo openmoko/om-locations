@@ -67,6 +67,9 @@ static int job_submit(Evas_Object *obj, E_Nav_Tile_Job *job, int force);
 static void job_cancel(Evas_Object *obj, E_Nav_Tile_Job *job);
 static void job_completed_cb(void *data, DBusMessage *message);
 
+inline static void mercator_project(double lon, double lat, double *x, double *y);
+inline static void mercator_project_inv(double x, double y, double *lon, double *lat);
+
 static int _e_nav_tileset_check(Evas_Object *obj);
 static void _e_nav_tileset_reset(Evas_Object *obj, int w, int h);
 static Evas_Object *_e_nav_tileset_tile_get(Evas_Object *obj, int x, int y);
@@ -173,6 +176,9 @@ e_nav_tileset_span_set(Evas_Object *obj, int span)
    
    SMART_CHECK(obj, ;);
 
+   if (span < 0)
+     span = 0;
+
    level = (int) ((log((double) span / sd->size) / M_LOG2) + 0.5);
 
    sd->span = span;
@@ -232,32 +238,46 @@ void
 e_nav_tileset_to_offsets(Evas_Object *obj, double lon, double lat, double *x, double *y)
 {
    E_Smart_Data *sd;
-   double tmp;
+   double ox, oy;
 
    SMART_CHECK(obj, ;);
 
-   if (x)
-     *x = (lon - sd->lon) * sd->span / 360.0;
+   mercator_project(sd->lon, sd->lat, &ox, &oy);
+   mercator_project(lon, lat, x, y);
 
-   tmp = cos(RADIANS(sd->lat));
-   if (tmp == 0.0)
-     tmp = 0.0000001;
+   if (x)
+     *x = (*x - ox) * sd->span;
 
    if (y)
-     *y = (lat - sd->lat) * sd->span / 360.0 / tmp;
+     *y = (*y - oy) * sd->span;
 }
 
 void
 e_nav_tileset_from_offsets(Evas_Object *obj, double x, double y, double *lon, double *lat)
 {
    E_Smart_Data *sd;
+   double ox, oy;
+   int span;
 
    SMART_CHECK(obj, ;);
 
+   mercator_project(sd->lon, sd->lat, &ox, &oy);
+
+   span = (sd->span) ? sd->span : 1;
+   ox += x / span;
+   oy += y / span;
+
+   if (ox < 0.0)
+     ox = 0.0;
+   else if (ox > 1.0)
+     ox = 1.0;
+
+   mercator_project_inv(ox, oy, lon, lat);
+
    if (lon)
-     *lon = x * 360.0 / sd->span;
+     *lon -= sd->lon;
    if (lat)
-     *lat = y * 360.0 * cos(RADIANS(sd->lat)) / sd->span;
+     *lat -= sd->lat;
 }
 
 void
@@ -650,7 +670,11 @@ mercator_project(double lon, double lat, double *x, double *y)
 {
    double tmp;
 
-   *x = (lon + 180.0) / 360.0;
+   if (x)
+     *x = (lon + 180.0) / 360.0;
+
+   if (!y)
+     return;
 
    /* avoid NaN */
    if (lat > 89.99)
@@ -661,6 +685,16 @@ mercator_project(double lon, double lat, double *x, double *y)
    tmp = RADIANS(lat);
    tmp = log(tan(tmp) + 1.0 / cos(tmp));
    *y = (1.0 - tmp / M_PI) / 2.0;
+}
+
+inline static void
+mercator_project_inv(double x, double y, double *lon, double *lat)
+{
+   if (lon)
+     *lon = -180.0 + x * 360.0;
+
+   if (lat)
+      *lat = DEGREES(atan(sinh((1.0 - y * 2.0) * M_PI)));
 }
 
 static Evas_Object *
