@@ -1,0 +1,25 @@
+
+fonts {
+   font: "Vera.ttf"   "Edje-Vera";
+   font: "VeraBd.ttf" "Edje-Vera-Bold";
+}
+
+spectra {
+  spectrum {
+    name: "black_to_trans";
+    color: 0 0 0 255 1;
+    color: 0 0 0 0 1;
+  }
+   spectrum 
+     {
+	name: "rubberband";
+	color: 255 231 157 127 1;
+	color: 255 249 231 127 1;
+     }
+}
+
+
+collections {
+#include "default_ilist.edc"
+}
+

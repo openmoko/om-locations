@@ -11,6 +11,7 @@ images {
    image: "ap_signal.png" COMP;
    image: "neo.png" COMP;
    image: "neo_other.png" COMP;
+   image: "button.png" COMP;
 }
 
 /* define any fonts we specifically want to use (totally optional) */
@@ -25,6 +26,245 @@ collections {
       /* the main object here */
       name: "modules/diversity_nav/main";
       parts {
+	 part { name: "e.image.footer";
+	    type: RECT;
+	    mouse_events: 0;
+	    description { state: "default" 0.0;
+	       min: 480 50;
+	       fixed: 1 1;
+	       color: 0 0 0 255;
+	       rel1 {
+		  relative: 0.0 1.0;
+		  offset: 0 -1;
+	       }
+	       rel2 {
+		  relative: 1.0 1.0;
+		  offset: 0 -1;
+	       }
+	       align: 0.5 1.0;
+	    }
+	 }  
+         part { name: "e.button.tagbook";
+	    mouse_events: 1;
+            effect: SOFT_SHADOW;
+            description { state: "default" 0.0;
+               min: 40 40;
+               max: 40 40;
+               fixed: 1 1;
+               rel1 {
+                   relative: 0.0 0.0;
+                   offset: 0 0;
+                    to: "e.image.footer";
+               }
+               rel2 {
+                   relative: 1.0 1.0;
+                   offset: 0 0;
+                    to: "e.image.footer";
+               }
+               align: 0.0 0.5;
+               image.normal: "button.png";
+            }      
+         }
+         part { name: "e.button.map";
+	    mouse_events: 1;
+            description { state: "default" 0.0;
+               min: 120 40;
+               max: 120 40;
+               fixed: 1 1;
+               rel1 {
+                   relative: 0.0 0.0;
+                   offset: 0 0;
+                    to: "e.button.satellite";
+               }
+               rel2 {
+                   relative: 0.0 1.0;
+                   offset: 0 0;
+                    to: "e.button.satellite";
+               }
+               align: 1.0 0.5;
+               image.normal: "button.png";
+            }      
+         } 
+         part { name: "e.button.satellite";
+	    mouse_events: 1;
+            description { state: "default" 0.0;
+               min: 120 40;
+               max: 120 40;
+               fixed: 1 1;
+               rel1 {
+                   relative: 0.0 0.0;
+                   offset: 0 0;
+                    to: "e.image.footer";
+               }
+               rel2 {
+                   relative: 1.0 1.0;
+                   offset: 0 0;
+                    to: "e.image.footer";
+               }
+               align: 0.5 0.5;
+               image.normal: "button.png";
+            }      
+         } 
+         part { name: "e.button.list";
+	    mouse_events: 1;
+            description { state: "default" 0.0;
+               min: 120 40;
+               max: 120 40;
+               fixed: 1 1;
+               rel1 {
+                   relative: 1.0 0.0;
+                   offset: 0 0;
+                    to: "e.button.satellite";
+               }
+               rel2 {
+                   relative: 1.0 1.0;
+                   offset: 0 0;
+                    to: "e.button.satellite";
+               }
+               align: 0.0 0.5;
+               image.normal: "button.png";
+            }      
+         }
+         part { name: "e.button.refresh";
+	    mouse_events: 1;
+            description { state: "default" 0.0;
+               min: 40 40;
+               max: 40 40;
+               fixed: 1 1;
+               rel1 {
+                   relative: 0.0 0.0;
+                   offset: 0 0;
+                    to: "e.image.footer";
+               }
+               rel2 {
+                   relative: 1.0 1.0;
+                   offset: 0 0;
+                    to: "e.image.footer";
+               }
+               align: 1.0 0.5;
+               image.normal: "button.png";
+            }      
+         }
+         part { name: "e.button.tagbook.label";
+	    type: TEXT;
+	    mouse_events: 0;
+	    description { state: "default" 0.0;
+	       rel1 {
+		  relative: 0.0 0.0;
+		  offset: 0 0;
+                  to: "e.button.tagbook";
+	       }
+	       rel2 {
+		  relative: 1.0 1.0;
+		  offset: 0 0;
+                  to: "e.button.tagbook";
+	       }
+	       color: 0 0 0 255;
+	       text {
+                  text: "T"; 
+		  font: "Sans:style=Bold,Edje-Vera-Bold";
+		  size: 16;
+		  min: 1 1;
+		  align: 0.5 0.5;
+	       }
+	    }
+         }
+         part { name: "e.button.map.label";
+	    type: TEXT;
+	    mouse_events: 0;
+	    description { state: "default" 0.0;
+	       rel1 {
+		  relative: 0.0 0.0;
+		  offset: 0 0;
+                  to: "e.button.map";
+	       }
+	       rel2 {
+		  relative: 1.0 1.0;
+		  offset: 0 0;
+                  to: "e.button.map";
+	       }
+	       color: 0 0 0 255;
+	       text {
+                  text: "Map"; 
+		  font: "Sans:style=Bold,Edje-Vera-Bold";
+		  size: 16;
+		  min: 1 1;
+		  align: 0.5 0.5;
+	       }
+	    }
+         }
+         part { name: "e.button.satellite.label";
+	    type: TEXT;
+	    mouse_events: 0;
+	    description { state: "default" 0.0;
+	       rel1 {
+		  relative: 0.0 0.0;
+		  offset: 0 0;
+                  to: "e.button.satellite";
+	       }
+	       rel2 {
+		  relative: 1.0 1.0;
+		  offset: 0 0;
+                  to: "e.button.satellite";
+	       }
+	       color: 0 0 0 255;
+	       text {
+                  text: "Satellite"; 
+		  font: "Sans:style=Bold,Edje-Vera-Bold";
+		  size: 16;
+		  min: 1 1;
+		  align: 0.5 0.5;
+	       }
+	    }
+         }
+         part { name: "e.button.list.label";
+	    type: TEXT;
+	    mouse_events: 0;
+	    description { state: "default" 0.0;
+	       rel1 {
+		  relative: 0.0 0.0;
+		  offset: 0 0;
+                  to: "e.button.list";
+	       }
+	       rel2 {
+		  relative: 1.0 1.0;
+		  offset: 0 0;
+                  to: "e.button.list";
+	       }
+	       color: 0 0 0 255;
+	       text {
+                  text: "List"; 
+		  font: "Sans:style=Bold,Edje-Vera-Bold";
+		  size: 16;
+		  min: 1 1;
+		  align: 0.5 0.5;
+	       }
+	    }
+         }
+         part { name: "e.button.refresh.label";
+	    type: TEXT;
+	    mouse_events: 0;
+	    description { state: "default" 0.0;
+	       rel1 {
+		  relative: 0.0 0.0;
+		  offset: 0 0;
+                  to: "e.button.refresh";
+	       }
+	       rel2 {
+		  relative: 1.0 1.0;
+		  offset: 0 0;
+                  to: "e.button.refresh";
+	       }
+	       color: 0 0 0 255;
+	       text {
+                  text: "R"; 
+		  font: "Sans:style=Bold,Edje-Vera-Bold";
+		  size: 16;
+		  min: 1 1;
+		  align: 0.5 0.5;
+	       }
+	    }
+         }
 	 part { name: "zoom_base";
 	    type: RECT;
 	    mouse_events: 0;
@@ -163,6 +403,7 @@ collections {
 	 }
       }
       programs { /* programs - where we react to events/signals */
+          
       }
    }
    group {

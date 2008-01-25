@@ -7,6 +7,7 @@
 #include "e_nav_item_link.h"
 #include "e_nav_dbus.h"
 #include "e_nav_tileset.h"
+#include "e_ctrl.h"
 
 /* FIXME: need objects:
  * 
@@ -21,6 +22,7 @@
 
 /* create (and destroy) a nav object on the desktop bg */
 /* setup and teardown */
+static Evas_Object *ctrl = NULL;
 static Evas_Object *nav = NULL;
 static E_Nav_World *world = NULL;
 static E_Nav_Bard *self = NULL;
@@ -160,7 +162,7 @@ void
 _e_mod_nav_init(Evas *evas)
 {
    Evas_Object *nwi, *nt;
-   
+
    if (nav) return;
 
    nav = e_nav_add(evas);
@@ -171,6 +173,11 @@ _e_mod_nav_init(Evas *evas)
 
    nt = osm_tileset_add(nav);
    evas_object_show(nt);
+
+   ctrl = e_ctrl_add(evas);
+   e_ctrl_theme_source_set(ctrl, THEME_PATH);
+   e_ctrl_nav_set(nav);
+   evas_object_show(ctrl);
 
    /* testing items */
    test_map(evas); 
@@ -256,6 +263,7 @@ _e_mod_nav_init(Evas *evas)
             
    _e_mod_nav_update(evas);
    evas_object_show(nav);
+   evas_object_show(ctrl);
 }
 
 void
@@ -268,6 +276,9 @@ _e_mod_nav_update(Evas *evas)
    evas_object_move(nav, 0, 0);
    evas_output_size_get(evas, &w, &h);
    evas_object_resize(nav, w, h);
+   evas_object_resize(ctrl, w, h);
+   evas_object_show(nav);
+   evas_object_show(ctrl);
 }
 
 void

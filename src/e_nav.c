@@ -1,5 +1,6 @@
 #include "e_nav.h"
 #include "e_nav_tileset.h"
+#include "e_ctrl.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -33,7 +34,6 @@ struct _E_Smart_Data
    Evas_Object     *underlay;
    Evas_Object     *clip;
    Evas_Object     *stacking;
-   Evas_Object     *overlay;
    Evas_Object     *event;
    
    /* the list of items in the world as we have been told by the backend */
@@ -97,7 +97,6 @@ static void _e_nav_cb_event_mouse_up(void *data, Evas *evas, Evas_Object *obj, v
 static void _e_nav_cb_event_mouse_move(void *data, Evas *evas, Evas_Object *obj, void *event);
 static void _e_nav_cb_event_mouse_wheel(void *data, Evas *evas, Evas_Object *obj, void *event);
 
-static Evas_Object *_e_nav_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
 static void _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, Evas_Coord y);
 static void _e_nav_update(Evas_Object *obj);
 static void _e_nav_overlay_update(Evas_Object *obj);
@@ -105,10 +104,6 @@ static int _e_nav_momentum_calc(Evas_Object *obj, double t);
 static void _e_nav_wallpaper_update(Evas_Object *obj);
 static int _e_nav_cb_animator_momentum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
-
-static void _e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source);
-static void _e_nav_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, const char *source);
-static void _e_nav_cb_signal_drag_stop(void *data, Evas_Object *obj, const char *emission, const char *source);
 
 static void _e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *x, double *y);
 static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lat, double *lon);
@@ -120,8 +115,6 @@ static void _e_nav_world_item_cb_item_del(void *data, Evas *evas, Evas_Object *o
 
 static Evas_Smart *_e_smart = NULL;
 
-#define E_NAV_ZOOM_MAX (M_EARTH_RADIUS / 50)
-#define E_NAV_ZOOM_MIN 0.5
 
 #define SMART_CHECK(obj, ret) \
    sd = evas_object_smart_data_get(obj); \
@@ -151,15 +144,6 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_clip_set(sd->event, sd->clip);
    evas_object_repeat_events_set(sd->event, 1);
    evas_object_show(sd->event);
-   
-   sd->overlay = _e_nav_theme_obj_new(evas_object_evas_get(obj), sd->dir,
-				      "modules/diversity_nav/main");
-   evas_object_smart_member_add(sd->overlay, obj);
-   evas_object_move(sd->overlay, sd->x, sd->y);
-   evas_object_resize(sd->overlay, sd->w, sd->h);
-   evas_object_clip_set(sd->overlay, sd->clip);
-
-   evas_object_show(sd->overlay);
 
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_cb_event_mouse_down, obj);
@@ -170,12 +154,6 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_WHEEL,
 				  _e_nav_cb_event_mouse_wheel, obj);
 
-   edje_object_signal_callback_add(sd->overlay, "drag", "*", _e_nav_cb_signal_drag, sd);
-   edje_object_signal_callback_add(sd->overlay, "drag,start", "*", _e_nav_cb_signal_drag_start, sd);
-   edje_object_signal_callback_add(sd->overlay, "drag,stop", "*", _e_nav_cb_signal_drag_stop, sd);
-   edje_object_signal_callback_add(sd->overlay, "drag,step", "*", _e_nav_cb_signal_drag_stop, sd);
-   edje_object_signal_callback_add(sd->overlay, "drag,set", "*", _e_nav_cb_signal_drag_stop, sd);
-   
    _e_nav_wallpaper_update(obj);
    _e_nav_overlay_update(obj);
 }
@@ -248,7 +226,8 @@ e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
 
    y = (zoom - E_NAV_ZOOM_MIN) / (E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN);
    y = sqrt(sqrt(y));
-   edje_object_part_drag_value_set(sd->overlay, "e.dragable.zoom", 0.0, y);
+   e_ctrl_zoom_drag_value_set(y);
+
    if (when == 0.0)
      {
 	sd->cur.target.zoom_time = 0.0;
@@ -511,7 +490,6 @@ _e_nav_smart_del(Evas_Object *obj)
    evas_object_del(sd->clip);
    evas_object_del(sd->stacking);
    evas_object_del(sd->event);
-   evas_object_del(sd->overlay);
    if (sd->cur.momentum_animator) ecore_animator_del(sd->cur.momentum_animator);
    if (sd->moveng.pause_timer) ecore_timer_del(sd->moveng.pause_timer);
    while (sd->world_items)
@@ -552,7 +530,6 @@ _e_nav_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    evas_object_move(sd->underlay, sd->x, sd->y);
    evas_object_move(sd->clip, sd->x, sd->y);
    evas_object_move(sd->stacking, sd->x, sd->y);
-   evas_object_move(sd->overlay, sd->x, sd->y);
    evas_object_move(sd->event, sd->x, sd->y);
 
    for (l = sd->tilesets; l; l = l->next)
@@ -574,7 +551,6 @@ _e_nav_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    evas_object_resize(sd->underlay, sd->w, sd->h);
    evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_resize(sd->stacking, sd->w, sd->h);
-   evas_object_resize(sd->overlay, sd->w, sd->h);
    evas_object_resize(sd->event, sd->w, sd->h);
 
    for (l = sd->tilesets; l; l = l->next)
@@ -666,7 +642,7 @@ _e_nav_cb_event_mouse_move(void *data, Evas *evas, Evas_Object *obj, void *event
 {
    Evas_Event_Mouse_Move *ev = event;
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(data);
    if (sd->cur.mouse_down)
      _e_nav_movengine(data, E_NAV_MOVEENGINE_GO, ev->cur.canvas.x, ev->cur.canvas.y);
@@ -677,32 +653,13 @@ _e_nav_cb_event_mouse_wheel(void *data, Evas *evas, Evas_Object *obj, void *even
 {
    Evas_Event_Mouse_Wheel *ev = event;
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(data);
    if (ev->direction == 0)
      {
 	if (ev->z > 0) e_nav_zoom_set(data, sd->conf.zoom * 2.0, 1.0);
        else e_nav_zoom_set(data, sd->conf.zoom / 2.0, 1.0);
      }
-}
-
-static Evas_Object *
-_e_nav_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "diversity_nav", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/diversity_nav.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
 }
 
 static void
@@ -906,7 +863,7 @@ _e_nav_overlay_update(Evas_Object *obj)
      snprintf(buf, sizeof(buf), "%1.2fm", z);
    /* and set the text that is there to what we snprintf'd into the buffer
     * aboe */
-   edje_object_part_text_set(sd->overlay, "e.text.zoom", buf);
+   e_ctrl_zoom_text_value_set(buf);
    
    lat = sd->lat;
    if (lat >= 0.0) xdir = "E";
@@ -921,7 +878,7 @@ _e_nav_overlay_update(Evas_Object *obj)
    lat = (lat - (double)latm) * 60.0;
    lats = (int)lat;
    snprintf(buf, sizeof(buf), "%i°%i'%i\"%s", latd, latm, lats, xdir);
-   edje_object_part_text_set(sd->overlay, "e.text.latitude", buf);
+   e_ctrl_latitude_set(buf);
    
    lon = sd->lon;
    if (lon >= 0.0) ydir = "S";
@@ -936,7 +893,7 @@ _e_nav_overlay_update(Evas_Object *obj)
    lon = (lon - (double)lonm) * 60.0;
    lons = (int)lon;
    snprintf(buf, sizeof(buf), "%i°%i'%i\"%s", lond, lonm, lons, ydir);
-   edje_object_part_text_set(sd->overlay, "e.text.longitude", buf);
+   e_ctrl_longitude_set(buf);
 }
 
 static int
@@ -1042,49 +999,6 @@ _e_nav_cb_timer_moveng_pause(void *data)
 		  1.0);
    sd->moveng.pause_timer = NULL;
    return 0;
-}
-
-static void
-_e_nav_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source)
-{
-   E_Smart_Data *sd;
-   
-   sd = data;
-     {
-	double x = 0, y = 0, z;
-	
-	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
-	y = (y * y) * (y * y);
-
-	z = E_NAV_ZOOM_MIN + ((E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN) * y);
-	e_nav_zoom_set(sd->obj, z, 0.2);
-     }
-}
-
-static void
-_e_nav_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, const char *source)
-{
-   E_Smart_Data *sd;
-   
-   sd = data;
-     {
-	double x = 0, y = 0;
-	
-	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
-     }
-}
-
-static void
-_e_nav_cb_signal_drag_stop(void *data, Evas_Object *obj, const char *emission, const char *source)
-{
-   E_Smart_Data *sd;
-   
-   sd = data;
-     {
-	double x = 0, y = 0;
-	
-	edje_object_part_drag_value_get(sd->overlay, "e.dragable.zoom", &x, &y);
-     }
 }
 
 static void _e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *x, double *y)
