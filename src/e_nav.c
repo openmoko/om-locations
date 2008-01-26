@@ -115,7 +115,6 @@ static void _e_nav_world_item_cb_item_del(void *data, Evas *evas, Evas_Object *o
 
 static Evas_Smart *_e_smart = NULL;
 
-
 #define SMART_CHECK(obj, ret) \
    sd = evas_object_smart_data_get(obj); \
    if (!sd) return ret \
@@ -945,6 +944,7 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
    return done;
 }
 
+#define E_NAV_ZOOM_SPAN(scale) ((int) (M_EARTH_RADIUS * M_PI * 2 / (scale)))
 static void
 _e_nav_wallpaper_update(Evas_Object *obj)
 {
@@ -955,9 +955,12 @@ _e_nav_wallpaper_update(Evas_Object *obj)
    for (l = sd->tilesets; l; l = l->next)
      {
 	Evas_Object *nt = l->data;
+	int span;
+
+	span = E_NAV_ZOOM_SPAN(sd->zoom);
 
 	e_nav_tileset_center_set(nt, sd->lat, -sd->lon);
-	e_nav_tileset_scale_set(nt, sd->zoom);
+	e_nav_tileset_span_set(nt, span);
 	e_nav_tileset_update(nt);
      }
 }
@@ -1029,6 +1032,10 @@ static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *la
 
 	return;
      }
+
+   e_nav_tileset_center_set(sd->tilesets->data,
+	 sd->moveng.start.lat, -sd->moveng.start.lon);
+   /* no need to restore center */
 
    e_nav_tileset_from_offsets(sd->tilesets->data, x, y, lat, lon);
    *lon = -*lon;
