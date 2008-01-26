@@ -6,7 +6,6 @@
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _E_Nav_Tile_Job E_Nav_Tile_Job;
 
-#define NUM_JOB_SLOTS 5
 struct _E_Smart_Data
 {
    Evas_Object *obj;
@@ -18,7 +17,6 @@ struct _E_Smart_Data
    E_DBus_Proxy *proxy;
 
    Ecore_Hash *jobs;
-   int job_count;
 
    E_Nav_Tileset_Format format;
    char *dir;
@@ -68,7 +66,7 @@ static int job_compare(const E_Nav_Tile_Job *job1, const E_Nav_Tile_Job *job2);
 static int job_submit(E_Nav_Tile_Job *job, int force);
 static void job_cancel(E_Nav_Tile_Job *job);
 static void job_completed_cb(void *data, DBusMessage *message);
-static E_Nav_Tile_Job * job_add(Evas_Object *obj, int x, int y);
+static E_Nav_Tile_Job *job_add(Evas_Object *obj, int i, int j);
 static void job_reset(E_Nav_Tile_Job *job, int x, int y);
 static void job_load(E_Nav_Tile_Job *job);
 
@@ -77,6 +75,8 @@ inline static void mercator_project_inv(double x, double y, double *lon, double 
 
 static int _e_nav_tileset_prepare(Evas_Object *obj);
 static void _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h);
+static int _e_nav_tileset_realloc(Evas_Object *obj, int num_jobs);
+static void _e_nav_tileset_free(Evas_Object *obj);
 static Evas_Object *_e_nav_tileset_tile_get(Evas_Object *obj, int x, int y);
 static void _e_nav_tileset_update(Evas_Object *obj);
 
@@ -423,29 +423,7 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
 				    job_completed_cb, obj);
    ecore_hash_destroy(sd->jobs);
 
-   if (sd->tiles.jobs)
-     {
-	int i, j;
-
-	for (j = 0; j < sd->tiles.oh; j++)
-	  {
-	     for (i = 0; i < sd->tiles.ow; i++)
-	       {
-		  E_Nav_Tile_Job *job;
-
-		  job = sd->tiles.jobs[(j * sd->tiles.ow) + i];
-		  if (job)
-		    {
-		       if (job->id)
-			 job_cancel(job);
-		       evas_object_del(job->obj);
-		       free(job);
-		    }
-	       }
-	  }
-	free(sd->tiles.jobs);
-	sd->tiles.jobs = NULL;
-     }
+   _e_nav_tileset_free(obj);
 
    free(sd);
 }
@@ -578,9 +556,6 @@ job_submit(E_Nav_Tile_Job *job, int force)
 
    printf("submit job for tile (%d,%d)@%d\n", job->x, job->y, sd->level);
 
-   if (sd->job_count > NUM_JOB_SLOTS)
-     return 0;
-
    if (job->id)
      {
 	printf("job busy\n");
@@ -616,8 +591,6 @@ job_submit(E_Nav_Tile_Job *job, int force)
 
    ecore_hash_set(sd->jobs, job, job);
 
-   sd->job_count++;
-
    return 1;
 }
 
@@ -631,8 +604,6 @@ job_cancel(E_Nav_Tile_Job *job)
    sd = evas_object_smart_data_get(job->nt);
    if (!sd || !sd->proxy) return;
 
-   printf("job %d cancelled\n", job->id);
-
    e_dbus_proxy_simple_call(sd->proxy, "CancelTile",
 			    NULL,
 			    DBUS_TYPE_UINT32, &job->id,
@@ -641,7 +612,6 @@ job_cancel(E_Nav_Tile_Job *job)
 
    job->id = 0;
    ecore_hash_remove(sd->jobs, job);
-   sd->job_count--;
 }
 
 static void
@@ -673,11 +643,9 @@ job_completed_cb(void *data, DBusMessage *message)
 		  job = sd->tiles.jobs[(j * sd->tiles.ow) + i];
 		  if (job && job->id == id)
 		     break;
-
-		  job = NULL;
 	       }
 
-	     if (job)
+	     if (i < sd->tiles.ow)
 	       break;
 	  }
      }
@@ -695,15 +663,13 @@ job_completed_cb(void *data, DBusMessage *message)
 
    job->id = 0;
    ecore_hash_remove(sd->jobs, job);
-   sd->job_count--;
 }
 
 static E_Nav_Tile_Job *
-job_add(Evas_Object *obj, int x, int y)
+job_add(Evas_Object *obj, int i, int j)
 {
    E_Smart_Data *sd;
    E_Nav_Tile_Job *job;
-   int i, j;
 
    sd = evas_object_smart_data_get(obj);
    if (!sd) return NULL;
@@ -720,17 +686,15 @@ job_add(Evas_Object *obj, int x, int y)
    evas_object_stack_below(job->obj, sd->clip);
    evas_object_image_smooth_scale_set(job->obj, 0);
 
-   i = x - sd->tiles.ox;
-   j = y - sd->tiles.oy;
    sd->tiles.jobs[(j * sd->tiles.ow) + i] = job;
 
    job->level = sd->level;
-   job->x = x;
-   job->y = y;
+   job->x = i + sd->tiles.ox;
+   job->y = j + sd->tiles.oy;
 
    return job;
 }
-
+ 
 static void
 job_reset(E_Nav_Tile_Job *job, int x, int y)
 {
@@ -837,7 +801,7 @@ _e_nav_tileset_tile_get(Evas_Object *obj, int i, int j)
 	job_reset(job, x, y);
      }
    else
-     job = job_add(obj, x, y);
+     job = job_add(obj, i, j);
 
 
    if (TILE_VALID(sd->level, x, y))
@@ -854,7 +818,6 @@ enum {
    MODE_MOVE
 };
 
-#define TILES_CONTAIN(sd)
 static void
 _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h)
 {
@@ -897,16 +860,84 @@ _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h)
 }
 
 static int
+_e_nav_tileset_realloc(Evas_Object *obj, int num_jobs)
+{
+   E_Smart_Data *sd;
+   int i;
+   
+   sd = evas_object_smart_data_get(obj);
+   if (!sd) return 0;
+
+   if (sd->tiles.num_jobs < num_jobs)
+     {
+	void *p;
+
+	p = realloc(sd->tiles.jobs, num_jobs * sizeof(E_Nav_Tile_Job *));
+	if (!p)
+	  return 0;
+
+	sd->tiles.jobs = p;
+
+	num_jobs -= sd->tiles.num_jobs;
+	memset(sd->tiles.jobs + sd->tiles.num_jobs, 0,
+	      num_jobs * sizeof(E_Nav_Tile_Job *));
+
+	sd->tiles.num_jobs += num_jobs;
+     }
+   else
+     {
+	for (i = num_jobs; i < sd->tiles.num_jobs; i++)
+	  {
+	     E_Nav_Tile_Job *job;
+
+	     job = sd->tiles.jobs[i];
+	     if (job)
+	       evas_object_hide(job->obj);
+	  }
+     }
+
+   return 1;
+}
+
+static void _e_nav_tileset_free(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   int i;
+   
+   sd = evas_object_smart_data_get(obj);
+   if (!sd) return;
+   if (!sd->tiles.jobs) return;
+
+   for (i = 0; i < sd->tiles.num_jobs; i++)
+     {
+	E_Nav_Tile_Job *job;
+
+	job = sd->tiles.jobs[i];
+	if (job)
+	  {
+	     if (job->id)
+	       job_cancel(job);
+	     evas_object_del(job->obj);
+	     free(job);
+	  }
+     }
+   free(sd->tiles.jobs);
+
+   sd->tiles.jobs = NULL;
+   sd->tiles.ow = 0;
+   sd->tiles.oh = 0;
+}
+
+static int
 _e_nav_tileset_prepare(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    int tiles_ow, tiles_oh, tiles_ox, tiles_oy;
    int offset_x, offset_y;
-   int num_tiles, num_jobs;
+   int num_tiles;
    double tilesize;
    double tpx, tpy;
    int mode = MODE_NONE;
-   int i;
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return MODE_FAIL;
@@ -920,34 +951,9 @@ _e_nav_tileset_prepare(Evas_Object *obj)
    tiles_ow = 1 + (((double)sd->w + tilesize) / tilesize);
    tiles_oh = 1 + (((double)sd->h + tilesize) / tilesize);
 
-   num_jobs = tiles_ow * tiles_oh;
-   if (sd->tiles.num_jobs < num_jobs)
-     {
-	void *p;
+   if (!_e_nav_tileset_realloc(obj, tiles_ow * tiles_oh))
+     return MODE_FAIL;
 
-	p = realloc(sd->tiles.jobs, num_jobs * sizeof(E_Nav_Tile_Job *));
-	if (!p)
-	  return MODE_FAIL;
-
-	sd->tiles.jobs = p;
-
-	num_jobs -= sd->tiles.num_jobs;
-	memset(sd->tiles.jobs + sd->tiles.num_jobs, 0,
-	      num_jobs * sizeof(E_Nav_Tile_Job *));
-
-	sd->tiles.num_jobs += num_jobs;
-     }
-   else
-     num_jobs = sd->tiles.num_jobs;
-
-   for (i = 0; i < num_jobs; i++)
-     {
-	E_Nav_Tile_Job *job;
-
-	job = sd->tiles.jobs[i];
-	if (job)
-	  evas_object_hide(job->obj);
-     }
    mode = MODE_RELOAD;
 
    mercator_project(sd->lon, sd->lat, &tpx, &tpy);
@@ -988,13 +994,6 @@ _e_nav_tileset_prepare(Evas_Object *obj)
 	sd->tiles.ow = tiles_ow;
 	sd->tiles.oh = tiles_oh;
      }
-
-   /*
-   printf("(%d, %d), (%d, %d), (%d, %d), level %d, tilesize %f\n",
-		   tiles_ox, tiles_oy,
-		   tiles_ow, tiles_oh,
-		   offset_x, offset_y, sd->level, tilesize);
-		   */
 
    return mode;
 }
