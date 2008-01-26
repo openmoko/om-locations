@@ -27,7 +27,7 @@ static Evas_Object *nav = NULL;
 static E_Nav_World *world = NULL;
 static E_Nav_Bard *self = NULL;
 
-static void add_city(Evas* evas, double lat, double lon, const char* cityname);
+static void add_city(Evas* evas, double lon, double lat, const char* cityname);
 static void test_map(Evas* evas);
 
 static Evas_Object *
@@ -312,7 +312,7 @@ static void test_map(Evas* evas)
     add_city(evas, -122.32974, -47.6035, "Seattle");
 }
 
-static void add_city(Evas* evas, double lat, double lon, const char* cityname)
+static void add_city(Evas* evas, double lon, double lat, const char* cityname)
 {
   Evas_Object*  nwi = theme_obj_new(evas, THEME_PATH, "modules/diversity_nav/city");
    evas_object_event_callback_add(nwi, EVAS_CALLBACK_MOUSE_DOWN,
@@ -322,7 +322,7 @@ static void add_city(Evas* evas, double lat, double lon, const char* cityname)
    e_nav_world_item_add(nav, nwi);
    e_nav_world_item_type_set(nwi, E_NAV_WORLD_ITEM_TYPE_ITEM);
    e_nav_world_item_geometry_set(nwi,
-                                 lat, lon,
+                                 lon, lat,
                                  32, 32);
    e_nav_world_item_scale_set(nwi, 0);
    e_nav_world_item_update(nwi);

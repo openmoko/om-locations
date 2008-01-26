@@ -363,21 +363,21 @@ void e_ctrl_zoom_text_value_set(const char* buf)
    edje_object_part_text_set(sd->overlay, "e.text.zoom", buf);
 }
 
-void e_ctrl_latitude_set(const char* buf)
-{
-   if(!ctrl) return;
-   E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(ctrl);
-   edje_object_part_text_set(sd->overlay, "e.text.latitude", buf);
-}
-
 void e_ctrl_longitude_set(const char* buf)
 {
    if(!ctrl) return;
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(ctrl);
-   if(!ctrl) return;
    edje_object_part_text_set(sd->overlay, "e.text.longitude", buf);
+}
+
+void e_ctrl_latitude_set(const char* buf)
+{
+   if(!ctrl) return;
+   E_Smart_Data *sd;
+   sd = evas_object_smart_data_get(ctrl);
+   if(!ctrl) return;
+   edje_object_part_text_set(sd->overlay, "e.text.latitude", buf);
 }
  
 static void

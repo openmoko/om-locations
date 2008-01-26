@@ -20,7 +20,7 @@ struct _E_Nav_World_Item
    Evas_Object *item; // the tiem object itself
    E_Nav_World_Item_Type type;
    struct { // where in the world it lives. x,y are the center. w,h the size
-      // in latitudinal/longitudinal degrees
+      // in longitudinal/latitudinal degrees
       double x, y, w, h;
    } geom;
    unsigned char scale : 1; // scale item with zoom or not
@@ -45,20 +45,20 @@ struct _E_Smart_Data
    /* these are the CONFIGURED state - what the user or API has ASKED the
     * nav to do. there are other "current" values that are used for
     * animation etc. */
-   double           lat, lon;
+   double           lon, lat;
    double           zoom; /* meters per pixel */
    
    struct {
-      double           lat, lon;
+      double           lon, lat;
       double           zoom;
    } conf;
    
    /* current state - dispay this currently */
    struct {
       struct {
-	 double lat, lon;
+	 double lon, lat;
 	 double zoom;
-	 double lat_lon_time;
+	 double lon_lat_time;
 	 double zoom_time;
       } start, target;
       unsigned char  mouse_down : 1;
@@ -68,7 +68,7 @@ struct _E_Smart_Data
    struct {
       struct {
 	 Evas_Coord    x, y;
-	 double        lat, lon;
+	 double        lon, lat;
 	 double        zoom;
       } start;
       struct {
@@ -105,8 +105,8 @@ static void _e_nav_wallpaper_update(Evas_Object *obj);
 static int _e_nav_cb_animator_momentum(void *data);
 static int _e_nav_cb_timer_moveng_pause(void *data);
 
-static void _e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *x, double *y);
-static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lat, double *lon);
+static void _e_nav_to_offsets(Evas_Object *obj, double lon, double lat, double *x, double *y);
+static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lon, double *lat);
 
 static void _e_nav_world_item_free(E_Nav_World_Item *nwi);
 static void _e_nav_world_item_move_resize(E_Nav_World_Item *nwi);
@@ -159,49 +159,40 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 
 /* spatial & zoom controls */
 void
-e_nav_coord_set(Evas_Object *obj, double lat, double lon, double when)
+e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when)
 {
    E_Smart_Data *sd;
    double t;
    
    SMART_CHECK(obj, ;);
-   if (lat < -180.0) lat = -180.0;
-   else if (lat > 180.0) lat = 180.0;
-   if (lon < -90.0) lon = -90.0;
-   else if (lon > 90.0) lon = 90.0;
+   if (lon < -180.0) lon = -180.0;
+   else if (lon > 180.0) lon = 180.0;
+   if (lat < -90.0) lat = -90.0;
+   else if (lat > 90.0) lat = 90.0;
    if (when == 0.0)
      {
-	sd->cur.target.lat_lon_time = 0.0;
-	sd->cur.start.lat_lon_time = 0.0;
-	sd->lat = lat;
+	sd->cur.target.lon_lat_time = 0.0;
+	sd->cur.start.lon_lat_time = 0.0;
 	sd->lon = lon;
-	sd->conf.lat = lat;
+	sd->lat = lat;
 	sd->conf.lon = lon;
+	sd->conf.lat = lat;
 	_e_nav_update(obj);
 	return;
      }
    t = ecore_time_get();
    _e_nav_momentum_calc(obj, t);
-   sd->cur.start.lat_lon_time = t;
-   sd->cur.start.lat = sd->lat;
+   sd->cur.start.lon_lat_time = t;
    sd->cur.start.lon = sd->lon;
-   sd->cur.target.lat = lat;
+   sd->cur.start.lat = sd->lat;
    sd->cur.target.lon = lon;
-   sd->cur.target.lat_lon_time = sd->cur.start.lat_lon_time + when;
-   sd->conf.lat = lat;
+   sd->cur.target.lat = lat;
+   sd->cur.target.lon_lat_time = sd->cur.start.lon_lat_time + when;
    sd->conf.lon = lon;
+   sd->conf.lat = lat;
    if (!sd->cur.momentum_animator)
      sd->cur.momentum_animator = ecore_animator_add(_e_nav_cb_animator_momentum,
 						 obj);
-}
-
-double
-e_nav_coord_lat_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0.0;);
-   return sd->lat;
 }
 
 double
@@ -211,6 +202,15 @@ e_nav_coord_lon_get(Evas_Object *obj)
    
    SMART_CHECK(obj, 0.0;);
    return sd->lon;
+}
+
+double
+e_nav_coord_lat_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, 0.0;);
+   return sd->lat;
 }
 
 void
@@ -469,12 +469,12 @@ _e_nav_smart_add(Evas_Object *obj)
    
    evas_object_smart_data_set(obj, sd);
    
-   sd->lat = 0;
    sd->lon = 0;
+   sd->lat = 0;
    sd->zoom = E_NAV_ZOOM_MAX;
    
-   sd->conf.lat = sd->lat;
    sd->conf.lon = sd->lon;
+   sd->conf.lat = sd->lat;
    sd->conf.zoom = sd->zoom;
 }
 
@@ -671,11 +671,11 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
      {
 	sd->moveng.start.x = x;
 	sd->moveng.start.y = y;
-	sd->moveng.start.lat = sd->lat;
 	sd->moveng.start.lon = sd->lon;
+	sd->moveng.start.lat = sd->lat;
 	sd->moveng.start.zoom = sd->conf.zoom;
 
-	e_nav_coord_set(obj, sd->lat, sd->lon, 0.0);
+	e_nav_coord_set(obj, sd->lon, sd->lat, 0.0);
 	e_nav_zoom_set(obj, sd->conf.zoom, 0.5);
 
 	return;
@@ -683,19 +683,19 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
    
    if (action == E_NAV_MOVEENGINE_STOP)
      {
-	e_nav_coord_set(obj, sd->lat, sd->lon, 0.0);
+	e_nav_coord_set(obj, sd->lon, sd->lat, 0.0);
      }
    else
      {
-	double lat_off, lon_off;
+	double lon_off, lat_off;
 
 	_e_nav_from_offsets(obj,
 			    sd->moveng.start.x - x,
 			    sd->moveng.start.y - y,
-			    &lat_off, &lon_off);
+			    &lon_off, &lat_off);
 	e_nav_coord_set(obj, 
-			sd->moveng.start.lat + lat_off,
 			sd->moveng.start.lon + lon_off,
+			sd->moveng.start.lat + lat_off,
 			0.0);
      }
 }
@@ -708,7 +708,7 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
    int i, count;
    Evas_Coord vx1, vy1, vx2, vy2;
    Evas_Coord dist;
-   double lat, lon;
+   double lon, lat;
    double zoomout = 0.0;
 
    /* TODO provide parameters instead of calling another engine */
@@ -720,8 +720,8 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
      {
 	sd->moveng.start.x = x;
 	sd->moveng.start.y = y;
-	sd->moveng.start.lat = sd->lat;
 	sd->moveng.start.lon = sd->lon;
+	sd->moveng.start.lat = sd->lat;
 	sd->moveng.start.zoom = sd->conf.zoom;
 	memset(&(sd->moveng.history[0]), 0, sizeof(sd->moveng.history[0]) * 20);
      }
@@ -744,12 +744,12 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
 	     count++;
 	  }
      }
-   lat = sd->lat;
    lon = sd->lon;
+   lat = sd->lat;
    if (action == E_NAV_MOVEENGINE_START)
      {
 	e_nav_coord_set(obj,
-			lat, lon,
+			lon, lat,
 			2.0);
 	e_nav_zoom_set(obj,
 		       sd->moveng.start.zoom,
@@ -765,7 +765,7 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
      {
 	if (action == E_NAV_MOVEENGINE_STOP)
 	  {
-	     e_nav_coord_set(obj, lat, lon, 2.0);
+	     e_nav_coord_set(obj, lon, lat, 2.0);
 	     e_nav_zoom_set(obj, sd->moveng.start.zoom, 1.0);
 	  }
 	return;
@@ -782,20 +782,20 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
    
    if (action == E_NAV_MOVEENGINE_STOP)
      {
-	double lat_off, lon_off;
+	double lon_off, lat_off;
 
 	if (dist > 40)
 	  {
 	     _e_nav_from_offsets(obj,
 				 (vx2 - vx1) * 5.0,
 				 (vy2 - vy1) * 5.0,
-				 &lat_off, &lon_off);
-	     e_nav_coord_set(obj, lat - lat_off,
-			     lon - lon_off,
+				 &lon_off, &lat_off);
+	     e_nav_coord_set(obj, lon - lon_off,
+			     lat - lat_off,
 			     2.0 + (zoomout / 16.0));
 	  }
 	else
-	  e_nav_coord_set(obj, lat, lon,
+	  e_nav_coord_set(obj, lon, lat,
 			  2.0 + (zoomout / 16.0));
 	e_nav_zoom_set(obj, sd->moveng.start.zoom, 1.0 + (zoomout / 4.0));
 	if (sd->moveng.pause_timer) ecore_timer_del(sd->moveng.pause_timer);
@@ -803,16 +803,16 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
      }
    else
      {
-	double lat_off, lon_off;
+	double lon_off, lat_off;
 
 	_e_nav_from_offsets(obj,
 			    sd->moveng.start.x - x,
 			    sd->moveng.start.y - y,
-			    &lat_off, &lon_off);
+			    &lon_off, &lat_off);
 
 	e_nav_coord_set(obj, 
-			sd->moveng.start.lat + lat_off,
 			sd->moveng.start.lon + lon_off,
+			sd->moveng.start.lat + lat_off,
 			0.1);
 	e_nav_zoom_set(obj, 
 		       sd->moveng.start.zoom * (1.0 + zoomout),
@@ -847,14 +847,14 @@ _e_nav_overlay_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    char buf[256];
-   double z, lat, lon;
+   double z, lon, lat;
    char *xdir, *ydir;
-   int latd, latm, lats, lond, lonm, lons;
+   int lond, lonm, lons, latd, latm, lats;
    
    sd = evas_object_smart_data_get(obj);
-   /* the little legend in the overlay theme i KNOW is 64 pixels lon */
+   /* the little legend in the overlay theme i KNOW is 64 pixels lat */
    z = 64.0 * sd->zoom;
-   /* if its more than 1000m lon - display the length in Km */
+   /* if its more than 1000m lat - display the length in Km */
    if (z > 1000.0)
      snprintf(buf, sizeof(buf), "%1.2fKm", z / 1000.0);
    else
@@ -864,26 +864,11 @@ _e_nav_overlay_update(Evas_Object *obj)
     * aboe */
    e_ctrl_zoom_text_value_set(buf);
    
-   lat = sd->lat;
-   if (lat >= 0.0) xdir = "E";
+   lon = sd->lon;
+   if (lon >= 0.0) xdir = "E";
    else 
      {
 	xdir = "W";
-	lat = -lat;
-     }
-   latd = (int)lat;
-   lat = (lat - (double)latd) * 60.0;
-   latm = (int)lat;
-   lat = (lat - (double)latm) * 60.0;
-   lats = (int)lat;
-   snprintf(buf, sizeof(buf), "%i°%i'%i\"%s", latd, latm, lats, xdir);
-   e_ctrl_latitude_set(buf);
-   
-   lon = sd->lon;
-   if (lon >= 0.0) ydir = "S";
-   else 
-     {
-	ydir = "N";
 	lon = -lon;
      }
    lond = (int)lon;
@@ -891,8 +876,23 @@ _e_nav_overlay_update(Evas_Object *obj)
    lonm = (int)lon;
    lon = (lon - (double)lonm) * 60.0;
    lons = (int)lon;
-   snprintf(buf, sizeof(buf), "%i°%i'%i\"%s", lond, lonm, lons, ydir);
+   snprintf(buf, sizeof(buf), "%i°%i'%i\"%s", lond, lonm, lons, xdir);
    e_ctrl_longitude_set(buf);
+   
+   lat = sd->lat;
+   if (lat >= 0.0) ydir = "S";
+   else 
+     {
+	ydir = "N";
+	lat = -lat;
+     }
+   latd = (int)lat;
+   lat = (lat - (double)latd) * 60.0;
+   latm = (int)lat;
+   lat = (lat - (double)latm) * 60.0;
+   lats = (int)lat;
+   snprintf(buf, sizeof(buf), "%i°%i'%i\"%s", latd, latm, lats, ydir);
+   e_ctrl_latitude_set(buf);
 }
 
 static int
@@ -903,10 +903,10 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
    int done = 0;
    
    sd = evas_object_smart_data_get(obj);
-   if (sd->cur.target.lat_lon_time > sd->cur.start.lat_lon_time)
+   if (sd->cur.target.lon_lat_time > sd->cur.start.lon_lat_time)
      {
-	v = (t - sd->cur.start.lat_lon_time) / 
-	  (sd->cur.target.lat_lon_time - sd->cur.start.lat_lon_time);
+	v = (t - sd->cur.start.lon_lat_time) / 
+	  (sd->cur.target.lon_lat_time - sd->cur.start.lon_lat_time);
 	if (v >= 1.0)
 	  {
 	     v = 1.0;
@@ -914,12 +914,12 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
 	  }
 	v = 1.0 - v;
 	v = 1.0 - (v * v * v * v);
-	sd->lat = 
-	  ((sd->cur.target.lat - sd->cur.start.lat) * v) +
-	  sd->cur.start.lat;
 	sd->lon = 
 	  ((sd->cur.target.lon - sd->cur.start.lon) * v) +
 	  sd->cur.start.lon;
+	sd->lat = 
+	  ((sd->cur.target.lat - sd->cur.start.lat) * v) +
+	  sd->cur.start.lat;
      }
    else
      done++;
@@ -959,7 +959,7 @@ _e_nav_wallpaper_update(Evas_Object *obj)
 
 	span = E_NAV_ZOOM_SPAN(sd->zoom);
 
-	e_nav_tileset_center_set(nt, sd->lat, -sd->lon);
+	e_nav_tileset_center_set(nt, sd->lon, -sd->lat);
 	e_nav_tileset_span_set(nt, span);
 	e_nav_tileset_update(nt);
      }
@@ -978,8 +978,8 @@ _e_nav_cb_animator_momentum(void *data)
    _e_nav_update(obj);
    if (done >= 2)
      {
-	sd->cur.target.lat_lon_time = 0.0;
-	sd->cur.start.lat_lon_time = 0.0;
+	sd->cur.target.lon_lat_time = 0.0;
+	sd->cur.start.lon_lat_time = 0.0;
 	sd->cur.target.zoom_time = 0.0;
 	sd->cur.start.zoom_time = 0.0;
 	sd->cur.momentum_animator = NULL;
@@ -1004,7 +1004,7 @@ _e_nav_cb_timer_moveng_pause(void *data)
    return 0;
 }
 
-static void _e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *x, double *y)
+static void _e_nav_to_offsets(Evas_Object *obj, double lon, double lat, double *x, double *y)
 {
    E_Smart_Data *sd;
    
@@ -1017,28 +1017,28 @@ static void _e_nav_to_offsets(Evas_Object *obj, double lat, double lon, double *
 	return;
      }
 
-   e_nav_tileset_to_offsets(sd->tilesets->data, lat, -lon, x, y);
+   e_nav_tileset_to_offsets(sd->tilesets->data, lon, -lat, x, y);
 }
 
-static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lat, double *lon)
+static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lon, double *lat)
 {
    E_Smart_Data *sd;
    
    sd = evas_object_smart_data_get(obj);
    if (!sd || !sd->tilesets)
      {
-	*lat = 0.0;
 	*lon = 0.0;
+	*lat = 0.0;
 
 	return;
      }
 
    e_nav_tileset_center_set(sd->tilesets->data,
-	 sd->moveng.start.lat, -sd->moveng.start.lon);
+	 sd->moveng.start.lon, -sd->moveng.start.lat);
    /* no need to restore center */
 
-   e_nav_tileset_from_offsets(sd->tilesets->data, x, y, lat, lon);
-   *lon = -*lon;
+   e_nav_tileset_from_offsets(sd->tilesets->data, x, y, lon, lat);
+   *lat = -*lat;
 }
 
 /* nav world internal calls - move to the end later */

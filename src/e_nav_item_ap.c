@@ -39,11 +39,11 @@ static void
 _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Evas_Object *nav;
-   double lat, lon, w, h, z;
+   double lon, lat, w, h, z;
    
    nav = e_nav_world_item_nav_get(src_obj);
-   e_nav_world_item_geometry_get(src_obj, &lat, &lon, &w, &h);
-   e_nav_coord_set(nav, lat, lon, 0.5);
+   e_nav_world_item_geometry_get(src_obj, &lon, &lat, &w, &h);
+   e_nav_coord_set(nav, lon, lat, 0.5);
    if (w < h) w = h;
    z = 0.0001;
    if (w > 0.0) z = w / 200;
@@ -101,7 +101,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
-e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, Object_Proxy* proxy, double lat, double lon)
+e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, Object_Proxy* proxy, double lon, double lat)
 {
    Evas_Object *o;
    AP_Data *apd;
@@ -119,7 +119,7 @@ e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, Object_Proxy* p
 				  theme_dir);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
-   e_nav_world_item_geometry_set(o, lat, lon, 0, 0);
+   e_nav_world_item_geometry_set(o, lon, lat, 0, 0);
    e_nav_world_item_scale_set(o, 1);
    e_nav_world_item_update(o);
    evas_object_event_callback_add(o, EVAS_CALLBACK_DEL,
