@@ -11,7 +11,7 @@ struct _E_Smart_Data
 {
    Evas_Object *obj;
    Evas_Object *clip;
-   Evas_Object *dummy;
+   Evas_Object *underlay;
    Evas_Coord x, y, w, h;
 
    Evas_Object *nav;
@@ -82,7 +82,8 @@ static Evas_Smart *_e_smart = NULL;
    if (!sd) return ret \
    if (strcmp(evas_object_type_get(obj), "e_nav_tileset")) return ret
 
-#define TILE_VALID(lv, num) ((num) >= 0 && (num) < (1 << lv))
+#define TILE_VALID_NUM(lv, num) ((num) >= 0 && (num) < (1 << lv))
+#define TILE_VALID(lv, x, y) (TILE_VALID_NUM(lv, x) && TILE_VALID_NUM(lv, y))
 
 Evas_Object *
 e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir)
@@ -384,9 +385,12 @@ _e_nav_tileset_smart_add(Evas_Object *obj)
    evas_object_smart_member_add(sd->clip, obj);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
 
-   sd->dummy = evas_object_rectangle_add(evas_object_evas_get(obj));
-   evas_object_smart_member_add(sd->dummy, obj);
-   evas_object_clip_set(sd->dummy, sd->clip);
+   sd->underlay = evas_object_rectangle_add(evas_object_evas_get(obj));
+   evas_object_smart_member_add(sd->underlay, obj);
+   evas_object_color_set(sd->underlay, 180, 180, 180, 255);
+   evas_object_clip_set(sd->underlay, sd->clip);
+   evas_object_lower(sd->underlay);
+   evas_object_show(sd->underlay);
 
    sd->jobs = ecore_hash_new((Ecore_Hash_Cb) job_hash,
 			     (Ecore_Compare_Cb) job_compare);
@@ -408,7 +412,7 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
 
    _e_nav_tileset_reset(obj, 0, 0);
 
-   evas_object_del(sd->dummy);
+   evas_object_del(sd->underlay);
    evas_object_del(sd->clip);
 
    if (sd->proxy)
@@ -428,6 +432,7 @@ _e_nav_tileset_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    if (!sd) return;
    sd->x = x;
    sd->y = y;
+   evas_object_move(sd->underlay, sd->x, sd->y);
    evas_object_move(sd->clip, sd->x, sd->y);
    _e_nav_tileset_update(obj);
 }
@@ -441,6 +446,7 @@ _e_nav_tileset_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    if (!sd) return;
    sd->w = w;
    sd->h = h;
+   evas_object_resize(sd->underlay, sd->w, sd->h);
    evas_object_resize(sd->clip, sd->w, sd->h);
    _e_nav_tileset_update(obj);
 }
@@ -742,6 +748,13 @@ _e_nav_tileset_tile_get(Evas_Object *obj, int i, int j)
 		   sd->dir, sd->map,
 		   job->level, x, y, sd->suffix);
 
+   if (!TILE_VALID(sd->level, sd->tiles.ox + i, sd->tiles.oy + j))
+     {
+	evas_object_hide(job->obj);
+
+	return job->obj;
+     }
+
    evas_object_image_file_set(job->obj, buf, NULL);
    if (evas_object_image_load_error_get(job->obj) == EVAS_LOAD_ERROR_NONE)
      {
@@ -898,16 +911,10 @@ _e_nav_tileset_update(Evas_Object *obj)
 	y = (j * sd->tiles.tilesize);
 	yy = ((j + 1) * sd->tiles.tilesize);
 
-	if (!TILE_VALID(sd->level, sd->tiles.oy + j))
-	  continue;
-
 	for (i = 0; i < sd->tiles.ow; i++)
 	  {
 	     Evas_Object *o;
 	    
-	     if (!TILE_VALID(sd->level, sd->tiles.ox + i))
-	       continue;
-
 	     o = _e_nav_tileset_tile_get(obj, i, j);
 
 	     x = (i * sd->tiles.tilesize);
