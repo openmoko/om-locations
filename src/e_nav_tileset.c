@@ -66,7 +66,6 @@ static int job_compare(const E_Nav_Tile_Job *job1, const E_Nav_Tile_Job *job2);
 static int job_submit(E_Nav_Tile_Job *job, int force);
 static void job_cancel(E_Nav_Tile_Job *job);
 static void job_completed_cb(void *data, DBusMessage *message);
-static E_Nav_Tile_Job *job_add(Evas_Object *obj, int i, int j);
 static void job_reset(E_Nav_Tile_Job *job, int x, int y);
 static void job_load(E_Nav_Tile_Job *job);
 
@@ -77,7 +76,8 @@ static int _e_nav_tileset_prepare(Evas_Object *obj);
 static void _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h);
 static int _e_nav_tileset_realloc(Evas_Object *obj, int num_jobs);
 static void _e_nav_tileset_free(Evas_Object *obj);
-static Evas_Object *_e_nav_tileset_tile_get(Evas_Object *obj, int x, int y);
+static E_Nav_Tile_Job *_e_nav_tileset_tile_add(Evas_Object *obj, int i, int j);
+static Evas_Object *_e_nav_tileset_tile_get(Evas_Object *obj, int i, int j);
 static void _e_nav_tileset_update(Evas_Object *obj);
 
 static Evas_Smart *_e_smart = NULL;
@@ -665,36 +665,6 @@ job_completed_cb(void *data, DBusMessage *message)
    ecore_hash_remove(sd->jobs, job);
 }
 
-static E_Nav_Tile_Job *
-job_add(Evas_Object *obj, int i, int j)
-{
-   E_Smart_Data *sd;
-   E_Nav_Tile_Job *job;
-
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return NULL;
-
-   job = calloc(1, sizeof(E_Nav_Tile_Job));
-   if (!job) return NULL;
-
-   job->nt = obj;
-   job->obj = evas_object_image_add(evas_object_evas_get(sd->obj));
-
-   evas_object_smart_member_add(job->obj, sd->obj);
-   evas_object_clip_set(job->obj, sd->clip);
-   evas_object_pass_events_set(job->obj, 1);
-   evas_object_stack_below(job->obj, sd->clip);
-   evas_object_image_smooth_scale_set(job->obj, 0);
-
-   sd->tiles.jobs[(j * sd->tiles.ow) + i] = job;
-
-   job->level = sd->level;
-   job->x = i + sd->tiles.ox;
-   job->y = j + sd->tiles.oy;
-
-   return job;
-}
- 
 static void
 job_reset(E_Nav_Tile_Job *job, int x, int y)
 {
@@ -774,6 +744,36 @@ mercator_project_inv(double x, double y, double *lon, double *lat)
       *lat = DEGREES(atan(sinh((1.0 - y * 2.0) * M_PI)));
 }
 
+static E_Nav_Tile_Job *
+_e_nav_tileset_tile_add(Evas_Object *obj, int i, int j)
+{
+   E_Smart_Data *sd;
+   E_Nav_Tile_Job *job;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd) return NULL;
+
+   job = calloc(1, sizeof(E_Nav_Tile_Job));
+   if (!job) return NULL;
+
+   job->nt = obj;
+   job->obj = evas_object_image_add(evas_object_evas_get(sd->obj));
+
+   evas_object_smart_member_add(job->obj, sd->obj);
+   evas_object_clip_set(job->obj, sd->clip);
+   evas_object_pass_events_set(job->obj, 1);
+   evas_object_stack_below(job->obj, sd->clip);
+   evas_object_image_smooth_scale_set(job->obj, 0);
+
+   sd->tiles.jobs[(j * sd->tiles.ow) + i] = job;
+
+   job->level = sd->level;
+   job->x = i + sd->tiles.ox;
+   job->y = j + sd->tiles.oy;
+
+   return job;
+}
+ 
 static Evas_Object *
 _e_nav_tileset_tile_get(Evas_Object *obj, int i, int j)
 {
@@ -801,7 +801,7 @@ _e_nav_tileset_tile_get(Evas_Object *obj, int i, int j)
 	job_reset(job, x, y);
      }
    else
-     job = job_add(obj, i, j);
+     job = _e_nav_tileset_tile_add(obj, i, j);
 
 
    if (TILE_VALID(sd->level, x, y))
