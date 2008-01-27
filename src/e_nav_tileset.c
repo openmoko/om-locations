@@ -60,7 +60,9 @@ static void _e_nav_tileset_smart_color_set(Evas_Object *obj, int r, int g, int b
 static void _e_nav_tileset_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_nav_tileset_smart_clip_unset(Evas_Object *obj);
 
-static void job_level_set(Evas_Object *obj);
+inline static void mercator_project(double lon, double lat, double *x, double *y);
+inline static void mercator_project_inv(double x, double y, double *lon, double *lat);
+
 static unsigned int job_hash(const E_Nav_Tile_Job *job);
 static int job_compare(const E_Nav_Tile_Job *job1, const E_Nav_Tile_Job *job2);
 static int job_submit(E_Nav_Tile_Job *job, int force);
@@ -68,9 +70,6 @@ static void job_cancel(E_Nav_Tile_Job *job);
 static void job_completed_cb(void *data, DBusMessage *message);
 static void job_reset(E_Nav_Tile_Job *job, int x, int y);
 static void job_load(E_Nav_Tile_Job *job);
-
-inline static void mercator_project(double lon, double lat, double *x, double *y);
-inline static void mercator_project_inv(double x, double y, double *lon, double *lat);
 
 static int _e_nav_tileset_prepare(Evas_Object *obj);
 static void _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h);
@@ -131,6 +130,21 @@ e_nav_tileset_update(Evas_Object *obj)
    _e_nav_tileset_update(obj);
 }
 
+static void
+proxy_level_set(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd || !sd->proxy) return;
+
+   e_dbus_proxy_simple_call(sd->proxy, "SetLevel",
+			    NULL,
+			    DBUS_TYPE_INT32, &sd->level,
+			    DBUS_TYPE_INVALID,
+			    DBUS_TYPE_INVALID);
+}
+
 void
 e_nav_tileset_level_set(Evas_Object *obj, int level)
 {
@@ -146,7 +160,7 @@ e_nav_tileset_level_set(Evas_Object *obj, int level)
    if (sd->level != level)
      {
 	sd->level = level;
-	job_level_set(obj);
+	proxy_level_set(obj);
      }
    sd->span = sd->size << level;
 }
@@ -197,7 +211,7 @@ e_nav_tileset_span_set(Evas_Object *obj, int span)
    if (sd->level != level)
      {
 	sd->level = level;
-	job_level_set(obj);
+	proxy_level_set(obj);
      }
 }
 
@@ -506,19 +520,36 @@ _e_nav_tileset_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 } 
 
-static void
-job_level_set(Evas_Object *obj)
+inline static void
+mercator_project(double lon, double lat, double *x, double *y)
 {
-   E_Smart_Data *sd;
+   double tmp;
 
-   sd = evas_object_smart_data_get(obj);
-   if (!sd || !sd->proxy) return;
+   if (x)
+     *x = (lon + 180.0) / 360.0;
 
-   e_dbus_proxy_simple_call(sd->proxy, "SetLevel",
-			    NULL,
-			    DBUS_TYPE_INT32, &sd->level,
-			    DBUS_TYPE_INVALID,
-			    DBUS_TYPE_INVALID);
+   if (!y)
+     return;
+
+   /* avoid NaN */
+   if (lat > 89.99)
+     lat = 89.99;
+   else if (lat < -89.99)
+     lat = -89.99;
+
+   tmp = RADIANS(lat);
+   tmp = log(tan(tmp) + 1.0 / cos(tmp));
+   *y = (1.0 - tmp / M_PI) / 2.0;
+}
+
+inline static void
+mercator_project_inv(double x, double y, double *lon, double *lat)
+{
+   if (lon)
+     *lon = -180.0 + x * 360.0;
+
+   if (lat)
+      *lat = DEGREES(atan(sinh((1.0 - y * 2.0) * M_PI)));
 }
 
 static unsigned int
@@ -710,38 +741,6 @@ job_load(E_Nav_Tile_Job *job)
 
 	job_submit(job, 1);
      }
-}
-
-inline static void
-mercator_project(double lon, double lat, double *x, double *y)
-{
-   double tmp;
-
-   if (x)
-     *x = (lon + 180.0) / 360.0;
-
-   if (!y)
-     return;
-
-   /* avoid NaN */
-   if (lat > 89.99)
-     lat = 89.99;
-   else if (lat < -89.99)
-     lat = -89.99;
-
-   tmp = RADIANS(lat);
-   tmp = log(tan(tmp) + 1.0 / cos(tmp));
-   *y = (1.0 - tmp / M_PI) / 2.0;
-}
-
-inline static void
-mercator_project_inv(double x, double y, double *lon, double *lat)
-{
-   if (lon)
-     *lon = -180.0 + x * 360.0;
-
-   if (lat)
-      *lat = DEGREES(atan(sinh((1.0 - y * 2.0) * M_PI)));
 }
 
 static E_Nav_Tile_Job *
