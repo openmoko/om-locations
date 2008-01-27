@@ -65,10 +65,10 @@ inline static void mercator_project_inv(double x, double y, double *lon, double 
 
 static int job_submit(E_Nav_Tile_Job *job, int force);
 static void job_cancel(E_Nav_Tile_Job *job);
-static void job_completed_cb(void *data, DBusMessage *message);
 static void job_reset(E_Nav_Tile_Job *job, int x, int y);
 static void job_load(E_Nav_Tile_Job *job);
 
+static void _e_nav_tileset_tile_completed_cb(Evas_Object *obj, DBusMessage *message);
 static int _e_nav_tileset_prepare(Evas_Object *obj);
 static void _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h);
 static int _e_nav_tileset_realloc(Evas_Object *obj, int num_jobs);
@@ -340,11 +340,11 @@ e_nav_tileset_proxy_set(Evas_Object *obj, E_DBus_Proxy *proxy)
 
    if (sd->proxy)
      e_dbus_proxy_disconnect_signal(sd->proxy, "TileCompleted",
-				    job_completed_cb, obj);
+	   (E_DBus_Signal_Cb) _e_nav_tileset_tile_completed_cb, obj);
 
    sd->proxy = proxy;
    e_dbus_proxy_connect_signal(sd->proxy, "TileCompleted",
-			       job_completed_cb, obj);
+	 (E_DBus_Signal_Cb) _e_nav_tileset_tile_completed_cb, obj);
 }
 
 E_DBus_Proxy *
@@ -431,7 +431,7 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
 
    if (sd->proxy)
      e_dbus_proxy_disconnect_signal(sd->proxy, "TileCompleted",
-				    job_completed_cb, obj);
+	   (E_DBus_Signal_Cb) _e_nav_tileset_tile_completed_cb, obj);
    ecore_hash_destroy(sd->jobs);
 
    _e_nav_tileset_free(obj);
@@ -603,44 +603,10 @@ job_cancel(E_Nav_Tile_Job *job)
 			    DBUS_TYPE_INVALID,
 			    DBUS_TYPE_INVALID);
 
+   printf("job %u cancelled\n", job->id);
+
    ecore_hash_remove(sd->jobs, (void *) job->id);
    job->id = 0;
-}
-
-static void
-job_completed_cb(void *data, DBusMessage *message)
-{
-   E_Smart_Data *sd;
-   E_Nav_Tile_Job *job;
-   unsigned int id;
-   int status;
-
-   if (!message)
-     return;
-
-   sd = evas_object_smart_data_get(data);
-   if (!sd || !sd->proxy) return;
-
-   if (!dbus_message_get_args(message, NULL,
-			      DBUS_TYPE_UINT32, &id,
-			      DBUS_TYPE_INT32, &status,
-			      DBUS_TYPE_INVALID))
-     return;
-
-   job = ecore_hash_get(sd->jobs, (void *) id);
-   if (!job)
-     return;
-
-   printf("job %u completed with status %d\n", id, status);
-   if (status == 0 && job->obj)
-     {
-	evas_object_image_reload(job->obj);
-	if (evas_object_image_load_error_get(job->obj) == EVAS_LOAD_ERROR_NONE)
-	  evas_object_show(job->obj);
-     }
-
-   job->id = 0;
-   ecore_hash_remove(sd->jobs, (void *) id);
 }
 
 static void
@@ -688,6 +654,42 @@ job_load(E_Nav_Tile_Job *job)
 
 	job_submit(job, 1);
      }
+}
+
+static void
+_e_nav_tileset_tile_completed_cb(Evas_Object *obj, DBusMessage *message)
+{
+   E_Smart_Data *sd;
+   E_Nav_Tile_Job *job;
+   unsigned int id;
+   int status;
+
+   if (!message)
+     return;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd || !sd->proxy) return;
+
+   if (!dbus_message_get_args(message, NULL,
+			      DBUS_TYPE_UINT32, &id,
+			      DBUS_TYPE_INT32, &status,
+			      DBUS_TYPE_INVALID))
+     return;
+
+   job = ecore_hash_get(sd->jobs, (void *) id);
+   if (!job)
+     return;
+
+   printf("job %u completed with status %d\n", id, status);
+   if (status == 0 && job->obj)
+     {
+	evas_object_image_reload(job->obj);
+	if (evas_object_image_load_error_get(job->obj) == EVAS_LOAD_ERROR_NONE)
+	  evas_object_show(job->obj);
+     }
+
+   job->id = 0;
+   ecore_hash_remove(sd->jobs, (void *) id);
 }
 
 static E_Nav_Tile_Job *
