@@ -45,8 +45,8 @@ struct _E_Nav_Tile_Job
    Evas_Object *obj;
    int level;
    int x, y;
-   int id;
-   int timestamp;
+   unsigned int id;
+   double timestamp;
 };
 
 static void _e_nav_tileset_smart_init(void);
@@ -63,8 +63,6 @@ static void _e_nav_tileset_smart_clip_unset(Evas_Object *obj);
 inline static void mercator_project(double lon, double lat, double *x, double *y);
 inline static void mercator_project_inv(double x, double y, double *lon, double *lat);
 
-static unsigned int job_hash(const E_Nav_Tile_Job *job);
-static int job_compare(const E_Nav_Tile_Job *job1, const E_Nav_Tile_Job *job2);
 static int job_submit(E_Nav_Tile_Job *job, int force);
 static void job_cancel(E_Nav_Tile_Job *job);
 static void job_completed_cb(void *data, DBusMessage *message);
@@ -411,8 +409,7 @@ _e_nav_tileset_smart_add(Evas_Object *obj)
    evas_object_lower(sd->underlay);
    evas_object_show(sd->underlay);
 
-   sd->jobs = ecore_hash_new((Ecore_Hash_Cb) job_hash,
-			     (Ecore_Compare_Cb) job_compare);
+   sd->jobs = ecore_hash_new(ecore_direct_hash, ecore_direct_compare);
 
    evas_object_smart_data_set(obj, sd);
 }
@@ -552,35 +549,11 @@ mercator_project_inv(double x, double y, double *lon, double *lat)
       *lat = DEGREES(atan(sinh((1.0 - y * 2.0) * M_PI)));
 }
 
-static unsigned int
-job_hash(const E_Nav_Tile_Job *job)
-{
-   /* x and y are usually continuous; ignore higer bits */
-   return ((job->level & 0x1f) << 27) |
-	  ((job->y & 0x3ff) << 13) |
-	  (job->x & 0x1ff);
-}
-
-static int
-job_compare(const E_Nav_Tile_Job *job1, const E_Nav_Tile_Job *job2)
-{
-   if (job1->x < job2->x)
-     return -1;
-   else if (job1->x > job2->x)
-     return 1;
-   else if (job1->y < job2->y)
-     return -1;
-   else if (job1->y < job2->y)
-     return 1;
-   else
-      return job1->level - job2->level;
-}
-
 static int
 job_submit(E_Nav_Tile_Job *job, int force)
 {
    E_Smart_Data *sd;
-   int id;
+   unsigned int id;
 
    sd = evas_object_smart_data_get(job->nt);
    if (!sd || !sd->proxy) return 0;
@@ -588,18 +561,7 @@ job_submit(E_Nav_Tile_Job *job, int force)
    printf("submit job for tile (%d,%d)@%d\n", job->x, job->y, sd->level);
 
    if (job->id)
-     {
-	printf("job busy\n");
-
-	return 0;
-     }
-
-   if (ecore_hash_get(sd->jobs, job))
-     {
-	printf("job alredy on the way!\n");
-
-	return 1;
-     }
+     return 1;
 
    if (!e_dbus_proxy_simple_call(sd->proxy, "SubmitTile",
 				 NULL,
@@ -615,12 +577,12 @@ job_submit(E_Nav_Tile_Job *job, int force)
 	return 0;
      }
 
-   printf("job %d submitted\n", id);
+   printf("job %u submitted\n", id);
 
    job->id = id;
-   job->timestamp = 0;
+   job->timestamp = ecore_time_get();
 
-   ecore_hash_set(sd->jobs, job, job);
+   ecore_hash_set(sd->jobs, (void *) id, job);
 
    return 1;
 }
@@ -641,17 +603,17 @@ job_cancel(E_Nav_Tile_Job *job)
 			    DBUS_TYPE_INVALID,
 			    DBUS_TYPE_INVALID);
 
+   ecore_hash_remove(sd->jobs, (void *) job->id);
    job->id = 0;
-   ecore_hash_remove(sd->jobs, job);
 }
 
 static void
 job_completed_cb(void *data, DBusMessage *message)
 {
    E_Smart_Data *sd;
-   E_Nav_Tile_Job *job = NULL;
-   int id, status;
-   int i, j;
+   E_Nav_Tile_Job *job;
+   unsigned int id;
+   int status;
 
    if (!message)
      return;
@@ -665,27 +627,12 @@ job_completed_cb(void *data, DBusMessage *message)
 			      DBUS_TYPE_INVALID))
      return;
 
-   if (sd->tiles.jobs)
-     {
-	for (j = 0; j < sd->tiles.oh; j++)
-	  {
-	     for (i = 0; i < sd->tiles.ow; i++)
-	       {
-		  job = sd->tiles.jobs[(j * sd->tiles.ow) + i];
-		  if (job && job->id == id)
-		     break;
-	       }
-
-	     if (i < sd->tiles.ow)
-	       break;
-	  }
-     }
-
+   job = ecore_hash_get(sd->jobs, (void *) id);
    if (!job)
      return;
 
-   printf("job %d completed with status %d\n", id, status);
-   if (job->obj)
+   printf("job %u completed with status %d\n", id, status);
+   if (status == 0 && job->obj)
      {
 	evas_object_image_reload(job->obj);
 	if (evas_object_image_load_error_get(job->obj) == EVAS_LOAD_ERROR_NONE)
@@ -693,7 +640,7 @@ job_completed_cb(void *data, DBusMessage *message)
      }
 
    job->id = 0;
-   ecore_hash_remove(sd->jobs, job);
+   ecore_hash_remove(sd->jobs, (void *) id);
 }
 
 static void
