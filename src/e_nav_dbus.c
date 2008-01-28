@@ -30,21 +30,21 @@ static E_DBus_Connection* e_conn=NULL;
 static int initialized = -1;
 
 #define DIVERSITY_DBUS_BUS			DBUS_BUS_SESSION
-#define DIVERSITY_DBUS_SERVICE			"org.openmoko.diversity"
-#define DIVERSITY_DBUS_PATH			"/org/openmoko/diversity"
-#define DIVERSITY_DBUS_INTERFACE		"org.openmoko.diversity"
+#define DIVERSITY_DBUS_SERVICE			"org.openmoko.Diversity"
+#define DIVERSITY_DBUS_PATH			"/org/openmoko/Diversity"
+#define DIVERSITY_DBUS_INTERFACE		"org.openmoko.Diversity"
 
-#define DIVERSITY_WORLD_DBUS_PATH 		"/org/openmoko/diversity/world"
-#define DIVERSITY_WORLD_DBUS_INTERFACE		"org.openmoko.diversity.world"
+#define DIVERSITY_WORLD_DBUS_PATH 		"/org/openmoko/Diversity/world"
+#define DIVERSITY_WORLD_DBUS_INTERFACE		"org.openmoko.Diversity.World"
 
-#define DIVERSITY_VIEWPORT_DBUS_INTERFACE	"org.openmoko.diversity.viewport"
-#define DIVERSITY_OBJECT_DBUS_INTERFACE		"org.openmoko.diversity.object"
-#define DIVERSITY_BARD_DBUS_INTERFACE		"org.openmoko.diversity.bard"
-#define DIVERSITY_TAG_DBUS_INTERFACE		"org.openmoko.diversity.tag"
+#define DIVERSITY_VIEWPORT_DBUS_INTERFACE	"org.openmoko.Diversity.Viewport"
+#define DIVERSITY_OBJECT_DBUS_INTERFACE		"org.openmoko.Diversity.Object"
+#define DIVERSITY_BARD_DBUS_INTERFACE		"org.openmoko.Diversity.Bard"
+#define DIVERSITY_TAG_DBUS_INTERFACE		"org.openmoko.Diversity.Tag"
 
-#define DIVERSITY_EQUIPMENT_DBUS_INTERFACE	"org.openmoko.diversity.equipment"
-#define DIVERSITY_ATLAS_DBUS_INTERFACE		"org.openmoko.diversity.atlas"
-#define DIVERSITY_SMS_DBUS_INTERFACE		"org.openmoko.diversity.sms"
+#define DIVERSITY_EQUIPMENT_DBUS_INTERFACE	"org.openmoko.Diversity.Equipment"
+#define DIVERSITY_ATLAS_DBUS_INTERFACE		"org.openmoko.Diversity.Atlas"
+#define DIVERSITY_SMS_DBUS_INTERFACE		"org.openmoko.Diversity.Sms"
 
 enum _DiversityObjectType {
 	DIVERSITY_OBJECT_TYPE_OBJECT,

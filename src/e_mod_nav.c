@@ -132,7 +132,7 @@ osm_tileset_add(Evas_Object *nav)
 	self = e_nav_world_get_self(world);
 	if (self)
 	  proxy = e_nav_bard_equipment_get(self,
-		"osm", "org.openmoko.diversity.atlas");
+		"osm", "org.openmoko.Diversity.Atlas");
      }
 
 
