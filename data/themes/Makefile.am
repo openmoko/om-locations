@@ -1,5 +1,4 @@
 MAINTAINERCLEANFILES = Makefile.in
-SUBDIRS = images
 
 EDJE_CC = @edje_cc@
 EDJE_FLAGS = \
@@ -13,6 +12,7 @@ default.edj
 
 EXTRA_DIST = \
 default_ilist.edc \
+default_ctrl.edc \
 default.edc
 
 default.edj: Makefile $(EXTRA_DIST)

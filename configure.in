@@ -57,5 +57,4 @@ po/Makefile
 images/Makefile
 data/Makefile
 data/themes/Makefile
-data/themes/images/Makefile
 ],[])
