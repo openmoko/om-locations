@@ -5,6 +5,7 @@
 #include "e_nav_item_neo_me.h"
 #include "e_nav_item_neo_other.h"
 #include "e_nav_item_link.h"
+#include "e_nav_item_location.h"
 #include "e_nav_dbus.h"
 #include "e_nav_tileset.h"
 #include "e_ctrl.h"
@@ -256,6 +257,12 @@ _e_mod_nav_init(Evas *evas)
    nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
 				     151.210000, 33.870000);
    e_nav_world_item_neo_me_name_set(nwi, "Me");
+
+   /* test location object */
+   nwi = e_nav_world_item_location_add(nav, THEME_PATH,
+				     151.110000, 33.770000);
+   e_nav_world_item_location_name_set(nwi, "New Office");
+   e_nav_world_item_location_description_set(nwi, "Our new office will be opening soon. Can't wait\n to move in and throw a big party!");
 
    /* start off at a zoom level and location instantly */
    e_nav_zoom_set(nav, 80000, 0.0);

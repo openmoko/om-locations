@@ -22,5 +22,6 @@ spectra {
 collections {
 #include "default_ilist.edc"
 #include "default_ctrl.edc"
+#include "default_textblock.edc"
 }
 

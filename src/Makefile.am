@@ -20,6 +20,7 @@ noinst_HEADERS =		\
 	e_nav_item_neo_me.h	\
 	e_nav_item_neo_other.h	\
 	e_nav_item_link.h	\
+        e_nav_item_location.h   \
 	e_nav_dbus.h            \
         e_ctrl.h                
 
@@ -35,6 +36,7 @@ diversity_nav_SOURCES =		\
 	e_nav_item_neo_me.c	\
 	e_nav_item_neo_other.c	\
 	e_nav_item_link.c	\
+        e_nav_item_location.c   \
 	e_nav_dbus.c            \
         e_ctrl.c                
 		    

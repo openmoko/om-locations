@@ -1,4 +1,4 @@
-#include "e_nav.h"    // we need to control nav (map) , like zoom in/out
+#include "e_nav.h"    
 #include "e_ctrl.h"
 #include "e_nav_tileset.h"
 #include "widgets/e_ilist.h"
@@ -16,7 +16,7 @@ struct _E_Smart_Data
 {
    Evas_Object *obj;      
    Evas_Object *clip;
-   Evas_Object *map_overlay;   // control map, like scope
+   Evas_Object *map_overlay;   
    Evas_Object *nav;
    Evas_Object *listview;   
    Evas_Object *tagview;    
@@ -61,9 +61,20 @@ e_ctrl_add(Evas *e)
 }
 
 static void
-_e_test_sel(void *data, void *data2)
+_e_nav_tag_sel(void *data, void *data2)
 {
-   printf("test sel\n");
+   printf("tag sel\n");
+   E_Smart_Data *sd; 
+   sd = evas_object_smart_data_get(data);
+   if(!sd) {
+       printf("sd is NULL\n");
+       return;
+   }
+   evas_object_hide(sd->listview);
+   sd->view_mode = E_NAV_VIEW_MODE_MAP;
+   e_nav_coord_set(sd->nav, 151.205907, 33.875938, 0.0);
+   evas_object_show(sd->nav);
+   evas_object_show(sd->map_overlay);
 }
 
 static void   
@@ -92,8 +103,8 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
 
    Evas_Coord mw, mh; 
    listpane = e_ilist_add(evas);
-   e_ilist_append(listpane, NULL, "Girl friend dumped me", 20, _e_test_sel, NULL, NULL, NULL);
-   e_ilist_append(listpane, NULL, "My favorite steak", 20, _e_test_sel, NULL, NULL, NULL);
+   e_ilist_append(listpane, NULL, "Girl friend dumped me", 20, _e_nav_tag_sel, NULL, data, NULL);
+   e_ilist_append(listpane, NULL, "My favorite steak", 20, _e_nav_tag_sel, NULL, data, NULL);
    e_ilist_min_size_get(listpane, &mw, &mh);
    evas_object_resize(listpane, 480, mh);
    evas_object_move(listpane, 0, 50);
@@ -117,6 +128,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    }
    evas_object_hide(sd->listview);
    sd->view_mode = E_NAV_VIEW_MODE_MAP;
+   e_nav_coord_set(sd->nav, 151.205907, 33.875938, 0.0);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
 }
