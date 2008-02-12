@@ -1,6 +1,7 @@
 #include "../e_nav.h"
 #include "e_nav_dialog.h"
 #include "e_widget_textblock.h"
+#include "e_nav_textedit.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -12,9 +13,8 @@ struct _E_TextBlock_Item
    Evas_Object *obj;
    Evas_Object *item_obj;
    Evas_Coord sz;
-   const char *label;
+   Evas_Object *label;
    const char *input;
-   //void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj);
    void *data;
 };
 
@@ -41,16 +41,10 @@ struct _E_Smart_Data
 
    Evas_List      *textblocks;
    Evas_List      *buttons;
-   double           activate_time;
-   int              activate_deactivate;
    unsigned char direction : 2;  // 0: North, 1: East, 2: South, 3: West
-   Ecore_Animator  *animator;
    
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
-   
-   unsigned char autodelete : 1;
-   unsigned char active : 1;
 };
 
 static void _e_dialog_smart_init(void);
@@ -137,24 +131,6 @@ e_dialog_source_object_get(Evas_Object *obj)
    SMART_CHECK(obj, NULL;);
    return sd->src_obj;
 }
-  
-void
-e_dialog_autodelete_set(Evas_Object *obj, Evas_Bool autodelete)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   sd->autodelete = autodelete;
-}
-
-Evas_Bool
-e_dialog_autodelete_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0;);
-   return sd->autodelete;
-}
 
 void
 e_dialog_activate(Evas_Object *obj)
@@ -163,10 +139,6 @@ e_dialog_activate(Evas_Object *obj)
    
    SMART_CHECK(obj, ;);
    evas_object_show(sd->event);
-   if (sd->active) return;
-   sd->activate_deactivate = 1;
-   sd->active = 1;
-   sd->activate_time = ecore_time_get();
    _e_dialog_update(obj);
 }
 
@@ -177,12 +149,8 @@ e_dialog_deactivate(Evas_Object *obj)
    
    SMART_CHECK(obj, ;);
    evas_object_hide(sd->event);
-
-   if (!sd->active) return;
-   sd->activate_deactivate = -1;
-   sd->activate_time = ecore_time_get();
    _e_dialog_smart_hide(obj);
-   _e_dialog_smart_del(obj);
+   _e_dialog_smart_del(obj);    
 }
 
 /* internal calls */
@@ -258,16 +226,17 @@ _e_dialog_smart_del(Evas_Object *obj)
 	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_RESIZE,
 				       _e_dialog_cb_src_obj_resize);
      }
-   while (sd->textblocks)   // remove textblocks
+   while (sd->textblocks)   
      {
 	E_TextBlock_Item *tbi;
 	
 	tbi = sd->textblocks->data;
 	sd->textblocks = evas_list_remove_list(sd->textblocks, sd->textblocks);
+	evas_object_del(tbi->label);
 	evas_object_del(tbi->item_obj);
 	free(tbi);
      }
-   while (sd->buttons)   // remove buttons
+   while (sd->buttons)   
      {
 	E_Button_Item *bi;
 	
@@ -380,16 +349,15 @@ _e_dialog_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
 static void
 _e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
-   E_Button_Item *si;
+   E_Button_Item *bi;
    E_Smart_Data *sd;
      
-   si = data;
-   if (!si) return;
-   sd = evas_object_smart_data_get(si->obj);
+   bi = data;
+   if (!bi) return;
+   sd = evas_object_smart_data_get(bi->obj);
    if (!sd) return;
    if (!sd->src_obj) return;
-   if (!sd->active) return;
-   if (si->func) si->func(si->data, si->obj, sd->src_obj);
+   if (bi->func) bi->func(bi->data, bi->obj, sd->src_obj);
 }
 
 void
@@ -399,7 +367,6 @@ e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *dat
    E_Button_Item *bi;
    
    SMART_CHECK(obj, ;);
-   /* add menu item */
    bi = calloc(1, sizeof(E_Button_Item));
    bi->obj = obj;
    bi->func = func;
@@ -421,16 +388,14 @@ e_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
    
    SMART_CHECK(obj, ;);
    if(!sd) return;
-   if(!sd->title_object) {
-     Evas_Object *o;
-     o = _e_dialog_theme_obj_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/text");
-     sd->title_object = o;
-   edje_object_part_text_set(sd->title_object, "title", title);
-   edje_object_part_text_set(sd->title_object, "message", message);
-     //edje_object_part_swallow(sd->bg_object, "e.swallow.content", o);
-     //evas_object_show(o);
-   }
-
+   if(!sd->title_object) 
+     {
+        Evas_Object *o;
+        o = _e_dialog_theme_obj_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/text");
+        sd->title_object = o;
+        edje_object_part_text_set(sd->title_object, "title", title);
+        edje_object_part_text_set(sd->title_object, "message", message);
+     }
 }
 
 void 
@@ -444,43 +409,55 @@ e_dialog_text_set(Evas_Object *obj, const char *text)
      Evas_Object *o;
      o = _e_dialog_theme_obj_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/text");
      sd->text_object = o;
-   edje_object_part_text_set(sd->text_object, "e.textblock.message", text);
-     //edje_object_part_swallow(sd->bg_object, "e.swallow.content", o);
-     //evas_object_show(o);
+     edje_object_part_text_set(sd->text_object, "e.textblock.message", text);
    }
+}
 
-
+void 
+e_dialog_textblock_text_set(void *obj, const char *input)
+{
+   E_TextBlock_Item *tbi = (E_TextBlock_Item*)obj;
+   if(tbi->input) free((void*)tbi->input);
+   tbi->input = strdup(input);
+   e_widget_textblock_plain_set(tbi->item_obj, tbi->input);
+   _e_dialog_update(tbi->obj);
 }
 
 static void
 _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
-   E_Button_Item *si;
-   E_Smart_Data *sd;
-     
-   si = data;
-   if (!si) return;
-   sd = evas_object_smart_data_get(si->obj);
-   if (!sd) return;
-   if (!sd->src_obj) return;
-   if (!sd->active) return;
-
-   printf("textblock mouse up\n");
-   // jump to text edit screen
+   E_TextBlock_Item *tbi = (E_TextBlock_Item*)data;
+   Evas_Object *teo = e_textedit_add(evas);
+   e_textedit_theme_source_set(teo, THEME_PATH, NULL, NULL);  
+   e_textedit_source_object_set(teo, data); // data is tbi ( TextBlock_Item)
+   e_textedit_input_set(teo, evas_object_text_text_get(tbi->label), tbi->input);
+   
+   evas_object_show(teo);
+   e_textedit_activate(teo);
 }
 
 void 
-e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, void *data)
+e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Evas_Coord size, void *data)
 {
    E_Smart_Data *sd;
    E_TextBlock_Item *tbi;
    
    SMART_CHECK(obj, ;);
-   /* add menu item */
    tbi = calloc(1, sizeof(E_TextBlock_Item));
    tbi->obj = obj;
-   tbi->label = label;
-   tbi->input = input;
+   Evas_Object *o;
+   o = evas_object_text_add( evas_object_evas_get(obj) ); 
+   evas_object_text_text_set(o, label);
+   evas_object_text_font_set(o, "Sans:style=Bold,Edje-Vera-Bold", 20);
+   evas_object_text_glow_color_set(o, 255, 255, 255, 255);
+   tbi->label = o;
+   evas_object_smart_member_add(tbi->label, obj);
+   evas_object_clip_set(tbi->label, sd->clip);
+
+   tbi->input = strdup(input);
+   if(size < 30) size=30;
+   if(size > 150) size=150;
+   tbi->sz = size;
    tbi->data = data;
    tbi->item_obj = e_widget_textblock_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(tbi->item_obj, obj);
@@ -512,7 +489,6 @@ _e_dialog_update(Evas_Object *obj)
         evas_object_show(sd->title_object);
      }
 
-   int j = evas_list_count(sd->textblocks);
    Evas_List *l;
    E_TextBlock_Item *tbi;
    int y = 190;
@@ -520,10 +496,14 @@ _e_dialog_update(Evas_Object *obj)
    for (l = sd->textblocks; l; l = l->next)
      {
         tbi = l->data;
+        evas_object_move(tbi->label, 10, y);
+        //evas_object_resize(tbi->label, 460, 50);
+        evas_object_show(tbi->label);
+        y = y + 25;
         e_widget_textblock_move(tbi->item_obj, 10, y);
-        e_widget_textblock_resize(tbi->item_obj, 460, 100);
+        e_widget_textblock_resize(tbi->item_obj, 460, tbi->sz);
         e_widget_textblock_show(tbi->item_obj);
-        y = y + 150;
+        y = y + tbi->sz + 10;
      }
    
    int i = evas_list_count(sd->buttons);
@@ -547,8 +527,6 @@ _e_dialog_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event)
      
    sd = evas_object_smart_data_get(data);
    if (!sd) return;
-   if (sd->autodelete)
-     evas_object_del(sd->obj);
 }
 
 static void

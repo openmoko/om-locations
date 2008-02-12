@@ -78,7 +78,6 @@ e_widget_textblock_resize(Evas_Object *obj, int w, int h)
    E_Widget_Data *wd;
    wd = e_widget_data_get(obj);
    evas_object_resize(wd->o_textblock, w, h);
-
 }
 
 EAPI void

@@ -60,7 +60,7 @@ collections {
                }
                text {
 		  font: "Sans:style=Bold,Edje-Vera-Bold";
-		  size: 22;
+		  size: 28;
                   min:  1 1;
 		  align: 0.0 0.5;
                }

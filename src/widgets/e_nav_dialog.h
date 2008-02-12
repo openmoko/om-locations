@@ -13,7 +13,7 @@ void            e_dialog_deactivate(Evas_Object *obj);
 void            e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data);
 void            e_dialog_title_set(Evas_Object *obj, const char *title, const char *message);
 void            e_dialog_text_set(Evas_Object *obj, const char *text);
-void            e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, void *data);
-void            e_dialog_component_add(Evas_Object *obj, Evas_Object *comp);
+void            e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Evas_Coord size, void *data);
+void            e_dialog_textblock_text_set(void *tb_obj, const char *input);
     
 #endif

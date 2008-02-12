@@ -46,7 +46,7 @@ e_ctrl_dialog_set_message(Evas_Object *obj, const char *message)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
-   edje_object_part_text_set(sd->overlay, "e.titlepane.message", message);
+   edje_object_part_text_set(sd->overlay, "titlepane.message", message);
 }
 
 void
@@ -54,8 +54,8 @@ e_ctrl_dialog_set_left_button(Evas_Object *obj, const char *text, CallbackFunc c
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
-   edje_object_part_text_set(sd->overlay, "e.button.left.label", text);
-   Evas_Object* o = edje_object_part_object_get(sd->overlay, "e.button.left");
+   edje_object_part_text_set(sd->overlay, "button.label.left", text);
+   Evas_Object* o = edje_object_part_object_get(sd->overlay, "button.base.left");
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN, cb, src);
 }
 
@@ -64,8 +64,8 @@ e_ctrl_dialog_set_right_button(Evas_Object *obj, const char *text, CallbackFunc 
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
-   edje_object_part_text_set(sd->overlay, "e.button.right.label", text);
-   Evas_Object* o = edje_object_part_object_get(sd->overlay, "e.button.right");
+   edje_object_part_text_set(sd->overlay, "button.label.right", text);
+   Evas_Object* o = edje_object_part_object_get(sd->overlay, "button.base.right");
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN, cb, src);
 }
 
@@ -74,8 +74,8 @@ e_ctrl_dialog_hide_buttons(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
-   Evas_Object *left_button = edje_object_part_object_get(sd->overlay, "e.button.left");
-   Evas_Object *right_button = edje_object_part_object_get(sd->overlay, "e.button.right");
+   Evas_Object *left_button = edje_object_part_object_get(sd->overlay, "button.base.left");
+   Evas_Object *right_button = edje_object_part_object_get(sd->overlay, "button.base.right");
    evas_object_hide(left_button);
    evas_object_hide(right_button);
 }

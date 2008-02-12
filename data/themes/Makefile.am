@@ -14,6 +14,7 @@ EXTRA_DIST = \
 default_ilist.edc \
 default_ctrl.edc \
 default_textblock.edc \
+default_entry.edc \
 default.edc
 
 default.edj: Makefile $(EXTRA_DIST)
