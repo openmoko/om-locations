@@ -1,6 +1,6 @@
 #include "../e_nav.h"
 #include "e_nav_textedit.h"
-#include "e_ctrl_dialog.h"
+#include "e_nav_titlepane.h"
 #include "e_nav_dialog.h"
 #include "e_entry.h"
 
@@ -86,13 +86,13 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    evas_object_repeat_events_set(sd->bg_object, 1);
    evas_object_show(sd->bg_object);
 
-   sd->button_pane_object = e_ctrl_dialog_add(evas_object_evas_get(obj));
-   e_ctrl_dialog_theme_source_set(sd->button_pane_object, THEME_PATH);
-   e_ctrl_dialog_set_message(sd->button_pane_object, "");
-   if(!positive_func) e_ctrl_dialog_set_left_button(sd->button_pane_object, "OK", textedit_save, obj);  
-   else e_ctrl_dialog_set_left_button(sd->button_pane_object, "OK", positive_func, obj);
-   if(!negative_func) e_ctrl_dialog_set_right_button(sd->button_pane_object, "Cancel", textedit_exit, obj);
-   else e_ctrl_dialog_set_right_button(sd->button_pane_object, "Cancel", negative_func, obj);
+   sd->button_pane_object = e_nav_titlepane_add(evas_object_evas_get(obj));
+   e_nav_titlepane_theme_source_set(sd->button_pane_object, THEME_PATH);
+   e_nav_titlepane_set_message(sd->button_pane_object, "");
+   if(!positive_func) e_nav_titlepane_set_left_button(sd->button_pane_object, "OK", textedit_save, obj);  
+   else e_nav_titlepane_set_left_button(sd->button_pane_object, "OK", positive_func, obj);
+   if(!negative_func) e_nav_titlepane_set_right_button(sd->button_pane_object, "Cancel", textedit_exit, obj);
+   else e_nav_titlepane_set_right_button(sd->button_pane_object, "Cancel", negative_func, obj);
    evas_object_smart_member_add(sd->button_pane_object, obj);   
    evas_object_clip_set(sd->button_pane_object, sd->clip);
 }

@@ -12,7 +12,7 @@ default.edj
 
 EXTRA_DIST = \
 default_ilist.edc \
-default_ctrl.edc \
+default_titlepane.edc \
 default_textblock.edc \
 default_entry.edc \
 default.edc

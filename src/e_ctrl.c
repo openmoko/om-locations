@@ -2,7 +2,7 @@
 #include "e_ctrl.h"
 #include "e_nav_tileset.h"
 #include "widgets/e_ilist.h"
-#include "widgets/e_ctrl_dialog.h"
+#include "widgets/e_nav_titlepane.h"
 
 static Evas_Object *ctrl = NULL;
 
@@ -90,10 +90,10 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
    sd->view_mode = E_NAV_VIEW_MODE_LIST;
 
    Evas_Object *titlepane, *listpane;
-   titlepane = e_ctrl_dialog_add(evas);
-   e_ctrl_dialog_theme_source_set(titlepane, THEME_PATH);
-   e_ctrl_dialog_set_message(titlepane, "View Tags");
-   e_ctrl_dialog_hide_buttons(titlepane);
+   titlepane = e_nav_titlepane_add(evas);
+   e_nav_titlepane_theme_source_set(titlepane, THEME_PATH);
+   e_nav_titlepane_set_message(titlepane, "View Tags");
+   e_nav_titlepane_hide_buttons(titlepane);
    evas_object_smart_member_add(titlepane, sd->listview);   
    evas_object_clip_set(titlepane, sd->listview);
 

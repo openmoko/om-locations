@@ -12,7 +12,7 @@ noinst_HEADERS =		\
         e_ilist.h               \
         e_box.h                 \
         e_icon.h                \
-        e_ctrl_dialog.h         \
+        e_nav_titlepane.h       \
         e_nav_theme.h           \
         e_widget_textblock.h    \
         e_widget.h              \
@@ -27,7 +27,7 @@ libwidget_la_SOURCES =		\
         e_ilist.c               \
 	e_box.c                 \
         e_icon.c                \
-        e_ctrl_dialog.c         \
+        e_nav_titlepane.c       \
         e_nav_theme.c           \
         e_widget_textblock.c    \
         e_nav_dialog.c          \

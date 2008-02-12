@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include "e_ctrl_dialog.h"
+#include "e_nav_titlepane.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
-static Evas_Object * _e_ctrl_dialog_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
+static Evas_Object * _e_nav_titlepane_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
 
 struct _E_Smart_Data
 {
@@ -16,33 +16,33 @@ struct _E_Smart_Data
    const char      *dir;
 };
 
-static void _e_ctrl_dialog_smart_init(void);
-static void _e_ctrl_dialog_smart_add(Evas_Object *obj);
-static void _e_ctrl_dialog_smart_del(Evas_Object *obj);
-static void _e_ctrl_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
-static void _e_ctrl_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
-static void _e_ctrl_dialog_smart_show(Evas_Object *obj);
-static void _e_ctrl_dialog_smart_hide(Evas_Object *obj);
-static void _e_ctrl_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
-static void _e_ctrl_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
-static void _e_ctrl_dialog_smart_clip_unset(Evas_Object *obj);
+static void _e_nav_titlepane_smart_init(void);
+static void _e_nav_titlepane_smart_add(Evas_Object *obj);
+static void _e_nav_titlepane_smart_del(Evas_Object *obj);
+static void _e_nav_titlepane_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
+static void _e_nav_titlepane_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
+static void _e_nav_titlepane_smart_show(Evas_Object *obj);
+static void _e_nav_titlepane_smart_hide(Evas_Object *obj);
+static void _e_nav_titlepane_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
+static void _e_nav_titlepane_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
+static void _e_nav_titlepane_smart_clip_unset(Evas_Object *obj);
 
 static Evas_Smart *_e_smart = NULL;
 
 #define SMART_CHECK(obj, ret) \
    sd = evas_object_smart_data_get(obj); \
    if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_ctrl_dialog")) return ret
+   if (strcmp(evas_object_type_get(obj), "e_nav_titlepane")) return ret
 
 Evas_Object *
-e_ctrl_dialog_add(Evas *e)
+e_nav_titlepane_add(Evas *e)
 {
-   _e_ctrl_dialog_smart_init();
+   _e_nav_titlepane_smart_init();
    return evas_object_smart_add(e, _e_smart);
 }
 
 void
-e_ctrl_dialog_set_message(Evas_Object *obj, const char *message)
+e_nav_titlepane_set_message(Evas_Object *obj, const char *message)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
@@ -50,7 +50,7 @@ e_ctrl_dialog_set_message(Evas_Object *obj, const char *message)
 }
 
 void
-e_ctrl_dialog_set_left_button(Evas_Object *obj, const char *text, CallbackFunc cb, Evas_Object *src)  
+e_nav_titlepane_set_left_button(Evas_Object *obj, const char *text, CallbackFunc cb, Evas_Object *src)  
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
@@ -60,7 +60,7 @@ e_ctrl_dialog_set_left_button(Evas_Object *obj, const char *text, CallbackFunc c
 }
 
 void
-e_ctrl_dialog_set_right_button(Evas_Object *obj, const char *text, CallbackFunc cb, Evas_Object *src)
+e_nav_titlepane_set_right_button(Evas_Object *obj, const char *text, CallbackFunc cb, Evas_Object *src)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
@@ -70,7 +70,7 @@ e_ctrl_dialog_set_right_button(Evas_Object *obj, const char *text, CallbackFunc 
 }
 
 void
-e_ctrl_dialog_hide_buttons(Evas_Object *obj)
+e_nav_titlepane_hide_buttons(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
@@ -81,14 +81,14 @@ e_ctrl_dialog_hide_buttons(Evas_Object *obj)
 }
 
 void
-e_ctrl_dialog_theme_source_set(Evas_Object *obj, const char *custom_dir)
+e_nav_titlepane_theme_source_set(Evas_Object *obj, const char *custom_dir)
 {
    E_Smart_Data *sd;
    
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-   sd->overlay = _e_ctrl_dialog_theme_obj_new(evas_object_evas_get(obj), sd->dir,
+   sd->overlay = _e_nav_titlepane_theme_obj_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/titlepane");
    evas_object_smart_member_add(sd->overlay, obj);
    evas_object_move(sd->overlay, sd->x, sd->y);
@@ -99,12 +99,12 @@ e_ctrl_dialog_theme_source_set(Evas_Object *obj, const char *custom_dir)
 }
 
 static Evas_Object *
-_e_ctrl_dialog_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
+_e_nav_titlepane_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
 {
    Evas_Object *o;
    
    o = edje_object_add(e);
-   if (!e_ctrl_dialog_edje_object_set(o, "default", group))
+   if (!e_nav_titlepane_edje_object_set(o, "default", group))
      {
 	if (custom_dir)
 	  {
@@ -118,7 +118,7 @@ _e_ctrl_dialog_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
 }
 
 int
-e_ctrl_dialog_edje_object_set(Evas_Object *o, const char *category, const char *group)
+e_nav_titlepane_edje_object_set(Evas_Object *o, const char *category, const char *group)
 {
    char buf[PATH_MAX];
    int ok;
@@ -130,24 +130,24 @@ e_ctrl_dialog_edje_object_set(Evas_Object *o, const char *category, const char *
 
 /* internal calls */
 static void
-_e_ctrl_dialog_smart_init(void)
+_e_nav_titlepane_smart_init(void)
 {
    if (_e_smart) return;
 
    {
       static const Evas_Smart_Class sc =
       {
-	 "e_ctrl_dialog",
+	 "e_nav_titlepane",
 	 EVAS_SMART_CLASS_VERSION,
-	 _e_ctrl_dialog_smart_add,
-	 _e_ctrl_dialog_smart_del,
-	 _e_ctrl_dialog_smart_move,
-	 _e_ctrl_dialog_smart_resize,
-	 _e_ctrl_dialog_smart_show,
-	 _e_ctrl_dialog_smart_hide,
-	 _e_ctrl_dialog_smart_color_set,
-	 _e_ctrl_dialog_smart_clip_set,
-	 _e_ctrl_dialog_smart_clip_unset,
+	 _e_nav_titlepane_smart_add,
+	 _e_nav_titlepane_smart_del,
+	 _e_nav_titlepane_smart_move,
+	 _e_nav_titlepane_smart_resize,
+	 _e_nav_titlepane_smart_show,
+	 _e_nav_titlepane_smart_hide,
+	 _e_nav_titlepane_smart_color_set,
+	 _e_nav_titlepane_smart_clip_set,
+	 _e_nav_titlepane_smart_clip_unset,
 
 	 NULL /* data */
       };
@@ -156,7 +156,7 @@ _e_ctrl_dialog_smart_init(void)
 }
 
 static void
-_e_ctrl_dialog_smart_add(Evas_Object *obj)
+_e_nav_titlepane_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -176,7 +176,7 @@ _e_ctrl_dialog_smart_add(Evas_Object *obj)
 }
 
 static void
-_e_ctrl_dialog_smart_del(Evas_Object *obj)
+_e_nav_titlepane_smart_del(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -188,7 +188,7 @@ _e_ctrl_dialog_smart_del(Evas_Object *obj)
 }
 
 static void
-_e_ctrl_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
+_e_nav_titlepane_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
 
@@ -200,7 +200,7 @@ _e_ctrl_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 }
 
 static void
-_e_ctrl_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
+_e_nav_titlepane_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    E_Smart_Data *sd;
    
@@ -212,7 +212,7 @@ _e_ctrl_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 }
 
 static void
-_e_ctrl_dialog_smart_show(Evas_Object *obj)
+_e_nav_titlepane_smart_show(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -222,7 +222,7 @@ _e_ctrl_dialog_smart_show(Evas_Object *obj)
 }
 
 static void
-_e_ctrl_dialog_smart_hide(Evas_Object *obj)
+_e_nav_titlepane_smart_hide(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -232,7 +232,7 @@ _e_ctrl_dialog_smart_hide(Evas_Object *obj)
 }
 
 static void
-_e_ctrl_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
+_e_nav_titlepane_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 {
    E_Smart_Data *sd;
    
@@ -242,7 +242,7 @@ _e_ctrl_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 }
 
 static void
-_e_ctrl_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
+_e_nav_titlepane_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 {
    E_Smart_Data *sd;
    
@@ -252,7 +252,7 @@ _e_ctrl_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 }
 
 static void
-_e_ctrl_dialog_smart_clip_unset(Evas_Object *obj)
+_e_nav_titlepane_smart_clip_unset(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
