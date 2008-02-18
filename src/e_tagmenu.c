@@ -398,11 +398,15 @@ _e_tagmenu_update(Evas_Object *obj)
    E_Tagmenu_Item *ti;
    Evas_Coord x, y, w, h, xx, yy, ww, hh;
    double t;
-   
+   int screen_x, screen_y, screen_w, screen_h;
+   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h); 
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    if (!sd->items) return;
    evas_object_geometry_get(sd->src_obj, &x, &y, &w, &h);
+   int menu_h = screen_h/13;
+   int interspace = menu_h/2;
    int tsize = 0;
    if (sd->activate_deactivate == 0)
      {
@@ -420,9 +424,9 @@ _e_tagmenu_update(Evas_Object *obj)
 	     else
 	       {
 		  xx =  (-tsize/2) + size + (ti->sz/2);
-		  yy =  (-h/2) -20 - (50/2) ;
+		  yy =  (-h/2) -interspace - (menu_h/2) ;
 		  ww = ti->sz ;
-		  hh = 50 ;
+		  hh = menu_h ;
 		  evas_object_move(ti->item_obj, 
 				   x + (w / 2) + xx - (ww / 2), 
 				   y + (h / 2) + yy - (hh / 2));
@@ -453,8 +457,8 @@ _e_tagmenu_update(Evas_Object *obj)
 	for (l = sd->items; l; l = l->next)
 	  {
 	     ti = l->data;
-	     evas_object_move(ti->item_obj, x+(w/2)-(tsize/2)+size, (y*t)-50-20);
-	     evas_object_resize(ti->item_obj, ti->sz, 50);
+	     evas_object_move(ti->item_obj, x+(w/2)-(tsize/2)+size, (y*t)-menu_h-interspace);
+	     evas_object_resize(ti->item_obj, ti->sz, menu_h);
 	     evas_object_show(ti->item_obj);
              size = size + ti->sz;
 	  }

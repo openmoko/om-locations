@@ -477,46 +477,56 @@ _e_dialog_update(Evas_Object *obj)
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
-
-   evas_object_move(sd->bg_object, 0, 100);
-   evas_object_resize(sd->bg_object, 480, 440);
+   
+   int x, y;
+   int screen_x, screen_y, screen_w, screen_h;
+   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
+   int dialog_x, dialog_y, dialog_w, dialog_h;
+   dialog_x = 0;
+   dialog_y = screen_h* (1.0/6);
+   dialog_w = screen_w;
+   dialog_h = screen_h * (2.0/3);
+   evas_object_move(sd->bg_object, dialog_x, dialog_y );
+   evas_object_resize(sd->bg_object, dialog_w, dialog_h );
    evas_object_show(sd->bg_object);
+
 
    if(sd->title_object)
      {
-        evas_object_resize(sd->title_object, 480, 60);
-        evas_object_move(sd->title_object, 0, 100);
+        evas_object_resize(sd->title_object, dialog_w, dialog_h*(1.0/6));
+        evas_object_move(sd->title_object, dialog_x, dialog_y );
         evas_object_show(sd->title_object);
      }
 
    Evas_List *l;
    E_TextBlock_Item *tbi;
-   int y = 190;
+   int indent = 10;
+   y =  dialog_y + dialog_h*(1.0/6) + (indent*2.5);
    
    for (l = sd->textblocks; l; l = l->next)
      {
         tbi = l->data;
-        evas_object_move(tbi->label, 10, y);
-        //evas_object_resize(tbi->label, 460, 50);
+        evas_object_move(tbi->label, indent, y);
         evas_object_show(tbi->label);
-        y = y + 25;
-        e_widget_textblock_move(tbi->item_obj, 10, y);
-        e_widget_textblock_resize(tbi->item_obj, 460, tbi->sz);
+        y = y + (indent*2.5);
+        e_widget_textblock_move(tbi->item_obj, indent, y);
+        e_widget_textblock_resize(tbi->item_obj, (dialog_w-(indent*2)), tbi->sz);
         e_widget_textblock_show(tbi->item_obj);
-        y = y + tbi->sz + 10;
+        y = y + tbi->sz + indent;
      }
    
-   int i = evas_list_count(sd->buttons);
+   int lc = evas_list_count(sd->buttons);
    E_Button_Item *bi;
-   int x = 0;
-   int w = (int)(480/i); 
+   x = dialog_x;
+   int button_w = (int)(dialog_w/lc); 
+   int button_h = dialog_h*(1.0/8);
    for (l = sd->buttons; l; l = l->next)
      {
         bi = l->data;
-        evas_object_move(bi->item_obj, x, 490);
-        evas_object_resize(bi->item_obj, w, 50);
+        evas_object_move(bi->item_obj, x, (dialog_y+dialog_h*(7.0/8)) );
+        evas_object_resize(bi->item_obj, button_w, button_h);
         evas_object_show(bi->item_obj);
-        x = x + w;
+        x = x + button_w;
      }
 }
 

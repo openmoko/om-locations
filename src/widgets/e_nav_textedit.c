@@ -322,28 +322,31 @@ _e_textedit_update(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
-   evas_object_move(sd->bg_object, 0, 0);
-   evas_object_resize(sd->bg_object, 480, 640);
+   int screen_x, screen_y, screen_w, screen_h;
+   int indent=10;
+   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
+   evas_object_move(sd->bg_object, screen_x, screen_y);
+   evas_object_resize(sd->bg_object, screen_w, screen_h);
    evas_object_show(sd->bg_object);
    if(sd->button_pane_object)
      {
-        evas_object_resize(sd->button_pane_object, 480, 100);
-        evas_object_move(sd->button_pane_object, 0, 10);
+        evas_object_resize(sd->button_pane_object, screen_w, (screen_h*(1.0/6)) );
+        evas_object_move(sd->button_pane_object, screen_x, screen_y);
         evas_object_show(sd->button_pane_object);
      }
 
    if(sd->title_object)
      {
-        evas_object_resize(sd->title_object, 480, 20);
-        evas_object_move(sd->title_object, 10, 100);
+        evas_object_resize(sd->title_object, screen_w, 30);
+        evas_object_move(sd->title_object, indent, ((screen_h*(1.0/6))+indent) );
         evas_object_show(sd->title_object);
      }
    if(sd->entry_object)
      {
         e_entry_focus(sd->entry_object);
         e_entry_enable(sd->entry_object);
-        evas_object_resize(sd->entry_object, 460, 40);   
-        evas_object_move(sd->entry_object, 10, 120);
+        evas_object_resize(sd->entry_object, screen_w-(indent*2), 40);   
+        evas_object_move(sd->entry_object, indent,  (((screen_h*(1.0/6))+indent) + 30 + indent) );
         evas_object_show(sd->entry_object);
      }
 }

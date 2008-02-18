@@ -86,7 +86,7 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
        printf("sd is NULL\n");
        return;
    }
-
+   printf("List button down\n");
    sd->view_mode = E_NAV_VIEW_MODE_LIST;
 
    Evas_Object *titlepane, *listpane;
@@ -103,9 +103,11 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
 
    Evas_Coord mw, mh; 
    listpane = e_ilist_add(evas);
-   e_ilist_append(listpane, NULL, "Girl friend dumped me", 20, _e_nav_tag_sel, NULL, data, NULL);
+   e_ilist_append(listpane, NULL, "Girl friend dumped me", 50, _e_nav_tag_sel, NULL, data, NULL);
    e_ilist_append(listpane, NULL, "My favorite steak", 20, _e_nav_tag_sel, NULL, data, NULL);
+   e_ilist_icon_size_set(listpane, 480, 50);
    e_ilist_min_size_get(listpane, &mw, &mh);
+       printf("ilist minsize w:%d, h:%d\n", mw, mh);
    evas_object_resize(listpane, 480, mh);
    evas_object_move(listpane, 0, 50);
    evas_object_smart_member_add(listpane, sd->listview);   
@@ -167,14 +169,20 @@ _e_ctrl_buttons_set(Evas_Object *obj)
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
 
-   evas_object_resize(sd->button1, 118, 50);
-   evas_object_resize(sd->button2, 118, 50);
-   evas_object_resize(sd->button3, 118, 50);
-   evas_object_resize(sd->button4, 118, 50);
-   evas_object_move(sd->button1, 0, 588);
-   evas_object_move(sd->button2, 120, 588);
-   evas_object_move(sd->button3, 240, 588);
-   evas_object_move(sd->button4, 360, 588);
+   int screen_x, screen_y, screen_w, screen_h;
+   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h); 
+   int indent=2;
+   int button_w, button_h;
+   button_w = (screen_w/4) - indent;
+   button_h = screen_h/13; 
+   evas_object_resize(sd->button1, button_w, button_h);
+   evas_object_resize(sd->button2, button_w, button_h);
+   evas_object_resize(sd->button3, button_w, button_h);
+   evas_object_resize(sd->button4, button_w, button_h);
+   evas_object_move(sd->button1, 0, (screen_h-indent-button_h) );
+   evas_object_move(sd->button2, (screen_w/4)*1, (screen_h-indent-button_h) );
+   evas_object_move(sd->button3, (screen_w/4)*2, (screen_h-indent-button_h) );
+   evas_object_move(sd->button4, (screen_w/4)*3, (screen_h-indent-button_h) );
    evas_object_event_callback_add(sd->button1, EVAS_CALLBACK_MOUSE_DOWN, _e_nav_tagbook_button_cb_mouse_down, obj);
    evas_object_event_callback_add(sd->button2, EVAS_CALLBACK_MOUSE_DOWN, _e_nav_map_button_cb_mouse_down, obj);
    evas_object_event_callback_add(sd->button3, EVAS_CALLBACK_MOUSE_DOWN, _e_nav_refresh_button_cb_mouse_down, obj);
