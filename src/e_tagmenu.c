@@ -376,13 +376,13 @@ _e_tagmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
    Evas_Object *o;
    
    o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "diversity_nav", group))
+   if (!e_nav_edje_object_set(o, "default", group))
      {
 	if (custom_dir)
 	  {
 	     char buf[PATH_MAX];
 	     
-	     snprintf(buf, sizeof(buf), "%s/diversity_nav.edj", custom_dir);
+	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
 	     edje_object_file_set(o, buf, group);
 	  }
      }

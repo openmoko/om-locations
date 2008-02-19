@@ -927,7 +927,7 @@ _e_entry_smart_add(Evas_Object *object)
    o = edje_object_add(evas);
    sd->entry_object = o;
    //e_theme_edje_object_set(o, "base/theme/widgets", "e/widgets/entry");
-   e_theme_edje_object_set(o, THEME_PATH, "e/widgets/entry");
+   e_nav_theme_object_set(o, THEME_PATH, "e/widgets/entry");
    evas_object_smart_member_add(o, object);
    
    o = e_editable_add(evas);

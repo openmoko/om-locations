@@ -86,7 +86,6 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
        printf("sd is NULL\n");
        return;
    }
-   printf("List button down\n");
    sd->view_mode = E_NAV_VIEW_MODE_LIST;
 
    Evas_Object *titlepane, *listpane;
@@ -107,7 +106,6 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
    e_ilist_append(listpane, NULL, "My favorite steak", 20, _e_nav_tag_sel, NULL, data, NULL);
    e_ilist_icon_size_set(listpane, 480, 50);
    e_ilist_min_size_get(listpane, &mw, &mh);
-       printf("ilist minsize w:%d, h:%d\n", mw, mh);
    evas_object_resize(listpane, 480, mh);
    evas_object_move(listpane, 0, 50);
    evas_object_smart_member_add(listpane, sd->listview);   
@@ -248,13 +246,13 @@ _e_ctrl_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
    Evas_Object *o;
    
    o = edje_object_add(e);
-   if (!e_ctrl_edje_object_set(o, "diversity_nav", group))
+   if (!e_ctrl_edje_object_set(o, "default", group))
      {
 	if (custom_dir)
 	  {
 	     char buf[PATH_MAX];
 	     
-	     snprintf(buf, sizeof(buf), "%s/diversity_nav.edj", custom_dir);
+	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
 	     edje_object_file_set(o, buf, group);
 	  }
      }

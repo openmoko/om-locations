@@ -54,7 +54,6 @@ src/Makefile
 src/widgets/Makefile
 dbus/Makefile
 po/Makefile
-images/Makefile
 data/Makefile
 data/themes/Makefile
 ],[])

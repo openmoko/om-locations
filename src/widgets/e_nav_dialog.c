@@ -2,6 +2,7 @@
 #include "e_nav_dialog.h"
 #include "e_widget_textblock.h"
 #include "e_nav_textedit.h"
+#include "e_nav_theme.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -58,7 +59,6 @@ static void _e_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int
 static void _e_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_dialog_smart_clip_unset(Evas_Object *obj);
 
-static Evas_Object *_e_dialog_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
 static void _e_dialog_update(Evas_Object *obj);
 static void _e_dialog_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event);
 static void _e_dialog_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event);
@@ -327,25 +327,6 @@ _e_dialog_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 } 
 
-static Evas_Object *
-_e_dialog_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "diversity_nav", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/diversity_nav.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
-
 static void
 _e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
@@ -371,7 +352,7 @@ e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *dat
    bi->obj = obj;
    bi->func = func;
    bi->data = data;
-   bi->item_obj = _e_dialog_theme_obj_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button");
+   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button");
    evas_object_smart_member_add(bi->item_obj, obj);
    evas_object_clip_set(bi->item_obj, sd->clip);
    evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,
@@ -391,26 +372,11 @@ e_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
    if(!sd->title_object) 
      {
         Evas_Object *o;
-        o = _e_dialog_theme_obj_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/text");
+        o = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/text");
         sd->title_object = o;
         edje_object_part_text_set(sd->title_object, "title", title);
         edje_object_part_text_set(sd->title_object, "message", message);
      }
-}
-
-void 
-e_dialog_text_set(Evas_Object *obj, const char *text)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   if(!sd) return;
-   if(!sd->text_object) {
-     Evas_Object *o;
-     o = _e_dialog_theme_obj_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/text");
-     sd->text_object = o;
-     edje_object_part_text_set(sd->text_object, "e.textblock.message", text);
-   }
 }
 
 void 

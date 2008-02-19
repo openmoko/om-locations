@@ -3,9 +3,9 @@
 #include <string.h>
 #include <limits.h>
 #include "e_nav_titlepane.h"
+#include "e_nav_theme.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
-static Evas_Object * _e_nav_titlepane_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
 
 struct _E_Smart_Data
 {
@@ -88,7 +88,7 @@ e_nav_titlepane_theme_source_set(Evas_Object *obj, const char *custom_dir)
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-   sd->overlay = _e_nav_titlepane_theme_obj_new(evas_object_evas_get(obj), sd->dir,
+   sd->overlay = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/titlepane");
    evas_object_smart_member_add(sd->overlay, obj);
    evas_object_move(sd->overlay, sd->x, sd->y);
@@ -96,36 +96,6 @@ e_nav_titlepane_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_clip_set(sd->overlay, sd->clip);
 
    evas_object_show(sd->overlay);
-}
-
-static Evas_Object *
-_e_nav_titlepane_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_titlepane_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
-
-int
-e_nav_titlepane_edje_object_set(Evas_Object *o, const char *category, const char *group)
-{
-   char buf[PATH_MAX];
-   int ok;
-   
-   snprintf(buf, sizeof(buf), "%s/%s.edj", THEME_PATH, category);
-   ok = edje_object_file_set(o, buf, group);
-   return ok;
 }
 
 /* internal calls */

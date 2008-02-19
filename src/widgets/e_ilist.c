@@ -72,13 +72,13 @@ e_ilist_append(Evas_Object *obj, Evas_Object *icon, const char *label, int heade
    si->o_base = edje_object_add(evas_object_evas_get(sd->o_smart));
    
    if (header) 
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets", 
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets", 
 			     "e/widgets/ilist_header");
    else if (evas_list_count(sd->items) & 0x1)
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets",
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets",
 			     "e/widgets/ilist_odd");
    else
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets",
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets",
 			     "e/widgets/ilist");
    if (label)
      edje_object_part_text_set(si->o_base, "e.text.label", label);
@@ -123,13 +123,13 @@ e_ilist_append_relative(Evas_Object *obj, Evas_Object *icon, const char *label, 
    si->o_base = edje_object_add(evas_object_evas_get(sd->o_smart));
    
    if (header) 
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets", 
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets", 
 			     "e/widgets/ilist_header");
    else if (evas_list_count(sd->items) & 0x1)
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets",
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets",
 			     "e/widgets/ilist_odd");
    else
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets",
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets",
 			     "e/widgets/ilist");
    if (label)
      edje_object_part_text_set(si->o_base, "e.text.label", label);
@@ -182,13 +182,13 @@ e_ilist_prepend(Evas_Object *obj, Evas_Object *icon, const char *label, int head
    si->o_base = edje_object_add(evas_object_evas_get(sd->o_smart));
    
    if (header) 
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets", 
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets", 
 			     "e/widgets/ilist_header");
    else if (evas_list_count(sd->items) & 0x1)
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets",
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets",
 			     "e/widgets/ilist_odd");
    else
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets",
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets",
 			     "e/widgets/ilist");
    if (label)
      edje_object_part_text_set(si->o_base, "e.text.label", label);
@@ -233,13 +233,13 @@ e_ilist_prepend_relative(Evas_Object *obj, Evas_Object *icon, const char *label,
    si->o_base = edje_object_add(evas_object_evas_get(sd->o_smart));
    
    if (header) 
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets", 
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets", 
 			     "e/widgets/ilist_header");
    else if (evas_list_count(sd->items) & 0x1)
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets",
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets",
 			     "e/widgets/ilist_odd");
    else
-     e_theme_edje_object_set(si->o_base, "base/theme/widgets",
+     e_nav_theme_object_set(si->o_base, "base/theme/widgets",
 			     "e/widgets/ilist");
    if (label)
      edje_object_part_text_set(si->o_base, "e.text.label", label);

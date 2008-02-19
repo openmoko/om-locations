@@ -4,13 +4,16 @@ EDJE_CC = @edje_cc@
 EDJE_FLAGS = \
 -v \
 -id $(top_srcdir)/data/themes/images \
--fd $(top_srcdir)/fonts 
+-fd $(top_srcdir)/data/fonts 
 
 filesdir = $(pkgdatadir)
 files_DATA = \
 default.edj
 
 EXTRA_DIST = \
+diversity_nav.edc \
+default_nav_dialog.edc \
+default_nav_button.edc \
 default_ilist.edc \
 default_titlepane.edc \
 default_textblock.edc \
