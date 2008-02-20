@@ -1,10 +1,12 @@
 MAINTAINERCLEANFILES = Makefile.in
 
+SUBDIRS = fonts images
+
 EDJE_CC = @edje_cc@
 EDJE_FLAGS = \
 -v \
 -id $(top_srcdir)/data/themes/images \
--fd $(top_srcdir)/data/fonts 
+-fd $(top_srcdir)/data/themes/fonts 
 
 filesdir = $(pkgdatadir)
 files_DATA = \

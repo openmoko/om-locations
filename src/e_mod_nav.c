@@ -211,13 +211,6 @@ _e_mod_nav_init(Evas *evas)
    nt = osm_tileset_add(nav);
    evas_object_show(nt);
 
-     {
-	E_DBus_Proxy *proxy;
-
-	proxy = e_nav_bard_object_get(self);
-	e_dbus_proxy_connect_signal(proxy, "GeometryChanged", on_geometry_changed, NULL);
-     }
-
    ctrl = e_ctrl_add(evas);
    e_ctrl_theme_source_set(ctrl, THEME_PATH);
    e_ctrl_nav_set(nav);
