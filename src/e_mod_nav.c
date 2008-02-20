@@ -1,3 +1,23 @@
+/* e_mod_nav.c -
+ *
+ * Copyright 2007-2008 OpenMoko, Inc.
+ * Authored by Carsten Haitzler <raster@openmoko.org>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
 #include "e_nav.h"
 #include "e_mod_nav.h"
 #include "e_spiralmenu.h"
@@ -122,6 +142,22 @@ map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
    evas_object_image_fill_set(obj, 0, 0, w, h);
 }
 
+static void on_geometry_changed(void *data, DBusMessage *message)
+{
+   double x, y, w, h;
+
+   if (!dbus_message_get_args(message, NULL,
+			      DBUS_TYPE_DOUBLE, &x,
+			      DBUS_TYPE_DOUBLE, &y,
+			      DBUS_TYPE_DOUBLE, &w,
+			      DBUS_TYPE_DOUBLE, &h,
+			      DBUS_TYPE_INVALID))
+     return;
+
+   printf("geom: %f, %f\n", x, y);
+   e_nav_coord_set(nav, x, -y, 0.0);
+}
+
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
 {
@@ -174,6 +210,13 @@ _e_mod_nav_init(Evas *evas)
 
    nt = osm_tileset_add(nav);
    evas_object_show(nt);
+
+     {
+	E_DBus_Proxy *proxy;
+
+	proxy = e_nav_bard_object_get(self);
+	e_dbus_proxy_connect_signal(proxy, "GeometryChanged", on_geometry_changed, NULL);
+     }
 
    ctrl = e_ctrl_add(evas);
    e_ctrl_theme_source_set(ctrl, THEME_PATH);
@@ -265,7 +308,7 @@ _e_mod_nav_init(Evas *evas)
    e_nav_world_item_location_description_set(nwi, "Our new office will be opening soon. Can't wait\n to move in and throw a big party!");
 
    /* start off at a zoom level and location instantly */
-   e_nav_zoom_set(nav, 80000, 0.0);
+   e_nav_zoom_set(nav, 5, 0.0);
    e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
             
    _e_mod_nav_update(evas);
