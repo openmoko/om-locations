@@ -43,10 +43,10 @@
 
 /* create (and destroy) a nav object on the desktop bg */
 /* setup and teardown */
-static Evas_Object *ctrl = NULL;
-static Evas_Object *nav = NULL;
+static Evas_Object *ctrl  = NULL;
+static Evas_Object *nav   = NULL;
 static E_Nav_World *world = NULL;
-static E_Nav_Bard *self = NULL;
+static E_Nav_Bard  *self  = NULL;
 
 static void add_city(Evas* evas, double lon, double lat, const char* cityname);
 static void test_map(Evas* evas);
@@ -293,6 +293,7 @@ _e_mod_nav_init(Evas *evas)
    nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
 				     151.210000, 33.870000);
    e_nav_world_item_neo_me_name_set(nwi, "Me");
+   show_welcome_message(nwi);
 
    /* test location object */
    nwi = e_nav_world_item_location_add(nav, THEME_PATH,

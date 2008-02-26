@@ -26,5 +26,6 @@ void                    e_nav_world_item_neo_me_name_set(Evas_Object *item, cons
 const char             *e_nav_world_item_neo_me_name_get(Evas_Object *item);
 void                    e_nav_world_item_neo_me_visible_set(Evas_Object *item, Evas_Bool active);
 Evas_Bool               e_nav_world_item_neo_me_visible_get(Evas_Object *item);
+void                    show_welcome_message(Evas_Object *item);
     
 #endif

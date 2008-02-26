@@ -416,7 +416,7 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_TextBlock_Item *tbi = (E_TextBlock_Item*)data;
    Evas_Object *teo = e_textedit_add(evas);
-   e_textedit_theme_source_set(teo, THEME_PATH, NULL, NULL);  
+   e_textedit_theme_source_set(teo, THEME_PATH, NULL, NULL, NULL, NULL);  
    e_textedit_source_object_set(teo, data); // data is tbi ( TextBlock_Item)
    e_textedit_input_set(teo, evas_object_text_text_get(tbi->label), tbi->input);
    
@@ -473,7 +473,17 @@ _e_dialog_update(Evas_Object *obj)
    dialog_x = 0;
    dialog_y = screen_h* (1.0/6);
    dialog_w = screen_w;
-   dialog_h = screen_h * (2.0/3);
+   int tbc = evas_list_count(sd->textblocks);
+   if(tbc==0) 
+     {
+        dialog_y = screen_h* (1.0/3);
+        dialog_h = screen_h * (1.0/3);
+     }
+   else 
+     {
+        dialog_y = screen_h* (1.0/6);
+        dialog_h = screen_h * (2.0/3);
+     }
    evas_object_move(sd->bg_object, dialog_x, dialog_y );
    evas_object_resize(sd->bg_object, dialog_w, dialog_h );
    evas_object_show(sd->bg_object);
@@ -502,16 +512,20 @@ _e_dialog_update(Evas_Object *obj)
         e_widget_textblock_show(tbi->item_obj);
         y = y + tbi->sz + indent;
      }
-   
+  
+   int button_w, button_h; 
    int lc = evas_list_count(sd->buttons);
+   if(lc==0) return;
    E_Button_Item *bi;
    x = dialog_x;
-   int button_w = (int)(dialog_w/lc); 
-   int button_h = dialog_h*(1.0/8);
+   button_w = (int)(dialog_w/lc); 
+   if(tbc==0) button_h = dialog_h*(1.0/2); 
+   else button_h = dialog_h*(1.0/8);
    for (l = sd->buttons; l; l = l->next)
      {
         bi = l->data;
-        evas_object_move(bi->item_obj, x, (dialog_y+dialog_h*(7.0/8)) );
+        if(tbc==0) evas_object_move(bi->item_obj, x, (dialog_y+dialog_h*(1.0/2)) );
+        else evas_object_move(bi->item_obj, x, (dialog_y+dialog_h*(7.0/8)) );
         evas_object_resize(bi->item_obj, button_w, button_h);
         evas_object_show(bi->item_obj);
         x = x + button_w;

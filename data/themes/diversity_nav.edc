@@ -595,7 +595,7 @@ group {
                font: "Sans:style=Bold,Edje-Vera-Bold";
                size: 22;
                min: 1 1;
-               align: 0.0 1.0;
+               align: 0.5 0.5;
             }
          }
       }

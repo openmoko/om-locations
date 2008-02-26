@@ -22,18 +22,30 @@
 
 #include "../e_nav.h"
 #include "e_nav_textedit.h"
-#include "e_nav_titlepane.h"
 #include "e_nav_dialog.h"
 #include "e_entry.h"
+#include "e_nav_theme.h"
 
+typedef struct _E_Button_Item E_Button_Item;
 typedef struct _E_Smart_Data E_Smart_Data;
+
+struct _E_Button_Item
+{
+   Evas_Object *obj;
+   Evas_Object *item_obj;
+   Evas_Coord sz;
+   void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj);
+   void *data;
+};
+
 struct _E_Smart_Data
 {
    Evas_Coord       x, y, w, h;
    Evas_Object     *obj;
-   void            *src_obj;          // textblock widget
+   void            *src_obj;          
    Evas_Object     *bg_object;
-   Evas_Object     *button_pane_object;
+   Evas_Object     *left_button;
+   Evas_Object     *right_button;
    Evas_Object     *title_object;
    Evas_Object     *entry_object;
    const char      *input_text;
@@ -73,26 +85,42 @@ e_textedit_add(Evas *e)
 }
 
 static void
-textedit_exit(void *data, Evas *evas, Evas_Object *obj, void *event)
+textedit_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   e_textedit_deactivate(data);
+   printf("textedit exit\n");
+   e_textedit_deactivate(obj);
 }
 
 static void
-textedit_save(void *data, Evas *evas, Evas_Object *obj, void *event)
+textedit_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   Evas_Object *object = (Evas_Object*)data;
+   printf("textedit save\n");
+   Evas_Object *object = (Evas_Object*)obj;
    E_Smart_Data *sd;
    
    SMART_CHECK(object, ;);
 
    const char *text = e_entry_text_get(sd->entry_object);
    e_dialog_textblock_text_set(sd->src_obj, text);
-   e_textedit_deactivate(data);
+   e_textedit_deactivate(obj);
+}
+
+static void
+_e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
+{     // data is location_data, bi->obj is textedit object,  
+   E_Button_Item *bi;
+   E_Smart_Data *sd;
+     
+   bi = data;
+   if (!bi) return;
+   sd = evas_object_smart_data_get(bi->obj);
+   if (!sd) return;
+   if (!sd->src_obj) return;
+   if (bi->func) bi->func(bi->data, bi->obj, sd->src_obj);   // src_obj is location item object
 }
 
 void
-e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas *evas, Evas_Object *obj, void *event), void (*negative_func)(void *data, Evas *evas, Evas_Object *obj, void *event))
+e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data2)
 {
    E_Smart_Data *sd;
    
@@ -108,15 +136,32 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    evas_object_repeat_events_set(sd->bg_object, 1);
    evas_object_show(sd->bg_object);
 
-   sd->button_pane_object = e_nav_titlepane_add(evas_object_evas_get(obj));
-   e_nav_titlepane_theme_source_set(sd->button_pane_object, THEME_PATH);
-   e_nav_titlepane_set_message(sd->button_pane_object, "");
-   if(!positive_func) e_nav_titlepane_set_left_button(sd->button_pane_object, "OK", textedit_save, obj);  
-   else e_nav_titlepane_set_left_button(sd->button_pane_object, "OK", positive_func, obj);
-   if(!negative_func) e_nav_titlepane_set_right_button(sd->button_pane_object, "Cancel", textedit_exit, obj);
-   else e_nav_titlepane_set_right_button(sd->button_pane_object, "Cancel", negative_func, obj);
-   evas_object_smart_member_add(sd->button_pane_object, obj);   
-   evas_object_clip_set(sd->button_pane_object, sd->clip);
+   E_Button_Item *bi, *bi2;
+   bi = calloc(1, sizeof(E_Button_Item));
+   bi->obj = obj;
+   if(!positive_func) bi->func = textedit_save;
+   else bi->func = positive_func;
+   bi->data = data1;
+   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button");
+   evas_object_smart_member_add(bi->item_obj, obj);
+   evas_object_clip_set(bi->item_obj, sd->clip);
+   evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,
+                                  _e_button_cb_mouse_up, bi);
+   edje_object_part_text_set(bi->item_obj, "text", "OK");
+   sd->left_button = bi->item_obj;
+
+   bi2 = calloc(1, sizeof(E_Button_Item));
+   bi2->obj = obj;
+   if(!negative_func) bi2->func = textedit_exit;
+   else bi2->func = negative_func;
+   bi2->data = data2;
+   bi2->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button");
+   evas_object_smart_member_add(bi2->item_obj, obj);
+   evas_object_clip_set(bi2->item_obj, sd->clip);
+   evas_object_event_callback_add(bi2->item_obj, EVAS_CALLBACK_MOUSE_UP,
+                                  _e_button_cb_mouse_up, bi2);
+   edje_object_part_text_set(bi2->item_obj, "text", "Cancel");
+   sd->right_button = bi2->item_obj;
 }
 
 void
@@ -224,7 +269,8 @@ _e_textedit_smart_del(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    if(sd->bg_object) evas_object_del(sd->bg_object);
-   if(sd->button_pane_object) evas_object_del(sd->button_pane_object);
+   if(sd->left_button)  evas_object_del(sd->left_button);
+   if(sd->right_button) evas_object_del(sd->right_button);
    if(sd->title_object) evas_object_del(sd->title_object);
    if(sd->entry_object) evas_object_del(sd->entry_object);
    if(sd->input_text) free((void*)sd->input_text);
@@ -336,6 +382,16 @@ e_textedit_input_set(Evas_Object *obj, const char *name, const char *input)
      }
 }
 
+const char* 
+e_textedit_input_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+   if(!sd) return NULL;
+   return e_entry_text_get(sd->entry_object);
+}
+
 static void
 _e_textedit_update(Evas_Object *obj)
 {
@@ -350,13 +406,18 @@ _e_textedit_update(Evas_Object *obj)
    evas_object_move(sd->bg_object, screen_x, screen_y);
    evas_object_resize(sd->bg_object, screen_w, screen_h);
    evas_object_show(sd->bg_object);
-   if(sd->button_pane_object)
+   if(sd->left_button)
      {
-        evas_object_resize(sd->button_pane_object, screen_w, (screen_h*(1.0/6)) );
-        evas_object_move(sd->button_pane_object, screen_x, screen_y);
-        evas_object_show(sd->button_pane_object);
+        evas_object_resize(sd->left_button, screen_w*(1.0/6), (screen_h*(1.0/8)) );
+        evas_object_move(sd->left_button, screen_x+indent, screen_y+indent);
+        evas_object_show(sd->left_button);
      }
-
+   if(sd->right_button)
+     {
+        evas_object_resize(sd->right_button, screen_w*(1.0/6), (screen_h*(1.0/8)) );
+        evas_object_move(sd->right_button, screen_w-indent-(screen_w*(1.0/6)), screen_y+indent);
+        evas_object_show(sd->right_button);
+     }
    if(sd->title_object)
      {
         evas_object_resize(sd->title_object, screen_w, 30);

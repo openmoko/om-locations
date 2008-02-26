@@ -33,6 +33,7 @@ struct _Location_Data
    unsigned char           visible : 1;
    double                  lat;
    double                  lon;
+   // E_DBus_Proxy           *proxy;
 };
 
 static Evas_Object *
@@ -70,21 +71,49 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 }
 
 static void
-location_send(void *data, Evas *evas, Evas_Object *obj, void *event)
+location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("Send SMS\n");
-   e_textedit_deactivate(data);
+   const char* phone_number = strdup(e_textedit_input_get(obj)); 
+
+   Evas_Object *location_object = (Evas_Object*)data;
+   Location_Data *locd;
+   locd = evas_object_data_get(location_object, "nav_world_item_location_data");
+   if (!locd) return;
+   printf("Send SMS the number is %s, the message is %s, %s\n", phone_number, locd->name, locd->description);
+/*
+   int ask_ds = 0;
+   if (!e_dbus_proxy_simple_call(locd->proxy, "Send",
+                                 NULL,
+                                 DBUS_TYPE_STRING, number,
+                                 DBUS_TYPE_STRING, message,
+                                 DBUS_TYPE_BOOLEAN, &ask_ds,
+                                 DBUS_TYPE_INVALID))
+     {
+        printf("failed to send SMS\n");
+        return ;
+     }
+*/
+
+   Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
+   e_dialog_theme_source_set(od, THEME_PATH);
+   e_dialog_source_object_set(od, src_obj);     // dialog's src_obj is location item
+   e_dialog_title_set(od, "Success", "Tag sent");
+   e_dialog_button_add(od, "OK", dialog_exit, od);
+   e_textedit_deactivate(obj);   // object is textedit object
+   evas_object_show(od);
+   e_dialog_activate(od); 
    //ToDo:  call SMS to send
 }
 
 static void
 dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("location send\n");
+   printf("location send\n"); 
    e_dialog_deactivate(obj);
    Evas_Object *teo = e_textedit_add( evas_object_evas_get(obj) );
-   e_textedit_theme_source_set(teo, THEME_PATH, location_send, NULL);  
-   e_textedit_source_object_set(teo, NULL); 
+   e_textedit_theme_source_set(teo, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
+ 
+   e_textedit_source_object_set(teo, data);  //  src_object is location item evas object 
    e_textedit_input_set(teo, "To:", "");
    evas_object_show(teo);
    e_textedit_activate(teo);
@@ -134,7 +163,7 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_textblock_add(od, "Edit title", title, 40, obj);
    const char *message = e_nav_world_item_location_description_get(location_object);
    e_dialog_textblock_add(od, "Edit message", message, 120, obj);
-   e_dialog_button_add(od, "Send", dialog_location_send, od);
+   e_dialog_button_add(od, "Send", dialog_location_send, data);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    
    evas_object_show(od);
@@ -147,9 +176,9 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    Evas_Object *om;
    
    om = e_tagmenu_add(evas);
-   e_tagmenu_theme_source_set(om, data);
+   e_tagmenu_theme_source_set(om, data);  // data is THEME_PATH
    e_tagmenu_autodelete_set(om, 1);
-   e_tagmenu_source_object_set(om, obj);
+   e_tagmenu_source_object_set(om, obj);   // obj is location evas object
    /* FIXME: real menu items */
    e_tagmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Edit",
 			       _e_nav_world_item_cb_menu_1, obj);

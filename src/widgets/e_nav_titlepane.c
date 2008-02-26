@@ -34,6 +34,7 @@ struct _E_Smart_Data
    Evas_Object *clip;
    Evas_Object *overlay;
    Evas_Object *obj;
+   Evas_Object *src_obj;
    Evas_Coord x, y, w, h;
    const char      *dir;
 };
@@ -72,23 +73,23 @@ e_nav_titlepane_set_message(Evas_Object *obj, const char *message)
 }
 
 void
-e_nav_titlepane_set_left_button(Evas_Object *obj, const char *text, CallbackFunc cb, Evas_Object *src)  
+e_nav_titlepane_set_left_button(Evas_Object *obj, const char *text, CallbackFunc cb, Evas_Object *data)  
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
    edje_object_part_text_set(sd->overlay, "button.label.left", text);
    Evas_Object* o = edje_object_part_object_get(sd->overlay, "button.base.left");
-   evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN, cb, src);
+   evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_UP, cb, data);
 }
 
 void
-e_nav_titlepane_set_right_button(Evas_Object *obj, const char *text, CallbackFunc cb, Evas_Object *src)
+e_nav_titlepane_set_right_button(Evas_Object *obj, const char *text, CallbackFunc cb, Evas_Object *data)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
    edje_object_part_text_set(sd->overlay, "button.label.right", text);
    Evas_Object* o = edje_object_part_object_get(sd->overlay, "button.base.right");
-   evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN, cb, src);
+   evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_UP, cb, data);
 }
 
 void
@@ -118,6 +119,24 @@ e_nav_titlepane_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_clip_set(sd->overlay, sd->clip);
 
    evas_object_show(sd->overlay);
+}
+
+void
+e_nav_titlepane_source_object_set(Evas_Object *obj, void *src_obj)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+   sd->src_obj = src_obj;
+}
+
+Evas_Object *
+e_nav_titlepane_source_object_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, NULL;);
+   return sd->src_obj;
 }
 
 /* internal calls */
