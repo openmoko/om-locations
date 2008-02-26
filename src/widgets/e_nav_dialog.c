@@ -64,10 +64,13 @@ struct _E_Smart_Data
 
    Evas_List      *textblocks;
    Evas_List      *buttons;
-   unsigned char direction : 2;  // 0: North, 1: East, 2: South, 3: West
+   double           activate_time;
+   int              activate_deactivate;
+   Ecore_Animator  *animator;
    
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
+   unsigned char active : 1;
 };
 
 static void _e_dialog_smart_init(void);
@@ -81,6 +84,7 @@ static void _e_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int
 static void _e_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_dialog_smart_clip_unset(Evas_Object *obj);
 
+static int  _e_dialog_cb_animator(void *data);
 static void _e_dialog_update(Evas_Object *obj);
 static void _e_dialog_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event);
 static void _e_dialog_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event);
@@ -161,7 +165,14 @@ e_dialog_activate(Evas_Object *obj)
    
    SMART_CHECK(obj, ;);
    evas_object_show(sd->event);
+   if (sd->active) return;
+   sd->activate_deactivate = 1;
+   sd->active = 1;
+   sd->activate_time = ecore_time_get();
    _e_dialog_update(obj);
+
+   if (sd->animator) return;
+   sd->animator = ecore_animator_add(_e_dialog_cb_animator, obj);
 }
 
 void
@@ -170,6 +181,9 @@ e_dialog_deactivate(Evas_Object *obj)
    E_Smart_Data *sd;
    
    SMART_CHECK(obj, ;);
+   if (!sd->active) return;
+   sd->activate_deactivate = -1;
+
    evas_object_hide(sd->event);
    _e_dialog_smart_hide(obj);
    _e_dialog_smart_del(obj);    
@@ -465,29 +479,58 @@ _e_dialog_update(Evas_Object *obj)
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
-   
-   int x, y;
+
+   if (sd->activate_deactivate == -1)
+     {
+	sd->activate_deactivate = 0;
+	sd->active = 0;
+	evas_object_hide(sd->event);
+        return;
+     }
+
    int screen_x, screen_y, screen_w, screen_h;
    evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
-   int dialog_x, dialog_y, dialog_w, dialog_h;
-   dialog_x = 0;
-   dialog_y = screen_h* (1.0/6);
-   dialog_w = screen_w;
+   int dialog_x = 0;
+   int dialog_y = 0;
+   int dialog_w = screen_w;
+   int dialog_h = 0;
+
+   double t;
    int tbc = evas_list_count(sd->textblocks);
-   if(tbc==0) 
+   if (sd->activate_deactivate == 0)
      {
-        dialog_y = screen_h* (1.0/3);
-        dialog_h = screen_h * (1.0/3);
+        if(tbc==0) 
+          {
+             dialog_y = screen_h* (1.0/3);
+             dialog_h = screen_h * (1.0/3);
+          }
+        else 
+          {
+             dialog_y = screen_h* (1.0/6);
+             dialog_h = screen_h * (2.0/3);
+          }
      }
-   else 
+   else if (sd->activate_deactivate == 1)
      {
-        dialog_y = screen_h* (1.0/6);
-        dialog_h = screen_h * (2.0/3);
+	t = ecore_time_get() - sd->activate_time;
+	t = t / 1.0; /* anim time */
+	if (t >= 1.0) t = 1.0;
+	t = 1.0 - ((1.0 - t) * (1.0 - t)); /* decelerate */
+	if (t >= 1.0) sd->activate_deactivate = 0;
+        if(tbc==0) 
+          {
+             dialog_y = t * screen_h * (1.0/3);
+             dialog_h = screen_h * (1.0/3);
+          }
+        else 
+          {
+             dialog_y = t* screen_h* (1.0/6);
+             dialog_h = screen_h * (2.0/3);
+          }
      }
    evas_object_move(sd->bg_object, dialog_x, dialog_y );
    evas_object_resize(sd->bg_object, dialog_w, dialog_h );
    evas_object_show(sd->bg_object);
-
 
    if(sd->title_object)
      {
@@ -496,40 +539,58 @@ _e_dialog_update(Evas_Object *obj)
         evas_object_show(sd->title_object);
      }
 
+   int tmp_x, tmp_y;
    Evas_List *l;
    E_TextBlock_Item *tbi;
    int indent = 10;
-   y =  dialog_y + dialog_h*(1.0/6) + (indent*2.5);
+   tmp_y =  dialog_y + dialog_h*(1.0/6) + (indent*2.5);
    
    for (l = sd->textblocks; l; l = l->next)
      {
         tbi = l->data;
-        evas_object_move(tbi->label, indent, y);
+        evas_object_move(tbi->label, indent, tmp_y);
         evas_object_show(tbi->label);
-        y = y + (indent*2.5);
-        e_widget_textblock_move(tbi->item_obj, indent, y);
+        tmp_y = tmp_y + (indent*2.5);
+        e_widget_textblock_move(tbi->item_obj, indent, tmp_y);
         e_widget_textblock_resize(tbi->item_obj, (dialog_w-(indent*2)), tbi->sz);
         e_widget_textblock_show(tbi->item_obj);
-        y = y + tbi->sz + indent;
+        tmp_y = tmp_y + tbi->sz + indent;
      }
-  
+   tmp_y = tmp_y + (indent*2.5);
+ 
    int button_w, button_h; 
-   int lc = evas_list_count(sd->buttons);
-   if(lc==0) return;
+   int bc = evas_list_count(sd->buttons);
+   if(bc==0) return;
    E_Button_Item *bi;
-   x = dialog_x;
-   button_w = (int)(dialog_w/lc); 
-   if(tbc==0) button_h = dialog_h*(1.0/2); 
-   else button_h = dialog_h*(1.0/8);
+   tmp_x = dialog_x;
+   button_w = (int)(dialog_w/bc);
+   button_h = dialog_y + dialog_h - tmp_y;
    for (l = sd->buttons; l; l = l->next)
      {
         bi = l->data;
-        if(tbc==0) evas_object_move(bi->item_obj, x, (dialog_y+dialog_h*(1.0/2)) );
-        else evas_object_move(bi->item_obj, x, (dialog_y+dialog_h*(7.0/8)) );
+        evas_object_move(bi->item_obj, tmp_x, tmp_y );
         evas_object_resize(bi->item_obj, button_w, button_h);
         evas_object_show(bi->item_obj);
-        x = x + button_w;
+        tmp_x = tmp_x + button_w;
      }
+}
+
+static int
+_e_dialog_cb_animator(void *data)
+{
+   E_Smart_Data *sd;
+     
+   sd = evas_object_smart_data_get(data);
+   if (!sd) return 0;
+ 
+   _e_dialog_update(sd->obj);
+   if (sd->activate_deactivate == 0)
+     {
+	sd->animator = NULL;
+	if (!sd->active) evas_object_del(sd->obj);
+	return 0;
+     }
+   return 1;
 }
 
 static void

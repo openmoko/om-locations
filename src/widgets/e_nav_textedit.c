@@ -382,12 +382,12 @@ e_textedit_input_set(Evas_Object *obj, const char *name, const char *input)
      }
 }
 
-const char* 
+const char * 
 e_textedit_input_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
-   SMART_CHECK(obj, ;);
+   SMART_CHECK(obj, NULL;);
    if(!sd) return NULL;
    return e_entry_text_get(sd->entry_object);
 }

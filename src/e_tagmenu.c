@@ -46,7 +46,6 @@ struct _E_Smart_Data
    Evas_List      *items;
    double           activate_time;
    int              activate_deactivate;
-   unsigned char direction : 2;  // 0: North, 1: East, 2: South, 3: West
    Ecore_Animator  *animator;
    
    /* directory to find theme .edj files from the module - if there is one */

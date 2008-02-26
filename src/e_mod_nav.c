@@ -142,22 +142,6 @@ map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
    evas_object_image_fill_set(obj, 0, 0, w, h);
 }
 
-static void on_geometry_changed(void *data, DBusMessage *message)
-{
-   double x, y, w, h;
-
-   if (!dbus_message_get_args(message, NULL,
-			      DBUS_TYPE_DOUBLE, &x,
-			      DBUS_TYPE_DOUBLE, &y,
-			      DBUS_TYPE_DOUBLE, &w,
-			      DBUS_TYPE_DOUBLE, &h,
-			      DBUS_TYPE_INVALID))
-     return;
-
-   printf("geom: %f, %f\n", x, y);
-   e_nav_coord_set(nav, x, -y, 0.0);
-}
-
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
 {

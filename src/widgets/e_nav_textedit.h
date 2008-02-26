@@ -31,7 +31,7 @@ Evas_Object    *e_textedit_source_object_get(Evas_Object *obj);
 void            e_textedit_activate(Evas_Object *obj);
 void            e_textedit_deactivate(Evas_Object *obj);
 void            e_textedit_input_set(Evas_Object *obj, const char *name, const char *input);
-const char*     e_textedit_input_get(Evas_Object *obj);
+const char     *e_textedit_input_get(Evas_Object *obj);
     
 #endif
 
