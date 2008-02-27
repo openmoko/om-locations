@@ -1,4 +1,4 @@
-/* e_tagmenu.c -
+/* e_flyingmenu.c -
  *
  * Copyright 2008 OpenMoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
@@ -19,7 +19,7 @@
  */
 
 #include "e_nav.h"
-#include "e_tagmenu.h"
+#include "e_flyingmenu.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -55,42 +55,42 @@ struct _E_Smart_Data
    unsigned char active : 1;
 };
 
-static void _e_tagmenu_smart_init(void);
-static void _e_tagmenu_smart_add(Evas_Object *obj);
-static void _e_tagmenu_smart_del(Evas_Object *obj);
-static void _e_tagmenu_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
-static void _e_tagmenu_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
-static void _e_tagmenu_smart_show(Evas_Object *obj);
-static void _e_tagmenu_smart_hide(Evas_Object *obj);
-static void _e_tagmenu_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
-static void _e_tagmenu_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
-static void _e_tagmenu_smart_clip_unset(Evas_Object *obj);
+static void _e_flyingmenu_smart_init(void);
+static void _e_flyingmenu_smart_add(Evas_Object *obj);
+static void _e_flyingmenu_smart_del(Evas_Object *obj);
+static void _e_flyingmenu_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
+static void _e_flyingmenu_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
+static void _e_flyingmenu_smart_show(Evas_Object *obj);
+static void _e_flyingmenu_smart_hide(Evas_Object *obj);
+static void _e_flyingmenu_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
+static void _e_flyingmenu_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
+static void _e_flyingmenu_smart_clip_unset(Evas_Object *obj);
 
-static Evas_Object *_e_tagmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
-static void _e_tagmenu_update(Evas_Object *obj);
-static void _e_tagmenu_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event);
-static void _e_tagmenu_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event);
-static void _e_tagmenu_cb_src_obj_resize(void *data, Evas *evas, Evas_Object *obj, void *event);
-static int _e_tagmenu_cb_animator(void *data);
-static void _e_tagmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event);
-static void _e_tagmenu_cb_item_up(void *data, Evas *evas, Evas_Object *obj, void *event);
+static Evas_Object *_e_flyingmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
+static void _e_flyingmenu_update(Evas_Object *obj);
+static void _e_flyingmenu_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event);
+static void _e_flyingmenu_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event);
+static void _e_flyingmenu_cb_src_obj_resize(void *data, Evas *evas, Evas_Object *obj, void *event);
+static int _e_flyingmenu_cb_animator(void *data);
+static void _e_flyingmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event);
+static void _e_flyingmenu_cb_item_up(void *data, Evas *evas, Evas_Object *obj, void *event);
 
 static Evas_Smart *_e_smart = NULL;
 
 #define SMART_CHECK(obj, ret) \
    sd = evas_object_smart_data_get(obj); \
    if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_tagmenu")) return ret
+   if (strcmp(evas_object_type_get(obj), "e_flyingmenu")) return ret
 
 Evas_Object *
-e_tagmenu_add(Evas *e)
+e_flyingmenu_add(Evas *e)
 {
-   _e_tagmenu_smart_init();
+   _e_flyingmenu_smart_init();
    return evas_object_smart_add(e, _e_smart);
 }
 
 void
-e_tagmenu_theme_source_set(Evas_Object *obj, const char *custom_dir)
+e_flyingmenu_theme_source_set(Evas_Object *obj, const char *custom_dir)
 {
    E_Smart_Data *sd;
    
@@ -100,7 +100,7 @@ e_tagmenu_theme_source_set(Evas_Object *obj, const char *custom_dir)
 }
 
 void
-e_tagmenu_source_object_set(Evas_Object *obj, Evas_Object *src_obj)
+e_flyingmenu_source_object_set(Evas_Object *obj, Evas_Object *src_obj)
 {
    E_Smart_Data *sd;
    
@@ -108,27 +108,27 @@ e_tagmenu_source_object_set(Evas_Object *obj, Evas_Object *src_obj)
    if (sd->src_obj)
      {
 	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_DEL,
-				       _e_tagmenu_cb_src_obj_del);
+				       _e_flyingmenu_cb_src_obj_del);
 	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_MOVE,
-				       _e_tagmenu_cb_src_obj_move);
+				       _e_flyingmenu_cb_src_obj_move);
 	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_RESIZE,
-				       _e_tagmenu_cb_src_obj_resize);
+				       _e_flyingmenu_cb_src_obj_resize);
      }
    sd->src_obj = src_obj;
    if (sd->src_obj)
      {
 	evas_object_event_callback_add(sd->src_obj, EVAS_CALLBACK_DEL,
-				       _e_tagmenu_cb_src_obj_del, obj);
+				       _e_flyingmenu_cb_src_obj_del, obj);
 	evas_object_event_callback_add(sd->src_obj, EVAS_CALLBACK_MOVE,
-				       _e_tagmenu_cb_src_obj_move, obj);
+				       _e_flyingmenu_cb_src_obj_move, obj);
 	evas_object_event_callback_add(sd->src_obj, EVAS_CALLBACK_RESIZE,
-				       _e_tagmenu_cb_src_obj_resize, obj);
+				       _e_flyingmenu_cb_src_obj_resize, obj);
      }
-   _e_tagmenu_update(obj);
+   _e_flyingmenu_update(obj);
 }
 
 Evas_Object *
-e_tagmenu_source_object_get(Evas_Object *obj)
+e_flyingmenu_source_object_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -137,7 +137,7 @@ e_tagmenu_source_object_get(Evas_Object *obj)
 }
   
 void
-e_tagmenu_autodelete_set(Evas_Object *obj, Evas_Bool autodelete)
+e_flyingmenu_autodelete_set(Evas_Object *obj, Evas_Bool autodelete)
 {
    E_Smart_Data *sd;
    
@@ -146,7 +146,7 @@ e_tagmenu_autodelete_set(Evas_Object *obj, Evas_Bool autodelete)
 }
 
 Evas_Bool
-e_tagmenu_autodelete_get(Evas_Object *obj)
+e_flyingmenu_autodelete_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -155,7 +155,7 @@ e_tagmenu_autodelete_get(Evas_Object *obj)
 }
 
 void
-e_tagmenu_activate(Evas_Object *obj)
+e_flyingmenu_activate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_List *l;
@@ -174,12 +174,12 @@ e_tagmenu_activate(Evas_Object *obj)
      }
    
    if (sd->animator) return;
-   sd->animator = ecore_animator_add(_e_tagmenu_cb_animator, obj);
+   sd->animator = ecore_animator_add(_e_flyingmenu_cb_animator, obj);
    
 }
 
 void
-e_tagmenu_deactivate(Evas_Object *obj)
+e_flyingmenu_deactivate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_List *l;
@@ -199,12 +199,12 @@ e_tagmenu_deactivate(Evas_Object *obj)
      }
 
    if (sd->animator) return;
-   sd->animator = ecore_animator_add(_e_tagmenu_cb_animator, obj);
+   sd->animator = ecore_animator_add(_e_flyingmenu_cb_animator, obj);
     
 }
 
 void
-e_tagmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data)
+e_flyingmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data)
 {
    E_Smart_Data *sd;
    E_Tagmenu_Item *ti;
@@ -216,11 +216,11 @@ e_tagmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, co
    ti->sz = size;
    ti->func = func;
    ti->data = data;
-   ti->item_obj = _e_tagmenu_theme_obj_new(evas_object_evas_get(obj), sd->dir, icon);
+   ti->item_obj = _e_flyingmenu_theme_obj_new(evas_object_evas_get(obj), sd->dir, icon);
    evas_object_smart_member_add(ti->item_obj, obj);
    evas_object_clip_set(ti->item_obj, sd->clip);
    evas_object_event_callback_add(ti->item_obj, EVAS_CALLBACK_MOUSE_UP,
-				  _e_tagmenu_cb_item_up, ti);
+				  _e_flyingmenu_cb_item_up, ti);
    
    edje_object_part_text_set(ti->item_obj, "text", label);
    sd->items = evas_list_append(sd->items, ti);
@@ -228,23 +228,23 @@ e_tagmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, co
 
 /* internal calls */
 static void
-_e_tagmenu_smart_init(void)
+_e_flyingmenu_smart_init(void)
 {
    if (_e_smart) return;
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "e_tagmenu",
+	     "e_flyingmenu",
 	       EVAS_SMART_CLASS_VERSION,
-	       _e_tagmenu_smart_add,
-	       _e_tagmenu_smart_del,
-	       _e_tagmenu_smart_move,
-	       _e_tagmenu_smart_resize,
-	       _e_tagmenu_smart_show,
-	       _e_tagmenu_smart_hide,
-	       _e_tagmenu_smart_color_set,
-	       _e_tagmenu_smart_clip_set,
-	       _e_tagmenu_smart_clip_unset,
+	       _e_flyingmenu_smart_add,
+	       _e_flyingmenu_smart_del,
+	       _e_flyingmenu_smart_move,
+	       _e_flyingmenu_smart_resize,
+	       _e_flyingmenu_smart_show,
+	       _e_flyingmenu_smart_hide,
+	       _e_flyingmenu_smart_color_set,
+	       _e_flyingmenu_smart_clip_set,
+	       _e_flyingmenu_smart_clip_unset,
 	       
 	       NULL /* data */
 	  };
@@ -253,7 +253,7 @@ _e_tagmenu_smart_init(void)
 }
 
 static void
-_e_tagmenu_smart_add(Evas_Object *obj)
+_e_flyingmenu_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -280,13 +280,13 @@ _e_tagmenu_smart_add(Evas_Object *obj)
    evas_object_color_set(sd->event, 255, 255, 255, 0);
    evas_object_clip_set(sd->event, sd->clip);
    evas_object_event_callback_add(sd->event, EVAS_CALLBACK_MOUSE_DOWN,
-				  _e_tagmenu_cb_event_down, obj);
+				  _e_flyingmenu_cb_event_down, obj);
    
    evas_object_smart_data_set(obj, sd);
 }
 
 static void
-_e_tagmenu_smart_del(Evas_Object *obj)
+_e_flyingmenu_smart_del(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -295,11 +295,11 @@ _e_tagmenu_smart_del(Evas_Object *obj)
    if (sd->src_obj)
      {
 	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_DEL,
-				       _e_tagmenu_cb_src_obj_del);
+				       _e_flyingmenu_cb_src_obj_del);
 	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_MOVE,
-				       _e_tagmenu_cb_src_obj_move);
+				       _e_flyingmenu_cb_src_obj_move);
 	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_RESIZE,
-				       _e_tagmenu_cb_src_obj_resize);
+				       _e_flyingmenu_cb_src_obj_resize);
      }
    while (sd->items)
      {
@@ -316,7 +316,7 @@ _e_tagmenu_smart_del(Evas_Object *obj)
 }
                     
 static void
-_e_tagmenu_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
+_e_flyingmenu_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
    
@@ -324,11 +324,11 @@ _e_tagmenu_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    if (!sd) return;
    sd->x = x;
    sd->y = y;
-   _e_tagmenu_update(obj);
+   _e_flyingmenu_update(obj);
 }
 
 static void
-_e_tagmenu_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
+_e_flyingmenu_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    E_Smart_Data *sd;
    
@@ -336,11 +336,11 @@ _e_tagmenu_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    if (!sd) return;
    sd->w = w;
    sd->h = h;
-   _e_tagmenu_update(obj);
+   _e_flyingmenu_update(obj);
 }
 
 static void
-_e_tagmenu_smart_show(Evas_Object *obj)
+_e_flyingmenu_smart_show(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -350,7 +350,7 @@ _e_tagmenu_smart_show(Evas_Object *obj)
 }
 
 static void
-_e_tagmenu_smart_hide(Evas_Object *obj)
+_e_flyingmenu_smart_hide(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -360,7 +360,7 @@ _e_tagmenu_smart_hide(Evas_Object *obj)
 }
 
 static void
-_e_tagmenu_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
+_e_flyingmenu_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 {
    E_Smart_Data *sd;
    
@@ -370,7 +370,7 @@ _e_tagmenu_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 }
 
 static void
-_e_tagmenu_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
+_e_flyingmenu_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 {
    E_Smart_Data *sd;
    
@@ -380,7 +380,7 @@ _e_tagmenu_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 }
 
 static void
-_e_tagmenu_smart_clip_unset(Evas_Object *obj)
+_e_flyingmenu_smart_clip_unset(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -390,7 +390,7 @@ _e_tagmenu_smart_clip_unset(Evas_Object *obj)
 } 
 
 static Evas_Object *
-_e_tagmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
+_e_flyingmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
 {
    Evas_Object *o;
    
@@ -409,7 +409,7 @@ _e_tagmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
 }
 
 static void
-_e_tagmenu_update(Evas_Object *obj)
+_e_flyingmenu_update(Evas_Object *obj)
 {
 
    E_Smart_Data *sd;
@@ -499,7 +499,7 @@ _e_tagmenu_update(Evas_Object *obj)
 }
 
 static void
-_e_tagmenu_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_flyingmenu_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_Smart_Data *sd;
      
@@ -510,34 +510,34 @@ _e_tagmenu_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 }
 
 static void
-_e_tagmenu_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_flyingmenu_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_Smart_Data *sd;
      
    sd = evas_object_smart_data_get(data);
    if (!sd) return;
-   _e_tagmenu_update(sd->obj);
+   _e_flyingmenu_update(sd->obj);
 }
 
 static void
-_e_tagmenu_cb_src_obj_resize(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_flyingmenu_cb_src_obj_resize(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_Smart_Data *sd;
      
    sd = evas_object_smart_data_get(data);
    if (!sd) return;
-   _e_tagmenu_update(sd->obj);
+   _e_flyingmenu_update(sd->obj);
 }
 
 static int
-_e_tagmenu_cb_animator(void *data)
+_e_flyingmenu_cb_animator(void *data)
 {
    E_Smart_Data *sd;
      
    sd = evas_object_smart_data_get(data);
    if (!sd) return 0;
  
-   _e_tagmenu_update(sd->obj);
+   _e_flyingmenu_update(sd->obj);
    if (sd->activate_deactivate == 0)
      {
 	sd->animator = NULL;
@@ -548,13 +548,13 @@ _e_tagmenu_cb_animator(void *data)
 }
 
 static void
-_e_tagmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_flyingmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
-   e_tagmenu_deactivate(data);
+   e_flyingmenu_deactivate(data);
 }
 
 static void
-_e_tagmenu_cb_item_up(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_flyingmenu_cb_item_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_Tagmenu_Item *ti;
    E_Smart_Data *sd;

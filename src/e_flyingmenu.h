@@ -1,4 +1,4 @@
-/* e_tagmenu.h -
+/* e_flyingmenu.h -
  *
  * Copyright 2008 OpenMoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
@@ -18,20 +18,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef E_TAGMENU_H
-#define E_TAGMENU_H
+#ifndef E_FLYINGMENU_H
+#define E_FLYINGMENU_H
 
 /* types */
 
 /* object management */
-Evas_Object    *e_tagmenu_add(Evas *e);
-void            e_tagmenu_theme_source_set(Evas_Object *obj, const char *custom_dir);
-void            e_tagmenu_source_object_set(Evas_Object *obj, Evas_Object *src_obj);
-Evas_Object    *e_tagmenu_source_object_get(Evas_Object *obj);
-void            e_tagmenu_autodelete_set(Evas_Object *obj, Evas_Bool autodelete);
-Evas_Bool       e_tagmenu_autodelete_get(Evas_Object *obj);
-void            e_tagmenu_activate(Evas_Object *obj);
-void            e_tagmenu_deactivate(Evas_Object *obj);
-void            e_tagmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data);
+Evas_Object    *e_flyingmenu_add(Evas *e);
+void            e_flyingmenu_theme_source_set(Evas_Object *obj, const char *custom_dir);
+void            e_flyingmenu_source_object_set(Evas_Object *obj, Evas_Object *src_obj);
+Evas_Object    *e_flyingmenu_source_object_get(Evas_Object *obj);
+void            e_flyingmenu_autodelete_set(Evas_Object *obj, Evas_Bool autodelete);
+Evas_Bool       e_flyingmenu_autodelete_get(Evas_Object *obj);
+void            e_flyingmenu_activate(Evas_Object *obj);
+void            e_flyingmenu_deactivate(Evas_Object *obj);
+void            e_flyingmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data);
     
 #endif

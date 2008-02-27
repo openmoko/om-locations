@@ -21,7 +21,7 @@
 #include "e_nav.h"
 #include "e_nav_item_neo_me.h"
 #include "e_spiralmenu.h"
-#include "e_tagmenu.h"
+#include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
 
 typedef struct _Neo_Me_Data Neo_Me_Data;
@@ -142,7 +142,7 @@ save_current_location(void *data, Evas_Object *obj, Evas_Object *src_obj)
    printf("You touch me !\n");
    //Evas_Object *neo_me_object = (Evas_Object*)data;
 
-   e_tagmenu_deactivate(obj);
+   e_flyingmenu_deactivate(obj);
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);  
    e_dialog_source_object_set(od, src_obj);  
@@ -163,15 +163,15 @@ show_welcome_message(Evas_Object *item)
 {
    Evas_Object *om;
    
-   om = e_tagmenu_add( evas_object_evas_get(item) );
-   e_tagmenu_theme_source_set(om, THEME_PATH);
-   e_tagmenu_autodelete_set(om, 1);
-   e_tagmenu_source_object_set(om, item);
+   om = e_flyingmenu_add( evas_object_evas_get(item) );
+   e_flyingmenu_theme_source_set(om, THEME_PATH);
+   e_flyingmenu_autodelete_set(om, 1);
+   e_flyingmenu_source_object_set(om, item);
    /* FIXME: real menu items */
-   e_tagmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 200, "Touch Me!",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 200, "Touch Me!",
 			       save_current_location, item);  
    evas_object_show(om);
-   e_tagmenu_activate(om);
+   e_flyingmenu_activate(om);
 }
 
 /////////////////////////////////////////////////////////////////////////////

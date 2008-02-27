@@ -20,7 +20,7 @@
 
 #include "e_nav.h"
 #include "e_nav_item_location.h"
-#include "e_tagmenu.h"
+#include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
 #include "widgets/e_nav_textedit.h"
 
@@ -140,7 +140,7 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_button_add(od, "Save", dialog_location_save, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    
-   e_tagmenu_deactivate(obj);
+   e_flyingmenu_deactivate(obj);
    evas_object_show(od);
    e_dialog_activate(od);
 }
@@ -165,7 +165,7 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_button_add(od, "Send", dialog_location_send, data);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    
-   e_tagmenu_deactivate(obj);
+   e_flyingmenu_deactivate(obj);
    evas_object_show(od);
    e_dialog_activate(od);
 }
@@ -175,17 +175,17 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
 {
    Evas_Object *om;
    
-   om = e_tagmenu_add(evas);
-   e_tagmenu_theme_source_set(om, data);  // data is THEME_PATH
-   e_tagmenu_autodelete_set(om, 1);
-   e_tagmenu_source_object_set(om, obj);   // obj is location evas object
+   om = e_flyingmenu_add(evas);
+   e_flyingmenu_theme_source_set(om, data);  // data is THEME_PATH
+   e_flyingmenu_autodelete_set(om, 1);
+   e_flyingmenu_source_object_set(om, obj);   // obj is location evas object
    /* FIXME: real menu items */
-   e_tagmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Edit",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Edit",
 			       _e_nav_world_item_cb_menu_1, obj);
-   e_tagmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Send",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Send",
 			       _e_nav_world_item_cb_menu_2, obj);
    evas_object_show(om);
-   e_tagmenu_activate(om);
+   e_flyingmenu_activate(om);
 }
 
 static void
