@@ -45,8 +45,8 @@
 /* setup and teardown */
 static Evas_Object *ctrl  = NULL;
 static Evas_Object *nav   = NULL;
-static E_Nav_World *world = NULL;
-static E_Nav_Bard  *self  = NULL;
+static Diversity_World *world = NULL;
+static Diversity_Bard  *self  = NULL;
 
 static void add_city(Evas* evas, double lon, double lat, const char* cityname);
 static void test_map(Evas* evas);
@@ -145,17 +145,20 @@ map_resize(void *data, Evas *evas, Evas_Object *obj, void *event_info)
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
 {
+   Diversity_Equipment *eqp = NULL;
    E_DBus_Proxy *proxy = NULL;
    Evas_Object *nt = NULL;
 
    if (world)
      {
-	self = e_nav_world_get_self(world);
+	self = diversity_world_get_self(world);
 	if (self)
-	  proxy = e_nav_bard_equipment_get(self,
-		"osm", "org.openmoko.Diversity.Atlas");
+	  eqp = diversity_bard_equipment_get(self, "osm");
      }
 
+
+   if (eqp)
+     proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_ATLAS);
 
    if (proxy)
      {
@@ -190,7 +193,7 @@ _e_mod_nav_init(Evas *evas)
    e_nav_theme_source_set(nav, THEME_PATH);
 
    e_nav_dbus_init();
-   world = e_nav_world_new();
+   world = diversity_world_new();
 
    nt = osm_tileset_add(nav);
    evas_object_show(nt);
@@ -318,10 +321,10 @@ _e_mod_nav_shutdown(void)
      {
 	if (self)
 	  {
-	     e_nav_bard_destroy(self);
+	     diversity_bard_destroy(self);
 	     self = NULL;
 	  }
-	e_nav_world_destroy(world);
+	diversity_world_destroy(world);
 	world = NULL;
      }
 

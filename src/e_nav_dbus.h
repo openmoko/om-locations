@@ -24,10 +24,6 @@
 
 #include "e_dbus_proxy.h"
 
-typedef struct _E_Nav_World E_Nav_World;
-typedef struct _E_Nav_Viewport E_Nav_Viewport;
-typedef struct _E_Nav_Bard E_Nav_Bard;
-
 typedef struct _Diversity_DBus Diversity_DBus;
 typedef struct _Diversity_Object Diversity_Object;
 
@@ -58,20 +54,6 @@ int                 e_nav_dbus_init(void);
 void                e_nav_dbus_shutdown(void);
 E_DBus_Connection  *e_nav_dbus_connection_get(void);
 
-E_Nav_World        *e_nav_world_new(void);
-void                e_nav_world_destroy(E_Nav_World *world);
-E_DBus_Proxy       *e_nav_world_proxy_get(E_Nav_World *world);
-E_Nav_Viewport     *e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lon2, double lat2);
-void                e_nav_world_viewport_remove(E_Nav_World *world, E_Nav_Viewport *view);
-E_Nav_Bard         *e_nav_world_get_self(E_Nav_World *world);
-
-E_Nav_Viewport     *e_nav_viewport_new(const char *path);
-void                e_nav_viewport_destroy(E_Nav_Viewport *view);
-
-E_Nav_Bard         *e_nav_bard_new(const char *path);
-void                e_nav_bard_destroy(E_Nav_Bard *bard);
-E_DBus_Proxy       *e_nav_bard_equipment_get(E_Nav_Bard *bard, const char *eqp, const char *interface);
-
 const char         *diversity_dbus_path_get(Diversity_DBus *dbus);
 E_DBus_Proxy       *diversity_dbus_proxy_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface);
 void                diversity_dbus_signal_connect(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *signal, E_DBus_Signal_Cb cb_signal, void *data);
@@ -82,10 +64,14 @@ void               *diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_
 void                diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, double width, double height);
 void                diversity_object_geometry_get(Diversity_Object *obj, double *lon, double *lat, double *width, double *height);
 
+Diversity_World    *diversity_world_new(void);
+void                diversity_world_destroy(Diversity_World *world);
 Diversity_Viewport *diversity_world_viewport_add(Diversity_World *world, double lon1, double lat1, double lon2, double lat2);
 void                diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view);
 Diversity_Bard     *diversity_world_get_self(Diversity_World *world);
 
+Diversity_Equipment *diversity_equipment_new(const char *path);
+void                diversity_equipment_destroy(Diversity_Equipment *eqp);
 void                diversity_equipment_config_set(Diversity_Equipment *eqp, const char *key, void *val);
 void               *diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key);
 
@@ -94,5 +80,6 @@ void                diversity_viewport_destroy(Diversity_Viewport *view);
 
 Diversity_Bard     *diversity_bard_new(const char *path);
 void                diversity_bard_destroy(Diversity_Bard *bard);
+Diversity_Equipment *diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name);
 
 #endif
