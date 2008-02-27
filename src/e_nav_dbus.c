@@ -23,15 +23,61 @@
 #include <assert.h>
 #include "e_nav_dbus.h"
 #include "e_dbus_proxy.h"
-#include "e_mod_nav.h"
-#include "e_nav_item_ap.h"
-#include "e_nav_item_neo_me.h"
-#include "e_nav_item_neo_other.h"
-#include "e_nav_item_link.h"
+
+static const char *diversity_ifaces[N_DIVERSITY_DBUS_IFACES] = {
+     DBUS_INTERFACE_PROPERTIES,
+     "org.openmoko.Diversity",
+     "org.openmoko.Diversity.World",
+     "org.openmoko.Diversity.Object",
+     "org.openmoko.Diversity.Viewport",
+     "org.openmoko.Diversity.Bard",
+     "org.openmoko.Diversity.Tag",
+     "org.openmoko.Diversity.Equipment",
+     "org.openmoko.Diversity.Atlas",
+     "org.openmoko.Diversity.Sms",
+};
+
+struct _Diversity_DBus
+{
+   char *path;
+   E_DBus_Proxy *proxies[N_DIVERSITY_DBUS_IFACES];
+};
+
+struct _Diversity_Object
+{
+   Diversity_DBus dbus;
+   double lon, lat;
+   double width, height;
+};
+
+struct _Diversity_World
+{
+   Diversity_DBus dbus;
+};
+
+struct _Diversity_Equipment
+{
+   Diversity_DBus dbus;
+};
+
+struct _Diversity_Viewport
+{
+   Diversity_Object obj;
+};
+
+struct _Diversity_Bard
+{
+   Diversity_Object obj;
+};
+
+struct _Diversity_Tag
+{
+   Diversity_Object obj;
+};
 
 struct _E_Nav_World
 {
-   E_DBus_Proxy *proxy;
+   Diversity_DBus dbus;
 };
 
 struct _E_Nav_Viewport
@@ -44,7 +90,9 @@ struct _E_Nav_Bard
 {
    E_DBus_Proxy *proxy;
    const char *path;
+   E_DBus_Proxy *object;
    E_DBus_Proxy *atlas;
+   E_DBus_Proxy *gps;
 };
 
 static E_DBus_Connection* e_conn=NULL;
@@ -66,535 +114,6 @@ static int initialized = -1;
 #define DIVERSITY_EQUIPMENT_DBUS_INTERFACE	"org.openmoko.Diversity.Equipment"
 #define DIVERSITY_ATLAS_DBUS_INTERFACE		"org.openmoko.Diversity.Atlas"
 #define DIVERSITY_SMS_DBUS_INTERFACE		"org.openmoko.Diversity.Sms"
-
-enum _DiversityObjectType {
-	DIVERSITY_OBJECT_TYPE_OBJECT,
-	DIVERSITY_OBJECT_TYPE_VIEWPORT,
-	DIVERSITY_OBJECT_TYPE_TAG,
-	DIVERSITY_OBJECT_TYPE_BARD,
-	DIVERSITY_OBJECT_TYPE_AP,
-	DIVERSITY_OBJECT_TYPE_MAP,
-	NUM_DIVERSITY_OBJECT_TYPES,
-};
-
-typedef struct _World_Proxy World_Proxy;
-typedef struct _Viewport_Proxy Viewport_Proxy;
-typedef struct _Bard_Proxy  Bard_Proxy;
-
-static Ecore_Hash *hash_table = NULL;   // store neo_other and ap objects
-static World_Proxy *worldProxy = NULL;   // singleton?
-static Bard_Proxy *bardProxy = NULL;     // singleton?
-
-static void on_current_position_changed(void *data, DBusMessage *msg);
-static void on_viewport_object_added(void *data, DBusMessage *msg);
-static void on_viewport_object_removed(void *data, DBusMessage *msg);
-static void on_object_geometry_changed(void *data, DBusMessage *msg);
-
-void self_get();
-void self_get_reply(void *data, DBusMessage *reply, DBusError *error);
-
-E_DBus_Signal_Handler *
-e_nav_object_signal_handler_add(E_DBus_Connection *conn, char* object_path, char* interface, char* signal_name, E_DBus_Signal_Cb cb_signal);
-
-// call back functions
-void e_nav_neo_me_add(Bard_Proxy *proxy, double lat, double lon );
-void e_nav_ap_added(Object_Proxy* proxy, double lat, double lon);
-void e_nav_neo_other_added(Object_Proxy* proxy, double lat, double lon);
-
-//void e_nav_object_add(Object_Proxy* proxy, int type, double lat, double lon);
-void e_nav_object_del(const char* obj_path);
-
-void object_geometry_get(double *x, double *y, double *w, double *h);
-void object_geometry_set(double x, double y, double w, double h);
-
-void viewport_add(double lat1, double lon1, double lat2, double lon2);
-void viewport_add_reply(void *data, DBusMessage *reply, DBusError *error);
-void viewport_remove(World_Proxy *proxy, char* object_path);
-
-struct _Bard_Proxy {
-    char object_path[PATH_MAX];  // remote viewport path
-    E_DBus_Connection *connection;
-    Evas_Object *object;   // Neo_me
-};
-
-struct _World_Proxy {
-    E_DBus_Connection *connection;
-    Evas_Object *object;
-};
-
-struct _Viewport_Proxy {
-    char object_path[PATH_MAX];  // remote viewport path
-    E_DBus_Connection *connection;
-    Evas_Object *object;
-};
-
-struct _Object_Proxy {
-    char object_path[PATH_MAX];   // remote object path
-    E_DBus_Connection *connection;
-    Evas_Object *object;
-};
-
-Bard_Proxy *bard_proxy_new(char* path, E_DBus_Connection *connection)
-{
-    if(bardProxy) {
-        return bardProxy;
-    }
-    Bard_Proxy *proxy;
-    proxy = malloc(sizeof(*proxy));
-    if(!proxy) {
-        printf("proxy malloc is NULL\n");
-        return NULL;
-    }
-    proxy->object_path[PATH_MAX-1] = '\0';
-    strncpy(proxy->object_path, path, PATH_MAX-1);
-    proxy->connection = connection;
-
-    return proxy;
-}
-
-World_Proxy *world_proxy_new()
-{
-    if(worldProxy) {
-        return worldProxy;
-    }
-    World_Proxy *proxy;
-    proxy = malloc(sizeof(*proxy));
-    if (!proxy) {
-        return NULL;
-    }
-    proxy->connection = e_conn;
-    //proxy->viewport_add_func = add_viewport;
-    //proxy->viewport_remove_func = remove_viewport;
-    return proxy;
-}
-
-
-Viewport_Proxy *viewport_proxy_new(char* path, E_DBus_Connection *connection)
-{
-    if(connection==NULL) {
-        return NULL;
-    }
-    Viewport_Proxy *proxy;
-    proxy = malloc(sizeof(*proxy));
-    if (!proxy) {
-        return NULL;
-    }
-    proxy->object_path[PATH_MAX-1] = '\0';
-    strncpy(proxy->object_path, path, PATH_MAX-1);
-    proxy->connection = connection;
-
-    E_DBus_Signal_Handler *handler;
-    handler = e_nav_object_signal_handler_add(proxy->connection, proxy->object_path, DIVERSITY_VIEWPORT_DBUS_INTERFACE, "ObjectAdded", on_viewport_object_added);
-    if(handler==NULL) 
-        printf("handler NULL1 \n");
-    handler = e_nav_object_signal_handler_add(proxy->connection, proxy->object_path,  DIVERSITY_VIEWPORT_DBUS_INTERFACE, "ObjectRemoved", on_viewport_object_removed);
-    if(handler==NULL)
-        printf("handler NULL2\n");
-    return proxy;
-}
-
-Object_Proxy *object_proxy_new(char* path, E_DBus_Connection *connection)
-{
-    if(connection==NULL) {
-        return NULL;
-    }
-    Object_Proxy *proxy;
-    proxy = malloc(sizeof(*proxy));
-    if (!proxy) {
-        return NULL;
-    }
-    proxy->object_path[PATH_MAX-1] = '\0';
-    strncpy(proxy->object_path, path, PATH_MAX-1);
-    proxy->connection = connection;
-
-    //proxy->geometry_get_func = object_geometry_get;
-    //proxy->geometry_set_func = object_geometry_set;
-    
-    e_nav_object_signal_handler_add(proxy->connection, proxy->object_path,  DIVERSITY_OBJECT_DBUS_INTERFACE, "GeometryChanged", on_object_geometry_changed);
-    return proxy;
-}
-
-void self_get()
-{
-   if(e_conn) {
-       printf("e_conn OK !\n");
-   }
-   else {
-       printf("e_conn is NULL\n");
-   }
-
-   DBusMessage *msg;
-   msg = dbus_message_new_method_call(
-      DIVERSITY_DBUS_SERVICE,  
-      DIVERSITY_WORLD_DBUS_PATH, 
-      DIVERSITY_WORLD_DBUS_INTERFACE,  
-      "SelfGet"    
-   );
-   e_dbus_message_send(e_conn, msg, self_get_reply, -1, NULL);
-   dbus_message_unref(msg); 
-  
-}
-
-void self_get_reply(void *data, DBusMessage *reply, DBusError *error)
-{
-    char* bard_path;
-    if (dbus_error_is_set(error))
-    {
-        printf("Self get reply Error: %s - %s\n", error->name, error->message);
-        return;
-    }
-
-    dbus_message_get_args(reply, error, DBUS_TYPE_OBJECT_PATH, &bard_path, DBUS_TYPE_INVALID);
-    printf("bard path: %s\n", bard_path);
-    bardProxy = bard_proxy_new(bard_path, e_conn); 
-    if(bardProxy==NULL) {
-        return;
-    }
-    E_DBus_Signal_Handler *handler;
-    handler = e_nav_object_signal_handler_add(bardProxy->connection, bardProxy->object_path, DIVERSITY_OBJECT_DBUS_INTERFACE, "GeometryChanged", on_current_position_changed);
-    if(!handler)
-         printf("bard proxy add signal error\n");
-    
-#if 0
-    e_nav_neo_me_add(bardProxy, 151.210000, 33.870000);  // last fix location
-    if(bardProxy->object==NULL) {
-        printf("bardProxy evasObj is NULL\n");
-    }   
-#endif
-}
-
-static void e_nav_world_item_neo_me_position_change(Evas_Object* evasObj, double lat, double lon)
-{
-    if(evasObj==NULL) {
-        printf("EvasObj==NULL\n");
-        return;
-    }
-    e_nav_world_item_geometry_set(evasObj, lat, lon, 0, 0);
-    e_nav_world_item_update(evasObj);
-}
-
-static void on_current_position_changed(void *data, DBusMessage *msg)
-{
-    DBusError err;
-    double lat;
-    double lon;
-    double width;
-    double height;
-    dbus_error_init(&err);
-    if(!dbus_message_get_args(msg, &err,
-                 DBUS_TYPE_DOUBLE, &lon,
-                 DBUS_TYPE_DOUBLE, &lat,
-                 DBUS_TYPE_DOUBLE, &width,
-                 DBUS_TYPE_DOUBLE, &height,
-                 DBUS_TYPE_INVALID))
-    {
-        printf("Error: on_current_position_changed: %s\n", err.name);
-        printf("%s\n", err.message);
-        return;
-    }
-    else {
-        e_nav_world_item_neo_me_position_change(bardProxy->object, lon, lat); 
-    }
-}
-
-void viewport_add(double lat1, double lon1, double lat2, double lon2)
-{
-   if(e_conn) {
-       printf("e_conn OK !\n");
-   }
-   else {
-       printf("e_conn is NULL\n");
-   }
-
-   DBusMessage *msg;
-   msg = dbus_message_new_method_call(
-      DIVERSITY_DBUS_SERVICE,  
-      DIVERSITY_WORLD_DBUS_PATH, 
-      DIVERSITY_WORLD_DBUS_INTERFACE,  
-    "ViewportAdd"    
-   );
-   dbus_message_append_args(msg, DBUS_TYPE_DOUBLE, &lat1,
-                                 DBUS_TYPE_DOUBLE, &lon1, 
-                                 DBUS_TYPE_DOUBLE, &lat2, 
-                                 DBUS_TYPE_DOUBLE, &lon2,
-                                 DBUS_TYPE_INVALID);
-   e_dbus_message_send(e_conn, msg, viewport_add_reply, -1, NULL);
-   dbus_message_unref(msg); 
-}
-
-void viewport_add_reply(void *data, DBusMessage *reply, DBusError *error)
-{
-    char* viewport_path;
-    if (dbus_error_is_set(error))
-    {
-        printf("Viewport add reply Error: %s - %s\n", error->name, error->message);
-        return;
-    }
-
-    dbus_message_get_args(reply, error, DBUS_TYPE_OBJECT_PATH, &viewport_path, DBUS_TYPE_INVALID);
-    printf("Viewport added: %s\n", viewport_path);
-    // New a Viewport proxy
-    Viewport_Proxy* proxy = viewport_proxy_new(viewport_path, e_conn); 
-    if(proxy==NULL) {
-        return;
-    }
-}
-
-void viewport_remove(World_Proxy *proxy, char* object_path)
-{
-    DBusMessage *msg;
-    msg = dbus_message_new_method_call(
-        DIVERSITY_DBUS_SERVICE,  
-        DIVERSITY_WORLD_DBUS_PATH, 
-        DIVERSITY_WORLD_DBUS_INTERFACE,  
-        "ViewportRemove"    
-    );
-    dbus_message_append_args(msg, 
-                             DBUS_TYPE_OBJECT_PATH, &object_path,
-                             DBUS_TYPE_INVALID);
-    e_dbus_message_send(e_conn, msg, NULL, -1, NULL);
-    dbus_message_unref(msg); 
-}
-
-void object_type_get_reply(void *data, DBusMessage *reply, DBusError *error)
-{
-    int type;
-    if (dbus_error_is_set(error))
-    {
-        printf("Type Get reply Error: %s - %s\n", error->name, error->message);
-        return;
-    }
-
-    dbus_message_get_args(reply, error, DBUS_TYPE_INT32, &type, DBUS_TYPE_INVALID);
-    printf("Object type: %d\n", type);
-    if(type==DIVERSITY_OBJECT_TYPE_AP) { 
-        //e_nav_object_add(proxy, lat, lon);  // hard code 
-    }
-    else if(type==DIVERSITY_OBJECT_TYPE_OBJECT) {
-
-    }
-}
-
-void object_type_get(Object_Proxy *proxy)
-{
-    DBusMessage *msg;
-    msg = dbus_message_new_method_call(
-        DIVERSITY_DBUS_SERVICE,  
-        proxy->object_path,
-        DIVERSITY_OBJECT_DBUS_INTERFACE, 
-        "TypeGet"    
-    );
-    e_dbus_message_send(e_conn, msg, object_type_get_reply, -1, proxy);     
-    dbus_message_unref(msg); 
-}
-
-static void on_viewport_object_added(void *data, DBusMessage *msg)
-{
-    DBusError err;
-    char *object_path;
-    dbus_error_init(&err);
-    if(!dbus_message_get_args(msg, &err,
-                 DBUS_TYPE_OBJECT_PATH, &object_path,
-                 DBUS_TYPE_INVALID))
-    {
-        printf("Error: on_viewport_object_added: %s\n", err.name);
-        printf("%s\n", err.message);
-        return;
-    }
-    else {
-        printf("Object Added: %s \n", object_path);
-        //  New a Proxy
-        Object_Proxy* proxy = object_proxy_new(object_path, e_conn); 
-        if(proxy==NULL) {
-            return;
-        }
-        // get type
-        object_type_get(proxy);
-
-        //  Test: New object in UI and show on the map
-        double lat=122.0, lon=23.0;
-        int i=rand()/2;
-        if(i==1) {
-            lat = lat+drand48();
-        }
-        else {
-            lat = lat-drand48();
-        }
-        i=rand()/2;
-        if(i==1) {
-            lon = lon+drand48();
-        }
-        else {
-           lon = lon-drand48();
-        }
-        // get type
-        
-        //e_nav_object_add(proxy, DIVERSITY_ITEM_TYPE_AP, lat, lon);  // hard code 
-    }
-}
-
-static void on_viewport_object_removed(void *data, DBusMessage *msg)
-{
-    DBusError err;
-    char *object_path;
-    dbus_error_init(&err);
-    if(!dbus_message_get_args(msg, &err,
-                 DBUS_TYPE_OBJECT_PATH, &object_path,
-                 DBUS_TYPE_INVALID))
-    {
-        printf("Error: on_viewport_object_removed\n");
-        return;
-    }
-    else {
-        printf("Object Removed: %s \n", object_path);
-        e_nav_object_del(object_path);
-    }
-}
-
-static void on_object_geometry_changed(void *data, DBusMessage *msg)
-{
-    DBusError err;
-    double lon, lat, width, height;
-    dbus_error_init(&err);
-    if(!dbus_message_get_args(msg, &err,
-                 DBUS_TYPE_DOUBLE, &lon,
-                 DBUS_TYPE_DOUBLE, &lat,
-                 DBUS_TYPE_DOUBLE, &width,
-                 DBUS_TYPE_DOUBLE, &height,
-                 DBUS_TYPE_INVALID))
-    {
-        printf("Error: on_object_geometry_changed: %s\n", err.name);
-        printf("%s\n", err.message);
-        return;
-    }
-    else {
-        printf("Object geometry changed: %f,%f %f,%f \n", lon, lat, width, height);
-    }
-}
-
-void e_nav_connect_ap(char* object_path)
-{
-    DBusMessage *msg;
-    msg = dbus_message_new_method_call(
-        DIVERSITY_DBUS_SERVICE,
-        DIVERSITY_WORLD_DBUS_PATH,
-        DIVERSITY_WORLD_DBUS_INTERFACE,
-        "ConnectAp"
-    );
-    dbus_message_append_args(msg,
-                             DBUS_TYPE_OBJECT_PATH, &object_path,
-                             DBUS_TYPE_INVALID);
-    e_dbus_message_send(e_conn, msg, NULL, -1, NULL);
-    dbus_message_unref(msg);
-}
-
-#if 0
-void e_nav_ap_info_get(char* object_path)
-{
-    DBusMessage *msg;
-    msg = dbus_message_new_method_call(
-        DIVERSITY_DBUS_SERVICE,
-        object_path,
-        "org.freedesktop.DBus.Properties",
-        "GetAll"
-    );
-    dbus_message_append_args(msg,
-                             DBUS_TYPE_OBJECT_PATH, DIVERSITY_OBJECT_DBUS_INTERFACE,
-                             DBUS_TYPE_INVALID);
-    e_dbus_message_send(e_conn, msg, NULL, -1, NULL);
-    dbus_message_unref(msg);
-}
-#endif
-
-E_DBus_Signal_Handler *
-e_nav_object_signal_handler_add(E_DBus_Connection *conn, char* object_path, char* interface, char* signal_name, E_DBus_Signal_Cb cb_signal)
-{
-    return e_dbus_signal_handler_add(
-        conn,
-        DIVERSITY_DBUS_SERVICE, 
-        object_path, 
-        interface,
-        signal_name,
-        cb_signal, 
-        NULL);
-}
-
-
-Evas_Object* get_e_nav_object(const char* obj_path)
-{
-    return  ecore_hash_get(hash_table, obj_path);
-}
-
-void remove_e_nav_object(const char* obj_path)
-{
-    ecore_hash_remove(hash_table, obj_path);
-}
-
-int add_e_nav_object(const char *obj_path, Evas_Object* o)
-{
-     return ecore_hash_set(hash_table, (void *) obj_path, o);
-}
-
-void e_nav_object_del(const char* obj_path)
-{
-    Evas_Object *nwi = get_e_nav_object(obj_path);
-    if(nwi) {
-        evas_object_del(nwi);
-    }
-    remove_e_nav_object(obj_path);
-}
-
-#if 0
-// when we zoom in and zoom out or move the map, we should change the current viewport
-// when zoom in, we double size the viewport, when zoom out, we half the size of the viewport
-// when move the map or the user move his position, we change the coordinate of the left-up corner and the buttom-down corner
-void change_viewport()
-{
-
-}
-
-// we can have more than one viewport, and we can change to the viewport we want to see
-// use a list to manage viewport
-void e_nav_viewport_add(Viewport_Proxy* proxy)
-{
-    
-}
-
-void e_nav_viewport_del()
-{
-
-}
-
-void e_nav_neo_me_add(Bard_Proxy *proxy, double lat, double lon )
-{
-    Evas_Object *nwi;
-    nwi = e_nav_world_item_neo_me_add(nav,  THEME_PATH, lat, lon);
-    e_nav_world_item_neo_me_name_set(nwi, "Me");
-    proxy->object = nwi;
-
-}
-
-
-void e_nav_ap_added(Object_Proxy* proxy, double lat, double lon)
-{
-    Evas_Object *nwi;
-    nwi = e_nav_world_item_ap_add(nav,  THEME_PATH, proxy, lat, lon);
-    e_nav_world_item_ap_essid_set(nwi, "Office");   // hard code
-    e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE); // hard code
-    e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);  // hard code
-    proxy->object = nwi; 
-    add_e_nav_object(proxy->object_path, nwi);
-}
-
-void e_nav_neo_other_added(Object_Proxy* proxy, double lat, double lon)
-{
-    Evas_Object *nwi;
-    nwi = e_nav_world_item_neo_other_add(nav,  THEME_PATH, proxy, lat, lon);
-    e_nav_world_item_neo_other_name_set(nwi, "Sean");   // hard code  
-    proxy->object = nwi;
-    add_e_nav_object(proxy->object_path, nwi);
-}
-#endif
 
 int
 e_nav_dbus_init(void)
@@ -640,39 +159,478 @@ e_nav_dbus_connection_get(void)
    return e_conn;
 }
 
-E_Nav_World *
-e_nav_world_new(void)
+static Diversity_DBus *
+diversity_dbus_new(const char *path, int size)
 {
-   E_Nav_World *world;
    E_DBus_Connection *connection;
+   Diversity_DBus *dbus;
+
+   if (!path || size < sizeof(Diversity_DBus)) return NULL;
 
    connection = e_nav_dbus_connection_get();
    if (!connection) return NULL;
 
-   world = calloc(1, sizeof(E_Nav_World));
+   dbus = calloc(1, size);
+   if (!dbus) return NULL;
+
+   dbus->path = strdup(path);
+   if (!dbus->path) {
+	free(dbus);
+
+	return NULL;
+   }
+
+   return dbus;
+}
+
+static void
+diversity_dbus_destroy(Diversity_DBus *dbus)
+{
+   int i;
+
+   for (i = 0; i < N_DIVERSITY_DBUS_IFACES; i++)
+     {
+	if (dbus->proxies[i])
+	  e_dbus_proxy_destroy(dbus->proxies[i]);
+     }
+
+   free(dbus->path);
+   free(dbus);
+}
+
+const char *
+diversity_dbus_path_get(Diversity_DBus *dbus)
+{
+   return dbus->path;
+}
+
+E_DBus_Proxy *
+diversity_dbus_proxy_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface)
+{
+   E_DBus_Connection *connection;
+
+   if (dbus->proxies[iface])
+     return dbus->proxies[iface];
+
+   connection = e_nav_dbus_connection_get();
+   if (!connection) return NULL;
+
+   dbus->proxies[iface] = e_dbus_proxy_new_for_name(connection,
+	 					     DIVERSITY_DBUS_SERVICE,
+						     dbus->path,
+						     diversity_ifaces[iface]);
+
+   return dbus->proxies[iface];
+}
+
+void
+diversity_dbus_signal_connect(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *signal, E_DBus_Signal_Cb cb_signal, void *data)
+{
+   E_DBus_Proxy *proxy;
+
+   proxy = diversity_dbus_proxy_get(dbus, iface);
+   if (!proxy) return;
+
+   e_dbus_proxy_connect_signal(proxy, signal, cb_signal, data);
+}
+
+void
+diversity_dbus_signal_disconnect(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *signal, E_DBus_Signal_Cb cb_signal, void *data)
+{
+   E_DBus_Proxy *proxy;
+
+   proxy = diversity_dbus_proxy_get(dbus, iface);
+   if (!proxy) return;
+
+   e_dbus_proxy_disconnect_signal(proxy, signal, cb_signal, data);
+}
+
+void
+diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, void *val)
+{
+   E_DBus_Proxy *proxy;
+   DBusMessage *message, *reply;
+   DBusMessageIter iter, subiter;
+   char *sig;
+   int type;
+  
+   proxy = diversity_dbus_proxy_get(dbus, iface);
+   if (!proxy) return;
+
+   message = e_dbus_proxy_new_method_call(proxy, "Set");
+
+   dbus_message_iter_init_append(message, &iter);
+
+   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &diversity_ifaces[iface]);
+   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
+
+   sig = DBUS_TYPE_STRING_AS_STRING;
+   type = DBUS_TYPE_STRING;
+
+   if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT, sig, &subiter))
+     return;
+   dbus_message_iter_append_basic(&subiter, type, val);
+   dbus_message_iter_close_container(&iter, &subiter);
+
+   e_dbus_proxy_call(proxy, message, &reply);
+
+   if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
+	printf("failed to set property\n");
+   }
+
+   dbus_message_unref(message);
+   dbus_message_unref(reply);
+}
+
+void *
+diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop)
+{
+   E_DBus_Proxy *proxy;
+   DBusMessage *message, *reply;
+   DBusMessageIter iter, subiter;
+   int type;
+   void *val;
+  
+   proxy = diversity_dbus_proxy_get(dbus, iface);
+   if (!proxy) return NULL;
+
+   message = e_dbus_proxy_new_method_call(proxy, "Get");
+
+   dbus_message_iter_init_append(message, &iter);
+
+   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &diversity_ifaces[iface]);
+   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
+
+   e_dbus_proxy_call(proxy, message, &reply);
+
+   if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
+	printf("failed to get property\n");
+   } else {
+	dbus_message_iter_init(reply, &iter);
+	if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_VARIANT) {
+	     dbus_message_iter_recurse(&iter, &subiter);
+	     type = dbus_message_iter_get_arg_type(&subiter);
+
+	     if (dbus_type_is_basic(type)) {
+		  dbus_message_iter_get_basic(&subiter, &val);
+	     }
+	}
+   }
+
+   dbus_message_unref(message);
+   dbus_message_unref(reply);
+
+   return val;
+}
+
+static void
+on_geometry_changed(void *data, DBusMessage *msg)
+{
+   Diversity_Object *obj = data;
+
+   if (!dbus_message_get_args(msg, NULL,
+			      DBUS_TYPE_DOUBLE, &obj->lon,
+			      DBUS_TYPE_DOUBLE, &obj->lat,
+			      DBUS_TYPE_DOUBLE, &obj->width,
+			      DBUS_TYPE_DOUBLE, &obj->height,
+			      DBUS_TYPE_INVALID))
+     return;
+}
+
+static Diversity_Object *
+diversity_object_new(const char *path, int size)
+{
+   E_DBus_Connection *connection;
+   Diversity_Object *obj;
+
+   if (!path || size < sizeof(Diversity_Object)) return NULL;
+
+   connection = e_nav_dbus_connection_get();
+   if (!connection) return NULL;
+
+   obj = (Diversity_Object *) diversity_dbus_new(path, size);
+   if (!obj) return NULL;
+
+   diversity_dbus_signal_connect((Diversity_DBus *) obj,
+				 DIVERSITY_DBUS_IFACE_OBJECT,
+				"GeometryChanged",
+				on_geometry_changed,
+				obj);
+
+   return obj;
+}
+
+static void
+diversity_object_destroy(Diversity_Object *obj)
+{
+   diversity_dbus_destroy((Diversity_DBus *) obj);
+}
+
+void
+diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, double width, double height)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT);
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "GeometrySet", &error,
+				 DBUS_TYPE_DOUBLE, &lon,
+				 DBUS_TYPE_DOUBLE, &lat,
+				 DBUS_TYPE_DOUBLE, &width,
+				 DBUS_TYPE_DOUBLE, &height,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to set geometry: %s\n", error.message);
+	dbus_error_free(&error);
+     }
+}
+
+void
+diversity_object_geometry_get(Diversity_Object *obj, double *lon, double *lat, double *width, double *height)
+{
+	if (lon)
+		*lon = obj->lon;
+
+	if (lat)
+		*lat = obj->lat;
+
+	if (width)
+		*width = obj->width;
+
+	if (height)
+		*height = obj->height;
+}
+
+Diversity_Viewport *
+diversity_world_viewport_add(Diversity_World *world, double lon1, double lat1, double lon2, double lat2)
+{
+   E_DBus_Proxy *proxy;
+   Diversity_Viewport *view;
+   DBusError error;
+   char *path;
+   double tmp;
+
    if (!world) return NULL;
 
-   world->proxy = e_dbus_proxy_new_for_name(connection,
-					    DIVERSITY_DBUS_SERVICE,
-					    DIVERSITY_WORLD_DBUS_PATH,
-					    DIVERSITY_WORLD_DBUS_INTERFACE);
-   if (!world->proxy)
+   if (lon1 > lon2)
      {
-	free(world);
+	tmp = lon1;
+	lon1 = lon2;
+	lon2 = tmp;
+     }
+   if (lat1 > lat2)
+     {
+	tmp = lat1;
+	lat1 = lat2;
+	lat2 = tmp;
+     }
+
+   if (lon1 < -180.0 || lon2 > 180.0 || lat1 < -90.0 || lat2 > 90.0)
+     return NULL;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world, DIVERSITY_DBUS_IFACE_WORLD);
+   if (!proxy)
+     return NULL;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "ViewportAdd", &error,
+				 DBUS_TYPE_DOUBLE, &lon1,
+				 DBUS_TYPE_DOUBLE, &lat1,
+				 DBUS_TYPE_DOUBLE, &lon2,
+				 DBUS_TYPE_DOUBLE, &lat2,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_OBJECT_PATH, &path,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to add viewport: %s\n", error.message);
+	dbus_error_free(&error);
 
 	return NULL;
      }
 
-   return world;
+   view = diversity_viewport_new(path);
+   free(path);
+
+   return view;
+}
+
+void
+diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view)
+{
+   E_DBus_Proxy *proxy;
+   const char *path;
+
+   if (!world || !view) return;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world, DIVERSITY_DBUS_IFACE_WORLD);
+   if (!proxy) return;
+
+   path = diversity_dbus_path_get((Diversity_DBus *) world);
+   e_dbus_proxy_simple_call(proxy,
+			    "ViewportRemove", NULL,
+			    DBUS_TYPE_OBJECT_PATH, &path,
+			    DBUS_TYPE_INVALID,
+			    DBUS_TYPE_INVALID);
+
+   diversity_viewport_destroy(view);
+}
+
+Diversity_Bard *
+diversity_world_get_self(Diversity_World *world)
+{
+   E_DBus_Proxy *proxy;
+   Diversity_Bard *self;
+   DBusError error;
+   char *path;
+
+   if (!world) return NULL;
+
+   proxy = diversity_dbus_proxy_get(&world->dbus, DIVERSITY_DBUS_IFACE_WORLD);
+   if (!proxy) return NULL;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "GetSelf", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_OBJECT_PATH, &path,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to get self: %s\n", error.message);
+	dbus_error_free(&error);
+
+	return NULL;
+     }
+
+   self = diversity_bard_new(path);
+
+   return self;
+}
+
+Diversity_Viewport *
+diversity_viewport_new(const char *path)
+{
+   Diversity_Viewport *view;
+
+   view = (Diversity_Viewport *)
+      diversity_object_new(path, sizeof(Diversity_Viewport));
+
+   return view;
+}
+
+void
+diversity_viewport_destroy(Diversity_Viewport *view)
+{
+   diversity_object_destroy((Diversity_Object *) view);
+}
+
+Diversity_Bard *
+diversity_bard_new(const char *path)
+{
+   Diversity_Bard *bard;
+
+   bard = (Diversity_Bard *)
+      diversity_object_new(path, sizeof(Diversity_Bard));
+
+   return bard;
+}
+
+void
+diversity_bard_destroy(Diversity_Bard *bard)
+{
+   diversity_object_destroy((Diversity_Object *) bard);
+}
+
+void
+diversity_equipment_config_set(Diversity_Equipment *eqp, const char *key, void *val)
+{
+   E_DBus_Proxy *proxy;
+   DBusMessage *message, *reply;
+   DBusMessageIter iter, subiter;
+   char *sig;
+   int type;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_EQUIPMENT);
+   if (!proxy) return;
+
+   message = e_dbus_proxy_new_method_call(proxy, "SetConfig");
+
+   dbus_message_iter_init_append(message, &iter);
+
+   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &key);
+
+   sig = DBUS_TYPE_STRING_AS_STRING;
+   type = DBUS_TYPE_STRING;
+
+   if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT, sig, &subiter))
+     return;
+   dbus_message_iter_append_basic(&subiter, type, val);
+   dbus_message_iter_close_container(&iter, &subiter);
+
+   e_dbus_proxy_call(proxy, message, &reply);
+
+   if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR)
+	printf("failed to set config\n");
+
+   dbus_message_unref(message);
+   dbus_message_unref(reply);
+}
+
+void *
+diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key)
+{
+   E_DBus_Proxy *proxy;
+   DBusMessage *message, *reply;
+   DBusMessageIter iter, subiter;
+   int type;
+   void *val;
+  
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_EQUIPMENT);
+   if (!proxy) return NULL;
+
+   message = e_dbus_proxy_new_method_call(proxy, "GetConfig");
+
+   dbus_message_iter_init_append(message, &iter);
+
+   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &key);
+
+   e_dbus_proxy_call(proxy, message, &reply);
+
+   if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
+	printf("failed to get config\n");
+   } else {
+	dbus_message_iter_init(reply, &iter);
+	if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_VARIANT) {
+	     dbus_message_iter_recurse(&iter, &subiter);
+	     type = dbus_message_iter_get_arg_type(&subiter);
+
+	     if (dbus_type_is_basic(type)) {
+		  dbus_message_iter_get_basic(&subiter, &val);
+	     }
+	}
+   }
+
+   dbus_message_unref(message);
+   dbus_message_unref(reply);
+
+   return val;
+}
+
+E_Nav_World *
+e_nav_world_new(void)
+{
+   return (E_Nav_World *) diversity_dbus_new(DIVERSITY_WORLD_DBUS_PATH, sizeof(E_Nav_World));
 }
 
 void
 e_nav_world_destroy(E_Nav_World *world)
 {
-   if (!world) return;
-
-   e_dbus_proxy_destroy(world->proxy);
-   free(world);
+   if (world)
+     diversity_dbus_destroy((Diversity_DBus *) world);
 }
 
 E_DBus_Proxy *
@@ -680,12 +638,13 @@ e_nav_world_proxy_get(E_Nav_World *world)
 {
    if (!world) return NULL;
 
-   return world->proxy;
+   return diversity_dbus_proxy_get(&world->dbus, DIVERSITY_DBUS_IFACE_WORLD);
 }
 
 E_Nav_Viewport *
 e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lon2, double lat2)
 {
+   E_DBus_Proxy *proxy;
    E_Nav_Viewport *view;
    DBusError error;
    char *path;
@@ -709,8 +668,12 @@ e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lo
    if (lon1 < -180.0 || lon2 > 180.0 || lat1 < -90.0 || lat2 > 90.0)
      return NULL;
 
+   proxy = e_nav_world_proxy_get(world);
+   if (!proxy)
+     return NULL;
+
    dbus_error_init(&error);
-   if (!e_dbus_proxy_simple_call(world->proxy,
+   if (!e_dbus_proxy_simple_call(proxy,
 				 "ViewportAdd", &error,
 				 DBUS_TYPE_DOUBLE, &lon1,
 				 DBUS_TYPE_DOUBLE, &lat1,
@@ -735,9 +698,14 @@ e_nav_world_viewport_add(E_Nav_World *world, double lon1, double lat1, double lo
 void
 e_nav_world_viewport_remove(E_Nav_World *world, E_Nav_Viewport *view)
 {
+   E_DBus_Proxy *proxy;
+
    if (!world || !view) return;
 
-   e_dbus_proxy_simple_call(world->proxy,
+   proxy = e_nav_world_proxy_get(world);
+   if (!proxy) return;
+
+   e_dbus_proxy_simple_call(proxy,
 			    "ViewportRemove", NULL,
 			    DBUS_TYPE_OBJECT_PATH, &view->path,
 			    DBUS_TYPE_INVALID,
@@ -749,14 +717,18 @@ e_nav_world_viewport_remove(E_Nav_World *world, E_Nav_Viewport *view)
 E_Nav_Bard *
 e_nav_world_get_self(E_Nav_World *world)
 {
+   E_DBus_Proxy *proxy;
    E_Nav_Bard *self;
    DBusError error;
    char *path;
 
    if (!world) return NULL;
 
+   proxy = e_nav_world_proxy_get(world);
+   if (!proxy) return NULL;
+
    dbus_error_init(&error);
-   if (!e_dbus_proxy_simple_call(world->proxy,
+   if (!e_dbus_proxy_simple_call(proxy,
 				 "GetSelf", &error,
 				 DBUS_TYPE_INVALID,
 				 DBUS_TYPE_OBJECT_PATH, &path,
