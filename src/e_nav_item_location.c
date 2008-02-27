@@ -109,12 +109,12 @@ static void
 dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    printf("location send\n"); 
-   e_dialog_deactivate(obj);
    Evas_Object *teo = e_textedit_add( evas_object_evas_get(obj) );
    e_textedit_theme_source_set(teo, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
  
    e_textedit_source_object_set(teo, data);  //  src_object is location item evas object 
    e_textedit_input_set(teo, "To:", "");
+   e_dialog_deactivate(obj);
    evas_object_show(teo);
    e_textedit_activate(teo);
    //ToDo: choose  contact, select one contact 
@@ -129,7 +129,6 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
    if (!locd) return;
 
-   e_tagmenu_deactivate(obj);
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);  
    e_dialog_source_object_set(od, src_obj);  
@@ -141,6 +140,7 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_button_add(od, "Save", dialog_location_save, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    
+   e_tagmenu_deactivate(obj);
    evas_object_show(od);
    e_dialog_activate(od);
 }
@@ -154,7 +154,6 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
    if (!locd) return;
 
-   e_tagmenu_deactivate(obj);
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);  
    e_dialog_source_object_set(od, src_obj);  
@@ -166,6 +165,7 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_button_add(od, "Send", dialog_location_send, data);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    
+   e_tagmenu_deactivate(obj);
    evas_object_show(od);
    e_dialog_activate(od);
 }

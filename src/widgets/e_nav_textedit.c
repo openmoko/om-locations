@@ -273,10 +273,8 @@ _e_textedit_smart_del(Evas_Object *obj)
    if(sd->right_button) evas_object_del(sd->right_button);
    if(sd->title_object) evas_object_del(sd->title_object);
    if(sd->entry_object) evas_object_del(sd->entry_object);
-   if(sd->input_text) free((void*)sd->input_text);
    evas_object_del(sd->clip);
    evas_object_del(sd->event);
-   free(sd);
 }
                     
 static void

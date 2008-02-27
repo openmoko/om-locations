@@ -286,7 +286,6 @@ _e_dialog_smart_del(Evas_Object *obj)
    if(sd->text_object) evas_object_del(sd->text_object);
    evas_object_del(sd->clip);
    evas_object_del(sd->event);
-   free(sd);
 }
                     
 static void
@@ -519,12 +518,12 @@ _e_dialog_update(Evas_Object *obj)
 	if (t >= 1.0) sd->activate_deactivate = 0;
         if(tbc==0) 
           {
-             dialog_y = t * screen_h * (1.0/3);
+             dialog_y = ((-screen_h) * (1.0/3)) + (t * screen_h * (1.0/3) * 2);
              dialog_h = screen_h * (1.0/3);
           }
         else 
           {
-             dialog_y = t* screen_h* (1.0/6);
+             dialog_y = ((-screen_h) * (1.0/6)) + (t * screen_h* (1.0/6) * 2);
              dialog_h = screen_h * (2.0/3);
           }
      }
