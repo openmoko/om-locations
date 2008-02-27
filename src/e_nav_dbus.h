@@ -48,8 +48,6 @@ typedef enum {
      N_DIVERSITY_DBUS_IFACES
 } Diversity_DBus_IFace;
 
-typedef struct _Object_Proxy Object_Proxy;
-
 int                 e_nav_dbus_init(void);
 void                e_nav_dbus_shutdown(void);
 E_DBus_Connection  *e_nav_dbus_connection_get(void);

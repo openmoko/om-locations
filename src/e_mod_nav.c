@@ -263,16 +263,16 @@ _e_mod_nav_init(Evas *evas)
    e_nav_world_item_update(nwi);
    evas_object_show(nwi);
 
-   nwi = e_nav_world_item_ap_add(nav, THEME_PATH, NULL,
+   nwi = e_nav_world_item_ap_add(nav, THEME_PATH,
 				 151.220000, 33.874000);
    e_nav_world_item_ap_essid_set(nwi, "OpenMoko");
    e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_NONE);
    e_nav_world_item_ap_range_set(nwi, 100 NAV_UNIT_M);
     
-   nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH, NULL,
+   nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH,
 				     151.215000, 33.871000);
    e_nav_world_item_neo_other_name_set(nwi, "Sean");
-   nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH, NULL,
+   nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH,
 				     151.213000, 33.874000);
    e_nav_world_item_neo_other_name_set(nwi, "Olv");
    

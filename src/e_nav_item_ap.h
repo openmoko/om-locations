@@ -20,7 +20,6 @@
 
 #ifndef E_NAV_ITEM_AP_H
 #define E_NAV_ITEM_AP_H
-#include "e_nav_dbus.h"
 
 typedef enum _E_Nav_Item_Ap_Key_Type
 {
@@ -29,7 +28,7 @@ typedef enum _E_Nav_Item_Ap_Key_Type
      E_NAV_ITEM_AP_KEY_TYPE_WPA
 } E_Nav_Item_Ap_Key_Type;
 
-Evas_Object            *e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, Object_Proxy *proxy, double lon, double lat);
+Evas_Object            *e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, double lon, double lat);
 void                    e_nav_world_item_ap_essid_set(Evas_Object *item, const char *essid);
 const char             *e_nav_world_item_ap_essid_get(Evas_Object *item);
 void                    e_nav_world_item_ap_key_type_set(Evas_Object *item, E_Nav_Item_Ap_Key_Type key);
