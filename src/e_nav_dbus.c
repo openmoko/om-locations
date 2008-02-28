@@ -20,7 +20,6 @@
  */
 
 #include "e_nav.h"
-#include <assert.h>
 #include "e_nav_dbus.h"
 #include "e_dbus_proxy.h"
 
@@ -81,19 +80,7 @@ static int initialized = -1;
 #define DIVERSITY_DBUS_BUS			DBUS_BUS_SESSION
 #define DIVERSITY_DBUS_SERVICE			"org.openmoko.Diversity"
 #define DIVERSITY_DBUS_PATH			"/org/openmoko/Diversity"
-#define DIVERSITY_DBUS_INTERFACE		"org.openmoko.Diversity"
-
 #define DIVERSITY_WORLD_DBUS_PATH 		"/org/openmoko/Diversity/world"
-#define DIVERSITY_WORLD_DBUS_INTERFACE		"org.openmoko.Diversity.World"
-
-#define DIVERSITY_VIEWPORT_DBUS_INTERFACE	"org.openmoko.Diversity.Viewport"
-#define DIVERSITY_OBJECT_DBUS_INTERFACE		"org.openmoko.Diversity.Object"
-#define DIVERSITY_BARD_DBUS_INTERFACE		"org.openmoko.Diversity.Bard"
-#define DIVERSITY_TAG_DBUS_INTERFACE		"org.openmoko.Diversity.Tag"
-
-#define DIVERSITY_EQUIPMENT_DBUS_INTERFACE	"org.openmoko.Diversity.Equipment"
-#define DIVERSITY_ATLAS_DBUS_INTERFACE		"org.openmoko.Diversity.Atlas"
-#define DIVERSITY_SMS_DBUS_INTERFACE		"org.openmoko.Diversity.Sms"
 
 int
 e_nav_dbus_init(void)
@@ -225,17 +212,164 @@ diversity_dbus_signal_disconnect(Diversity_DBus *dbus, Diversity_DBus_IFace ifac
    e_dbus_proxy_disconnect_signal(proxy, signal, cb_signal, data);
 }
 
-void
-diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, void *val)
+static const char *sig_from_type(int type)
+{
+   const char *sig;
+
+   switch (type)
+     {
+      case DBUS_TYPE_BYTE:
+	 sig = DBUS_TYPE_BYTE_AS_STRING;
+	 break;
+      case DBUS_TYPE_BOOLEAN:
+	 sig = DBUS_TYPE_BOOLEAN_AS_STRING;
+	 break;
+      case DBUS_TYPE_INT16:
+	 sig = DBUS_TYPE_INT16_AS_STRING;
+	 break;
+      case DBUS_TYPE_UINT16:
+	 sig = DBUS_TYPE_UINT16_AS_STRING;
+	 break;
+      case DBUS_TYPE_INT32:
+	 sig = DBUS_TYPE_INT32_AS_STRING;
+	 break;
+      case DBUS_TYPE_UINT32:
+	 sig = DBUS_TYPE_UINT32_AS_STRING;
+	 break;
+      case DBUS_TYPE_INT64:
+	 sig = DBUS_TYPE_INT64_AS_STRING;
+	 break;
+      case DBUS_TYPE_UINT64:
+	 sig = DBUS_TYPE_UINT64_AS_STRING;
+	 break;
+      case DBUS_TYPE_DOUBLE:
+	 sig = DBUS_TYPE_DOUBLE_AS_STRING;
+	 break;
+      case DBUS_TYPE_STRING:
+	 sig = DBUS_TYPE_STRING_AS_STRING;
+	 break;
+      case DBUS_TYPE_OBJECT_PATH:
+	 sig = DBUS_TYPE_OBJECT_PATH_AS_STRING;
+	 break;
+      default:
+	 sig = NULL;
+	 break;
+     }
+
+   return sig;
+}
+
+static int
+set_basic_variant(E_DBus_Proxy *proxy, DBusMessage *msg, DBusMessageIter *iter, int type, void *val)
+{
+   DBusMessage *reply;
+   DBusMessageIter subiter;
+   DBusError error;
+   const char *sig;
+
+   sig = sig_from_type(type);
+   if (!sig) return 0;
+
+   if (!dbus_message_iter_open_container(iter,
+	    DBUS_TYPE_VARIANT, sig, &subiter))
+	return 0;
+
+   dbus_message_iter_append_basic(&subiter, type, val);
+   dbus_message_iter_close_container(iter, &subiter);
+
+   if (!e_dbus_proxy_call(proxy, msg, &reply))
+     return 0;
+
+   dbus_error_init(&error);
+   if (dbus_set_error_from_message(&error, reply))
+     {
+	printf("%s returns error: %s\n",
+	      dbus_message_get_member(msg), error.message);
+
+	dbus_error_free(&error);
+	dbus_message_unref(reply);
+
+	return 0;
+     }
+
+   dbus_message_unref(reply);
+
+   return 1;
+}
+
+static int
+get_basic_variant(E_DBus_Proxy *proxy, DBusMessage *msg, void *val)
+{
+   DBusMessage *reply;
+   DBusMessageIter iter, subiter;
+   DBusError error;
+   int type;
+
+   if (!e_dbus_proxy_call(proxy, msg, &reply))
+     return 0;
+
+   dbus_error_init(&error);
+   if (dbus_set_error_from_message(&error, reply))
+     {
+	printf("%s returns error: %s\n",
+	      dbus_message_get_member(msg), error.message);
+
+	dbus_error_free(&error);
+	dbus_message_unref(reply);
+
+	return 0;
+     }
+
+   dbus_message_iter_init(reply, &iter);
+   if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
+     {
+	printf("%s returns non-variant\n",
+	      dbus_message_get_member(msg));
+
+	dbus_message_unref(reply);
+
+	return 0;
+     }
+
+   dbus_message_iter_recurse(&iter, &subiter);
+   type = dbus_message_iter_get_arg_type(&subiter);
+   if (!dbus_type_is_basic(type))
+     {
+	printf("%s returns non-basic variant\n",
+	      dbus_message_get_member(msg));
+
+	dbus_message_unref(reply);
+
+	return 0;
+     }
+
+   dbus_message_iter_get_basic(&subiter, val);
+
+   if (type == DBUS_TYPE_STRING || type == DBUS_TYPE_OBJECT_PATH)
+     {
+	char *p = *((char **) val);
+
+	if (p)
+	  p = strdup(p);
+
+	*((char **) val) = p;
+     }
+
+   dbus_message_unref(reply);
+
+   return 1;
+}
+
+int
+diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, int type, void *val)
 {
    E_DBus_Proxy *proxy;
-   DBusMessage *message, *reply;
-   DBusMessageIter iter, subiter;
-   char *sig;
-   int type;
+   DBusMessage *message;
+   DBusMessageIter iter;
+   int ret;
   
-   proxy = diversity_dbus_proxy_get(dbus, iface);
-   if (!proxy) return;
+   proxy = diversity_dbus_proxy_get(dbus, DIVERSITY_DBUS_IFACE_PROPERTIES);
+   if (!proxy) return 0;
 
    message = e_dbus_proxy_new_method_call(proxy, "Set");
 
@@ -244,35 +378,22 @@ diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_DBus_IFace iface, co
    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &diversity_ifaces[iface]);
    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
 
-   sig = DBUS_TYPE_STRING_AS_STRING;
-   type = DBUS_TYPE_STRING;
-
-   if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT, sig, &subiter))
-     return;
-   dbus_message_iter_append_basic(&subiter, type, val);
-   dbus_message_iter_close_container(&iter, &subiter);
-
-   e_dbus_proxy_call(proxy, message, &reply);
-
-   if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
-	printf("failed to set property\n");
-   }
-
+   ret = set_basic_variant(proxy, message, &iter, type, val);
    dbus_message_unref(message);
-   dbus_message_unref(reply);
+
+   return ret;
 }
 
-void *
-diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop)
+int
+diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, void *val)
 {
    E_DBus_Proxy *proxy;
-   DBusMessage *message, *reply;
-   DBusMessageIter iter, subiter;
-   int type;
-   void *val;
+   DBusMessage *message;
+   DBusMessageIter iter;
+   int ret;
   
-   proxy = diversity_dbus_proxy_get(dbus, iface);
-   if (!proxy) return NULL;
+   proxy = diversity_dbus_proxy_get(dbus, DIVERSITY_DBUS_IFACE_PROPERTIES);
+   if (!proxy) return 0;
 
    message = e_dbus_proxy_new_method_call(proxy, "Get");
 
@@ -281,26 +402,10 @@ diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, co
    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &diversity_ifaces[iface]);
    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
 
-   e_dbus_proxy_call(proxy, message, &reply);
-
-   if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
-	printf("failed to get property\n");
-   } else {
-	dbus_message_iter_init(reply, &iter);
-	if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_VARIANT) {
-	     dbus_message_iter_recurse(&iter, &subiter);
-	     type = dbus_message_iter_get_arg_type(&subiter);
-
-	     if (dbus_type_is_basic(type)) {
-		  dbus_message_iter_get_basic(&subiter, &val);
-	     }
-	}
-   }
-
+   ret = get_basic_variant(proxy, message, val);
    dbus_message_unref(message);
-   dbus_message_unref(reply);
 
-   return val;
+   return ret;
 }
 
 static void
@@ -585,77 +690,48 @@ diversity_equipment_destroy(Diversity_Equipment *eqp)
    diversity_dbus_destroy((Diversity_DBus *) eqp);
 }
 
-void
-diversity_equipment_config_set(Diversity_Equipment *eqp, const char *key, void *val)
+int
+diversity_equipment_config_set(Diversity_Equipment *eqp, const char *key, int type, void *val)
 {
    E_DBus_Proxy *proxy;
-   DBusMessage *message, *reply;
-   DBusMessageIter iter, subiter;
-   char *sig;
-   int type;
+   DBusMessage *message;
+   DBusMessageIter iter;
+   int ret;
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_EQUIPMENT);
-   if (!proxy) return;
+   if (!proxy) return 0;
 
    message = e_dbus_proxy_new_method_call(proxy, "SetConfig");
+   if (!message) return 0;
 
    dbus_message_iter_init_append(message, &iter);
-
    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &key);
 
-   sig = DBUS_TYPE_STRING_AS_STRING;
-   type = DBUS_TYPE_STRING;
-
-   if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT, sig, &subiter))
-     return;
-   dbus_message_iter_append_basic(&subiter, type, val);
-   dbus_message_iter_close_container(&iter, &subiter);
-
-   e_dbus_proxy_call(proxy, message, &reply);
-
-   if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR)
-	printf("failed to set config\n");
-
+   ret = set_basic_variant(proxy, message, &iter, type, val);
    dbus_message_unref(message);
-   dbus_message_unref(reply);
+
+   return ret;
 }
 
-void *
-diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key)
+int
+diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key, void *val)
 {
    E_DBus_Proxy *proxy;
-   DBusMessage *message, *reply;
-   DBusMessageIter iter, subiter;
-   int type;
-   void *val;
+   DBusMessage *message;
+   DBusMessageIter iter;
+   int ret;
   
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_EQUIPMENT);
-   if (!proxy) return NULL;
+   if (!proxy) return 0;
 
    message = e_dbus_proxy_new_method_call(proxy, "GetConfig");
 
    dbus_message_iter_init_append(message, &iter);
-
    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &key);
 
-   e_dbus_proxy_call(proxy, message, &reply);
-
-   if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
-	printf("failed to get config\n");
-   } else {
-	dbus_message_iter_init(reply, &iter);
-	if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_VARIANT) {
-	     dbus_message_iter_recurse(&iter, &subiter);
-	     type = dbus_message_iter_get_arg_type(&subiter);
-
-	     if (dbus_type_is_basic(type)) {
-		  dbus_message_iter_get_basic(&subiter, &val);
-	     }
-	}
-   }
+   ret = get_basic_variant(proxy, message, val);
 
    dbus_message_unref(message);
-   dbus_message_unref(reply);
 
-   return val;
+   return ret;
 }

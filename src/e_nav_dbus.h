@@ -56,8 +56,8 @@ const char         *diversity_dbus_path_get(Diversity_DBus *dbus);
 E_DBus_Proxy       *diversity_dbus_proxy_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface);
 void                diversity_dbus_signal_connect(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *signal, E_DBus_Signal_Cb cb_signal, void *data);
 void                diversity_dbus_signal_disconnect(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *signal, E_DBus_Signal_Cb cb_signal, void *data);
-void                diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, void *val);
-void               *diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop);
+int                 diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, int type, void *val);
+int                 diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, void *val);
 
 void                diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, double width, double height);
 void                diversity_object_geometry_get(Diversity_Object *obj, double *lon, double *lat, double *width, double *height);
@@ -70,8 +70,8 @@ Diversity_Bard     *diversity_world_get_self(Diversity_World *world);
 
 Diversity_Equipment *diversity_equipment_new(const char *path);
 void                diversity_equipment_destroy(Diversity_Equipment *eqp);
-void                diversity_equipment_config_set(Diversity_Equipment *eqp, const char *key, void *val);
-void               *diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key);
+int                 diversity_equipment_config_set(Diversity_Equipment *eqp, const char *key, int type, void *val);
+int                 diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key, void *val);
 
 Diversity_Viewport *diversity_viewport_new(const char *path);
 void                diversity_viewport_destroy(Diversity_Viewport *view);
