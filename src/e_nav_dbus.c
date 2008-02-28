@@ -23,22 +23,24 @@
 #include "e_nav_dbus.h"
 #include "e_dbus_proxy.h"
 
-static const char *diversity_ifaces[N_DIVERSITY_DBUS_IFACES] = {
-     DBUS_INTERFACE_PROPERTIES,
-     "org.openmoko.Diversity",
-     "org.openmoko.Diversity.World",
-     "org.openmoko.Diversity.Object",
-     "org.openmoko.Diversity.Viewport",
-     "org.openmoko.Diversity.Bard",
-     "org.openmoko.Diversity.Tag",
-     "org.openmoko.Diversity.Equipment",
-     "org.openmoko.Diversity.Atlas",
-     "org.openmoko.Diversity.Sms",
+static const char *diversity_ifaces[N_DIVERSITY_DBUS_IFACES] =
+{
+   DBUS_INTERFACE_PROPERTIES,
+   "org.openmoko.Diversity",
+   "org.openmoko.Diversity.World",
+   "org.openmoko.Diversity.Object",
+   "org.openmoko.Diversity.Viewport",
+   "org.openmoko.Diversity.Bard",
+   "org.openmoko.Diversity.Tag",
+   "org.openmoko.Diversity.Equipment",
+   "org.openmoko.Diversity.Atlas",
+   "org.openmoko.Diversity.Sms",
 };
 
 struct _Diversity_DBus
 {
    char *path;
+   /* FIXME waste of memory! */
    E_DBus_Proxy *proxies[N_DIVERSITY_DBUS_IFACES];
 };
 
@@ -110,12 +112,12 @@ void
 e_nav_dbus_shutdown(void)
 {
    if (e_conn)
-   {
-     e_dbus_connection_close(e_conn);
-     e_conn = NULL;
+     {
+	e_dbus_connection_close(e_conn);
+	e_conn = NULL;
 
-     e_dbus_shutdown();
-   }
+	e_dbus_shutdown();
+     }
 
    initialized = -1;
 }
@@ -212,7 +214,8 @@ diversity_dbus_signal_disconnect(Diversity_DBus *dbus, Diversity_DBus_IFace ifac
    e_dbus_proxy_disconnect_signal(proxy, signal, cb_signal, data);
 }
 
-static const char *sig_from_type(int type)
+static const char *
+sig_from_type(int type)
 {
    const char *sig;
 
@@ -375,7 +378,8 @@ diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_DBus_IFace iface, co
 
    dbus_message_iter_init_append(message, &iter);
 
-   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &diversity_ifaces[iface]);
+   dbus_message_iter_append_basic(&iter,
+	 DBUS_TYPE_STRING, &diversity_ifaces[iface]);
    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
 
    ret = set_basic_variant(proxy, message, &iter, type, val);
@@ -399,7 +403,8 @@ diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, co
 
    dbus_message_iter_init_append(message, &iter);
 
-   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &diversity_ifaces[iface]);
+   dbus_message_iter_append_basic(&iter,
+	 DBUS_TYPE_STRING, &diversity_ifaces[iface]);
    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
 
    ret = get_basic_variant(proxy, message, val);
@@ -457,7 +462,8 @@ diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, dou
    E_DBus_Proxy *proxy;
    DBusError error;
 
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT);
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj,
+	 	DIVERSITY_DBUS_IFACE_OBJECT);
 
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
@@ -535,7 +541,8 @@ diversity_world_viewport_add(Diversity_World *world, double lon1, double lat1, d
    if (lon1 < -180.0 || lon2 > 180.0 || lat1 < -90.0 || lat2 > 90.0)
      return NULL;
 
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world, DIVERSITY_DBUS_IFACE_WORLD);
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
+	 	DIVERSITY_DBUS_IFACE_WORLD);
    if (!proxy)
      return NULL;
 
@@ -570,7 +577,8 @@ diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view
 
    if (!world || !view) return;
 
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world, DIVERSITY_DBUS_IFACE_WORLD);
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
+	 	DIVERSITY_DBUS_IFACE_WORLD);
    if (!proxy) return;
 
    path = diversity_dbus_path_get((Diversity_DBus *) world);
@@ -593,7 +601,8 @@ diversity_world_get_self(Diversity_World *world)
 
    if (!world) return NULL;
 
-   proxy = diversity_dbus_proxy_get(&world->dbus, DIVERSITY_DBUS_IFACE_WORLD);
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
+	 	DIVERSITY_DBUS_IFACE_WORLD);
    if (!proxy) return NULL;
 
    dbus_error_init(&error);
@@ -698,7 +707,8 @@ diversity_equipment_config_set(Diversity_Equipment *eqp, const char *key, int ty
    DBusMessageIter iter;
    int ret;
 
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_EQUIPMENT);
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp,
+	 	DIVERSITY_DBUS_IFACE_EQUIPMENT);
    if (!proxy) return 0;
 
    message = e_dbus_proxy_new_method_call(proxy, "SetConfig");
@@ -721,7 +731,8 @@ diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key, void *
    DBusMessageIter iter;
    int ret;
   
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_EQUIPMENT);
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp,
+	 	DIVERSITY_DBUS_IFACE_EQUIPMENT);
    if (!proxy) return 0;
 
    message = e_dbus_proxy_new_method_call(proxy, "GetConfig");
