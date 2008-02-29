@@ -401,6 +401,7 @@ _e_ctrl_smart_show(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    evas_object_show(sd->clip);
+   _e_ctrl_buttons_set(obj);
 }
 
 static void

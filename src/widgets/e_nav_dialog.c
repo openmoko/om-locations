@@ -563,11 +563,27 @@ _e_dialog_update(Evas_Object *obj)
    E_Button_Item *bi;
    tmp_x = dialog_x;
    button_w = (int)(dialog_w/bc);
-   button_h = dialog_y + dialog_h - tmp_y;
+   if(tbc==0) 
+     {
+        button_h = dialog_h*(1.0/2);
+     }
+   else 
+     {
+        button_h = dialog_h*(1.0/8);
+     }
+   //button_h = dialog_y + dialog_h - tmp_y;
    for (l = sd->buttons; l; l = l->next)
      {
         bi = l->data;
-        evas_object_move(bi->item_obj, tmp_x, tmp_y );
+        if(tbc==0) 
+          {
+             evas_object_move(bi->item_obj, tmp_x, (dialog_y+dialog_h*(1.0/2)) );
+          }
+        else 
+          {
+             evas_object_move(bi->item_obj, tmp_x, (dialog_y+dialog_h*(7.0/8)) );
+          }
+        // evas_object_move(bi->item_obj, tmp_x, tmp_y );
         evas_object_resize(bi->item_obj, button_w, button_h);
         evas_object_show(bi->item_obj);
         tmp_x = tmp_x + button_w;
