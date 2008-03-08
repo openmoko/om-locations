@@ -17,4 +17,9 @@ Some quick and dirty TODO's
 
 --- now we are at demo stage.
 
-  
+* make location title can be modified
+* make list view an indenpendent widget from e_ctrl. 
+* make e_ctrl using edje to implement buttons, etc. 
+* tag sharing by SMS
+
+-- Jeremy Chang

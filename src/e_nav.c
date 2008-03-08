@@ -21,6 +21,7 @@
 #include "e_nav.h"
 #include "e_nav_tileset.h"
 #include "e_ctrl.h"
+#include "e_nav_dbus.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -140,11 +141,20 @@ static Evas_Smart *_e_smart = NULL;
    if (!sd) return ret \
    if (strcmp(evas_object_type_get(obj), "e_nav")) return ret
 
+static Diversity_World *world = NULL;
+
 Evas_Object *
-e_nav_add(Evas *e)
+e_nav_add(Evas *e, void *div_world)
 {
    _e_nav_smart_init();
+   world = (Diversity_World*)div_world; 
    return evas_object_smart_add(e, _e_smart);
+}
+
+void *
+e_nav_world_get()
+{
+   return world;
 }
 
 void

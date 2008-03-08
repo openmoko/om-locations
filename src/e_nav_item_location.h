@@ -20,8 +20,9 @@
 
 #ifndef E_NAV_ITEM_LOCATION_H
 #define E_NAV_ITEM_LOCATION_H
+#include "e_nav_dbus.h"
 
-Evas_Object            *e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lon, double lat);
+Evas_Object            *e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Object *tag);
 void                    e_nav_world_item_location_name_set(Evas_Object *item, const char *name);
 const char             *e_nav_world_item_location_name_get(Evas_Object *item);
 void                    e_nav_world_item_location_description_set(Evas_Object *item, const char *description);

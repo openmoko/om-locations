@@ -23,8 +23,11 @@
 #include "e_nav_tileset.h"
 #include "widgets/e_ilist.h"
 #include "widgets/e_nav_titlepane.h"
+#include "e_nav_item_location.h"
 
 static Evas_Object *ctrl = NULL;
+static Evas_Object *listpane = NULL;
+static Evas_Object *titlepane = NULL;
 
 typedef struct _E_Smart_Data E_Smart_Data;
 static Evas_Object * _e_ctrl_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
@@ -36,11 +39,13 @@ struct _E_Smart_Data
 {
    Evas_Object *obj;      
    Evas_Object *clip;
+   //Evas_Object *event;
    Evas_Object *map_overlay;   
    Evas_Object *nav;
    Evas_Object *listview;   
-   Evas_Object *tagview;    
+   //Evas_Object *tagview;    
 
+   //Evas_Object *button_panel_bg;
    Evas_Object *button1;
    Evas_Object *button2;
    Evas_Object *button3;
@@ -84,22 +89,53 @@ static void
 _e_nav_tag_sel(void *data, void *data2)
 {
    printf("tag sel\n");
+  
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
    if(!sd) {
        printf("sd is NULL\n");
        return;
    }
+    
+   double lon = e_nav_world_item_location_lon_get(data2);
+   double lat = e_nav_world_item_location_lat_get(data2);
+   printf("tag sel: lon:%f, lat:%f\n", lon, lat);
    evas_object_hide(sd->listview);
    sd->view_mode = E_NAV_VIEW_MODE_MAP;
-   e_nav_coord_set(sd->nav, 151.205907, 33.875938, 0.0);
+   e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
+}
+
+void
+e_ctrl_taglist_tag_set(const char *name, const char *description, void *object)
+{
+    // object is Location evas object
+    Evas_Object *location_obj = NULL;
+    int n;
+    int count = e_ilist_count(listpane); 
+    for(n=0; n<count; n++) 
+      {
+         e_ilist_selected_set(listpane, count);
+         location_obj = (Evas_Object*) e_ilist_selected_data2_get(listpane);
+         if(location_obj == object)
+           break;
+      }
+    if(location_obj) 
+      e_ilist_nth_label_set(listpane, n, description);
+}
+
+void
+e_ctrl_taglist_tag_add(const char *name, const char *description, void *loc_object)
+{
+   printf("description2: %s\n", description);
+   e_ilist_append(listpane, NULL, description, 20, _e_nav_tag_sel, NULL, ctrl, loc_object);
 }
 
 static void   
 _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
+   printf("show items in ilist\n");
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
    if(!sd) {
@@ -108,8 +144,10 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
    }
    sd->view_mode = E_NAV_VIEW_MODE_LIST;
 
-   Evas_Object *titlepane, *listpane;
-   titlepane = e_nav_titlepane_add(evas);
+   //Evas_Object *listpane;
+   //Evas_Object *titlepane, *listpane;
+   //Evas_Object *titlepane;
+
    e_nav_titlepane_theme_source_set(titlepane, THEME_PATH);
    e_nav_titlepane_set_message(titlepane, "View Tags");
    e_nav_titlepane_hide_buttons(titlepane);
@@ -117,22 +155,25 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
    evas_object_clip_set(titlepane, sd->listview);
 
    evas_object_resize(titlepane, 480, 50);
-   evas_object_show(sd->listview);
+   //evas_object_show(sd->listview);
    evas_object_show(titlepane);
 
-   Evas_Coord mw, mh; 
-   listpane = e_ilist_add(evas);
-   e_ilist_append(listpane, NULL, "Girl friend dumped me", 50, _e_nav_tag_sel, NULL, data, NULL);
-   e_ilist_append(listpane, NULL, "My favorite steak", 20, _e_nav_tag_sel, NULL, data, NULL);
-   e_ilist_icon_size_set(listpane, 480, 50);
-   e_ilist_min_size_get(listpane, &mw, &mh);
-   evas_object_resize(listpane, 480, mh);
+   //Evas_Coord mw, mh; 
+   //listpane = e_ilist_add(evas);
+
+   //e_ilist_append(listpane, NULL, "Girl friend dumped me", 20, _e_nav_tag_sel, NULL, data, NULL);
+   //e_ilist_append(listpane, NULL, "My favorite steak", 20, _e_nav_tag_sel, NULL, data, NULL);
+   int count = e_ilist_count(listpane);
+   //e_ilist_icon_size_set(listpane, 480, 50);
+   //e_ilist_min_size_get(listpane, &mw, &mh);
+   evas_object_resize(listpane, 480, count * 70);
    evas_object_move(listpane, 0, 50);
-   evas_object_smart_member_add(listpane, sd->listview);   
-   evas_object_clip_set(listpane, sd->listview);
-   evas_object_stack_below(sd->listview, sd->clip);
+   //evas_object_smart_member_add(listpane, sd->listview);   
+   //evas_object_clip_set(listpane, sd->listview);
+   //evas_object_stack_below(sd->listview, sd->clip);
    evas_object_hide(sd->nav);
    evas_object_hide(sd->map_overlay);
+   evas_object_show(sd->listview);
    evas_object_show(listpane); 
 
 }
@@ -152,7 +193,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
 }
-
+/*
 static void
 _e_nav_tagbook_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
@@ -167,7 +208,7 @@ _e_nav_tagbook_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
         sd->show_mode = E_NAV_SHOW_MODE_TAG;
      }
 }
-
+*/
 static void
 _e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
@@ -175,7 +216,7 @@ _e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    sd = evas_object_smart_data_get(data);
    if(sd->view_mode == E_NAV_VIEW_MODE_LIST)
       evas_object_hide(sd->listview);
-   evas_object_hide(sd->tagview);
+   //evas_object_hide(sd->tagview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
    sd->view_mode = E_NAV_VIEW_MODE_MAP;
@@ -201,10 +242,10 @@ _e_ctrl_buttons_set(Evas_Object *obj)
    evas_object_move(sd->button2, (screen_w/4)*1, (screen_h-indent-button_h) );
    evas_object_move(sd->button3, (screen_w/4)*2, (screen_h-indent-button_h) );
    evas_object_move(sd->button4, (screen_w/4)*3, (screen_h-indent-button_h) );
-   evas_object_event_callback_add(sd->button1, EVAS_CALLBACK_MOUSE_DOWN, _e_nav_tagbook_button_cb_mouse_down, obj);
-   evas_object_event_callback_add(sd->button2, EVAS_CALLBACK_MOUSE_DOWN, _e_nav_map_button_cb_mouse_down, obj);
-   evas_object_event_callback_add(sd->button3, EVAS_CALLBACK_MOUSE_DOWN, _e_nav_refresh_button_cb_mouse_down, obj);
-   evas_object_event_callback_add(sd->button4, EVAS_CALLBACK_MOUSE_DOWN, _e_nav_list_button_cb_mouse_down, obj);
+   //evas_object_event_callback_add(sd->button1, EVAS_CALLBACK_MOUSE_UP, _e_nav_tagbook_button_cb_mouse_down, obj);
+   evas_object_event_callback_add(sd->button2, EVAS_CALLBACK_MOUSE_UP, _e_nav_map_button_cb_mouse_down, obj);
+   evas_object_event_callback_add(sd->button3, EVAS_CALLBACK_MOUSE_UP, _e_nav_refresh_button_cb_mouse_down, obj);
+   evas_object_event_callback_add(sd->button4, EVAS_CALLBACK_MOUSE_UP, _e_nav_list_button_cb_mouse_down, obj);
    edje_object_part_text_set(sd->button1, "text", "*");
    edje_object_part_text_set(sd->button2, "text", "MAP");
    edje_object_part_text_set(sd->button3, "text", "REFRESH");
@@ -237,18 +278,24 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    edje_object_signal_callback_add(sd->map_overlay, "drag,step", "*", _e_ctrl_cb_signal_drag_stop, sd);
    edje_object_signal_callback_add(sd->map_overlay, "drag,set", "*", _e_ctrl_cb_signal_drag_stop, sd);
 
-   sd->listview = evas_object_image_add(evas_object_evas_get(obj));
+   titlepane = e_nav_titlepane_add(evas_object_evas_get(obj));
+   sd->listview = evas_object_rectangle_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->listview, obj);
    evas_object_move(sd->listview, sd->x, sd->y);
    evas_object_resize(sd->listview, sd->w, sd->h);
    evas_object_clip_set(sd->listview, sd->clip);
-
+   listpane = e_ilist_add(evas_object_evas_get(sd->listview));
+   evas_object_smart_member_add(listpane, sd->listview);   
+   evas_object_clip_set(listpane, sd->listview);
+/*
    sd->tagview = evas_object_image_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->tagview, obj);
    evas_object_move(sd->tagview, sd->x, sd->y);
    evas_object_resize(sd->tagview, sd->w, sd->h);
    evas_object_clip_set(sd->tagview, sd->clip);
-
+*/
+   //sd->button_panel_bg =  evas_object_rectangle_add(evas_object_evas_get(obj)); 
+  
    sd->button1 = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
                                       "modules/diversity_nav/button"); 
    sd->button2 = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
@@ -257,6 +304,11 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
                                       "modules/diversity_nav/button"); 
    sd->button4 = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
                                       "modules/diversity_nav/button"); 
+     
+   //evas_object_clip_set(sd->button1, sd->clip);
+   //evas_object_clip_set(sd->button2, sd->clip);
+   //evas_object_clip_set(sd->button3, sd->clip);
+   //evas_object_clip_set(sd->button4, sd->clip);
    _e_ctrl_buttons_set(obj);
 }
 
@@ -344,7 +396,17 @@ _e_ctrl_smart_add(Evas_Object *obj)
    
    sd->clip = evas_object_rectangle_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->clip, obj);
+   //evas_object_move(sd->clip, -10000, -10000);
+   //evas_object_resize(sd->clip, 30000, 30000);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
+/*
+   sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
+   evas_object_smart_member_add(sd->event, obj);
+   evas_object_move(sd->event, -10000, -10000);
+   evas_object_resize(sd->event, 30000, 30000);
+   evas_object_color_set(sd->event, 255, 255, 255, 0);
+   evas_object_clip_set(sd->event, sd->clip);
+*/
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -358,7 +420,8 @@ _e_ctrl_smart_del(Evas_Object *obj)
    evas_object_del(sd->clip);
    evas_object_del(sd->map_overlay);
    evas_object_del(sd->listview);
-   evas_object_del(sd->tagview);
+   //evas_object_del(sd->event);
+   //evas_object_del(sd->tagview);
    free(sd);
 }
 
@@ -375,7 +438,7 @@ _e_ctrl_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    evas_object_move(sd->clip, sd->x, sd->y);
    evas_object_move(sd->map_overlay, sd->x, sd->y);
    evas_object_move(sd->listview, sd->x, sd->y);
-   evas_object_move(sd->tagview, sd->x, sd->y);
+   //evas_object_move(sd->tagview, sd->x, sd->y);
 }
 
 static void
@@ -390,7 +453,7 @@ _e_ctrl_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_resize(sd->map_overlay, sd->w, sd->h);
    evas_object_resize(sd->listview, sd->w, sd->h-50);
-   evas_object_resize(sd->tagview, sd->w, sd->h-50);
+   //evas_object_resize(sd->tagview, sd->w, sd->h-50);
 }
 
 static void

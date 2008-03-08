@@ -23,6 +23,7 @@
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
 #include "widgets/e_nav_textedit.h"
+#include "e_ctrl.h"
 
 typedef struct _Location_Data Location_Data;
 
@@ -33,7 +34,7 @@ struct _Location_Data
    unsigned char           visible : 1;
    double                  lat;
    double                  lon;
-   // E_DBus_Proxy           *proxy;
+   Diversity_Tag          *tag;
 };
 
 static Evas_Object *
@@ -66,8 +67,22 @@ static void
 dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    printf("location save\n");
+   Location_Data *locd;
+   locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
+   if (!locd) return;
+   const char *title = e_dialog_textblock_text_get(obj, "Edit title");
+   const char *description = e_dialog_textblock_text_get(obj, "Edit message");
+   printf("title = %s\n", title);
+   printf("message = %s\n", description);
+   int result = diversity_tag_prop_set(locd->tag, "description", description);
+   if(result)
+     {
+        if (locd->description) evas_stringshare_del(locd->description);
+        if (description) locd->description = evas_stringshare_add(description);
+        else locd->description = NULL;
+        e_ctrl_taglist_tag_set(title, description, src_obj);  
+     }
    e_dialog_deactivate(obj);
-   //ToDo:  Save to location book
 }
 
 static void
@@ -80,19 +95,10 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
    if (!locd) return;
    printf("Send SMS the number is %s, the message is %s, %s\n", phone_number, locd->name, locd->description);
-/*
    int ask_ds = 0;
-   if (!e_dbus_proxy_simple_call(locd->proxy, "Send",
-                                 NULL,
-                                 DBUS_TYPE_STRING, number,
-                                 DBUS_TYPE_STRING, message,
-                                 DBUS_TYPE_BOOLEAN, &ask_ds,
-                                 DBUS_TYPE_INVALID))
-     {
-        printf("failed to send SMS\n");
-        return ;
-     }
-*/
+   Diversity_Sms *sms = diversity_sms_new();
+   diversity_sms_send(sms, phone_number, locd->description, ask_ds);
+   diversity_sms_destroy(sms);
 
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);
@@ -102,7 +108,6 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_textedit_deactivate(obj);   // object is textedit object
    evas_object_show(od);
    e_dialog_activate(od); 
-   //ToDo:  call SMS to send
 }
 
 static void
@@ -123,7 +128,6 @@ dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("cb1\n");
    Evas_Object *location_object = (Evas_Object*)data;
    Location_Data *locd;
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
@@ -202,7 +206,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
-e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lon, double lat)
+e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Object *tag)
 {
    Evas_Object *o;
    Location_Data *locd;
@@ -211,6 +215,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
     * evas object */
    locd = calloc(1, sizeof(Location_Data));
    if (!locd) return NULL;
+   locd->tag = (Diversity_Tag *) tag;
    o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/location");
    edje_object_part_text_set(o, "e.text.name", "???");

@@ -76,6 +76,11 @@ struct _Diversity_Tag
    Diversity_Object obj;
 };
 
+struct _Diversity_Sms
+{
+   Diversity_Object obj;
+};
+
 static E_DBus_Connection *e_conn = NULL;
 static int initialized = -1;
 
@@ -83,6 +88,7 @@ static int initialized = -1;
 #define DIVERSITY_DBUS_SERVICE			"org.openmoko.Diversity"
 #define DIVERSITY_DBUS_PATH			"/org/openmoko/Diversity"
 #define DIVERSITY_WORLD_DBUS_PATH 		"/org/openmoko/Diversity/world"
+#define DIVERSITY_SMS_DBUS_PATH                 "/org/openmoko/Diversity/objects/0/equipments/phonekit"
 
 int
 e_nav_dbus_init(void)
@@ -464,7 +470,7 @@ diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, dou
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj,
 	 	DIVERSITY_DBUS_IFACE_OBJECT);
-
+   if(!proxy) printf("proxy is NULL\n");
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
 				 "GeometrySet", &error,
@@ -478,22 +484,63 @@ diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, dou
 	printf("failed to set geometry: %s\n", error.message);
 	dbus_error_free(&error);
      }
+   else
+      printf("Set object geo OK\n");
 }
 
 void
 diversity_object_geometry_get(Diversity_Object *obj, double *lon, double *lat, double *width, double *height)
 {
-	if (lon)
-		*lon = obj->lon;
+   E_DBus_Proxy *proxy;
+   DBusError error;
 
-	if (lat)
-		*lat = obj->lat;
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj,
+	 	DIVERSITY_DBUS_IFACE_OBJECT);
 
-	if (width)
-		*width = obj->width;
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "GeometryGet", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_DOUBLE, lon,
+				 DBUS_TYPE_DOUBLE, lat,
+				 DBUS_TYPE_DOUBLE, width,
+				 DBUS_TYPE_DOUBLE, height,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to get geometry: %s\n", error.message);
+	dbus_error_free(&error);
+     }
+}
 
-	if (height)
-		*height = obj->height;
+Diversity_Object * 
+diversity_object_object_get(const char *obj_path)
+{
+   Diversity_Object *obj = diversity_object_new(obj_path,  sizeof(Diversity_Object));
+   return obj;
+}
+
+int
+diversity_object_type_get(Diversity_Object *obj)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj,
+	 	DIVERSITY_DBUS_IFACE_OBJECT);
+
+   dbus_error_init(&error);
+   int type = DIVERSITY_OBJECT_TYPE_OBJECT;
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "GetType", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INT32, &type,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to get object type: %s\n", error.message);
+	dbus_error_free(&error);
+     }
+   return type;
+
 }
 
 Diversity_World *
@@ -640,6 +687,48 @@ diversity_viewport_destroy(Diversity_Viewport *view)
    diversity_object_destroy((Diversity_Object *) view);
 }
 
+void
+diversity_viewport_start(Diversity_Viewport *view)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) view,
+	 	DIVERSITY_DBUS_IFACE_VIEWPORT);
+   if (!proxy) return;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "Start", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to start viewport: %s\n", error.message);
+	dbus_error_free(&error);
+     }
+}
+
+void
+diversity_viewport_stop(Diversity_Viewport *view)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) view,
+	 	DIVERSITY_DBUS_IFACE_VIEWPORT);
+   if (!proxy) return;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "Stop", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to start viewport: %s\n", error.message);
+	dbus_error_free(&error);
+     }
+}
+
 Diversity_Bard *
 diversity_bard_new(const char *path)
 {
@@ -746,3 +835,123 @@ diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key, void *
 
    return ret;
 }
+
+Diversity_Tag *
+diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description)
+{
+   E_DBus_Proxy *proxy = NULL;
+   proxy = diversity_dbus_proxy_get((Diversity_DBus*)world, DIVERSITY_DBUS_IFACE_WORLD);
+   printf("tag add at %f %f\n", lon, lat);
+   if (proxy)
+     {
+        char *path;
+        if (e_dbus_proxy_simple_call(proxy, "TagAdd",
+                                     NULL,
+                                     DBUS_TYPE_DOUBLE, &lon,
+                                     DBUS_TYPE_DOUBLE, &lat,
+                                     DBUS_TYPE_STRING, &description, 
+                                     DBUS_TYPE_INVALID,
+                                     DBUS_TYPE_OBJECT_PATH, &path,
+                                     DBUS_TYPE_INVALID))
+          {
+             Diversity_Tag *tag;
+             tag = (Diversity_Tag *) diversity_object_new(path, sizeof(Diversity_Tag));
+             free(path);
+             return tag;
+          }
+        else
+          e_dbus_proxy_destroy(proxy);
+     }
+   return NULL;
+}
+
+int
+diversity_tag_prop_set(Diversity_Tag *tag, const char *key, const char *val)
+{
+   E_DBus_Proxy *proxy = NULL;
+   proxy = diversity_dbus_proxy_get((Diversity_DBus*)tag, DIVERSITY_DBUS_IFACE_TAG);
+
+   if (proxy)
+     {
+        if (e_dbus_proxy_simple_call(proxy, "Set",
+                                     NULL,
+                                     DBUS_TYPE_STRING, &key,
+                                     DBUS_TYPE_STRING, &val,
+                                     DBUS_TYPE_INVALID,
+                                     DBUS_TYPE_INVALID))
+          {
+             return 1;
+          }
+        else
+          e_dbus_proxy_destroy(proxy);
+     }
+   printf("tag object prop set fail!\n");
+   return 0;
+}
+
+int
+diversity_tag_prop_get(Diversity_Tag *tag, const char *key, char **val)
+{
+   E_DBus_Proxy *proxy = NULL;
+   proxy = diversity_dbus_proxy_get((Diversity_DBus*)tag, DIVERSITY_DBUS_IFACE_TAG);
+
+   if (proxy)
+     {
+        if (e_dbus_proxy_simple_call(proxy, "Get",
+                                     NULL,
+                                     DBUS_TYPE_STRING, &key,
+                                     DBUS_TYPE_INVALID,
+                                     DBUS_TYPE_STRING, val,
+                                     DBUS_TYPE_INVALID))
+          {
+             return 1;
+          }
+        else
+          e_dbus_proxy_destroy(proxy);
+     }
+   printf("tag object prop get fail!\n");
+   return 0;
+}
+
+Diversity_Sms *
+diversity_sms_new(void)
+{
+   Diversity_Sms *sms;
+
+   sms = (Diversity_Sms *)
+      diversity_dbus_new( DIVERSITY_SMS_DBUS_PATH, sizeof(Diversity_Sms));
+
+   return sms;
+}
+
+void
+diversity_sms_destroy(Diversity_Sms *sms)
+{
+   if (sms)
+     diversity_dbus_destroy((Diversity_DBus *) sms);
+}
+
+void
+diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, int ask_ds)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) sms,
+	 	DIVERSITY_DBUS_IFACE_SMS);
+   if (!proxy) return;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "Send", &error,
+                                 DBUS_TYPE_STRING, &number,
+                                 DBUS_TYPE_STRING, &message,
+                                 DBUS_TYPE_BOOLEAN, &ask_ds,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to send SMS: %s | %s\n", error.name, error.message);
+	dbus_error_free(&error);
+     }
+}
+

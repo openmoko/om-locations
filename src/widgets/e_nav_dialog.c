@@ -34,10 +34,11 @@ typedef struct _E_TextBlock_Item E_TextBlock_Item;
 struct _E_TextBlock_Item
 {
    Evas_Object *obj;
-   Evas_Object *item_obj;
    Evas_Coord sz;
-   Evas_Object *label;
+   const char *label;
    const char *input;
+   Evas_Object *label_obj;
+   Evas_Object *item_obj;
    void *data;
 };
 
@@ -268,7 +269,7 @@ _e_dialog_smart_del(Evas_Object *obj)
 	
 	tbi = sd->textblocks->data;
 	sd->textblocks = evas_list_remove_list(sd->textblocks, sd->textblocks);
-	evas_object_del(tbi->label);
+	evas_object_del(tbi->label_obj);
 	evas_object_del(tbi->item_obj);
 	free(tbi);
      }
@@ -424,6 +425,26 @@ e_dialog_textblock_text_set(void *obj, const char *input)
    _e_dialog_update(tbi->obj);
 }
 
+const char *
+e_dialog_textblock_text_get(Evas_Object *obj, const char *label)
+{
+   E_Smart_Data *sd;
+   
+   sd = evas_object_smart_data_get(obj);
+   if (!sd) return NULL;
+   E_TextBlock_Item *tbi;
+   Evas_List *l;
+   for (l = sd->textblocks; l; l = l->next)
+     {
+        tbi = l->data;
+        if(!strcmp(tbi->label, label))
+          {
+             return tbi->input; 
+          }
+     }
+   return NULL;
+}
+
 static void
 _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
@@ -431,7 +452,7 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    Evas_Object *teo = e_textedit_add(evas);
    e_textedit_theme_source_set(teo, THEME_PATH, NULL, NULL, NULL, NULL);  
    e_textedit_source_object_set(teo, data); // data is tbi ( TextBlock_Item)
-   e_textedit_input_set(teo, evas_object_text_text_get(tbi->label), tbi->input);
+   e_textedit_input_set(teo, evas_object_text_text_get(tbi->label_obj), tbi->input);
    
    evas_object_show(teo);
    e_textedit_activate(teo);
@@ -446,14 +467,15 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
    SMART_CHECK(obj, ;);
    tbi = calloc(1, sizeof(E_TextBlock_Item));
    tbi->obj = obj;
-   Evas_Object *o;
-   o = evas_object_text_add( evas_object_evas_get(obj) ); 
-   evas_object_text_text_set(o, label);
-   evas_object_text_font_set(o, "Sans:style=Bold,Edje-Vera-Bold", 20);
-   evas_object_text_glow_color_set(o, 255, 255, 255, 255);
-   tbi->label = o;
-   evas_object_smart_member_add(tbi->label, obj);
-   evas_object_clip_set(tbi->label, sd->clip);
+   tbi->label = strdup(label);
+   Evas_Object *text_object;
+   text_object = evas_object_text_add( evas_object_evas_get(obj) ); 
+   evas_object_text_text_set(text_object, label);
+   evas_object_text_font_set(text_object, "Sans:style=Bold,Edje-Vera-Bold", 20);
+   evas_object_text_glow_color_set(text_object, 255, 255, 255, 255);
+   tbi->label_obj = text_object;
+   evas_object_smart_member_add(tbi->label_obj, obj);
+   evas_object_clip_set(tbi->label_obj, sd->clip);
 
    tbi->input = strdup(input);
    if(size < 30) size=30;
@@ -547,8 +569,8 @@ _e_dialog_update(Evas_Object *obj)
    for (l = sd->textblocks; l; l = l->next)
      {
         tbi = l->data;
-        evas_object_move(tbi->label, indent, tmp_y);
-        evas_object_show(tbi->label);
+        evas_object_move(tbi->label_obj, indent, tmp_y);
+        evas_object_show(tbi->label_obj);
         tmp_y = tmp_y + (indent*2.5);
         e_widget_textblock_move(tbi->item_obj, indent, tmp_y);
         e_widget_textblock_resize(tbi->item_obj, (dialog_w-(indent*2)), tbi->sz);

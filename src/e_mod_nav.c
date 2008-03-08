@@ -47,6 +47,7 @@ static Evas_Object *ctrl  = NULL;
 static Evas_Object *nav   = NULL;
 static Diversity_World *world = NULL;
 static Diversity_Bard  *self  = NULL;
+static Diversity_Viewport *worldview = NULL;
 
 static void add_city(Evas* evas, double lon, double lat, const char* cityname);
 static void test_map(Evas* evas);
@@ -189,11 +190,11 @@ _e_mod_nav_init(Evas *evas)
 
    if (nav) return;
 
-   nav = e_nav_add(evas);
-   e_nav_theme_source_set(nav, THEME_PATH);
-
    e_nav_dbus_init();
    world = diversity_world_new();
+
+   nav = e_nav_add(evas, world);
+   e_nav_theme_source_set(nav, THEME_PATH);
 
    nt = osm_tileset_add(nav);
    evas_object_show(nt);
@@ -282,12 +283,6 @@ _e_mod_nav_init(Evas *evas)
    e_nav_world_item_neo_me_name_set(nwi, "Me");
    show_welcome_message(nwi);
 
-   /* test location object */
-   nwi = e_nav_world_item_location_add(nav, THEME_PATH,
-				     151.110000, 33.770000);
-   e_nav_world_item_location_name_set(nwi, "New Office");
-   e_nav_world_item_location_description_set(nwi, "Our new office will be opening soon. Can't wait\n to move in and throw a big party!");
-
    /* start off at a zoom level and location instantly */
    e_nav_zoom_set(nav, 5, 0.0);
    e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
@@ -334,6 +329,44 @@ _e_mod_nav_shutdown(void)
    nav = NULL;
 }
 
+static void
+viewport_object_added(void *data, DBusMessage *msg)
+{
+   const char *obj_path;
+   DBusError error;
+   dbus_error_init(&error);
+   if (!dbus_message_get_args(msg, &error,
+			      DBUS_TYPE_OBJECT_PATH, &obj_path,
+			      DBUS_TYPE_INVALID))
+     {
+        printf("object added parse error: %s\n", error.message);
+	dbus_error_free(&error);
+        return;
+     }
+   else 
+     {
+        printf("object added in the viewport, path:%s\n", obj_path);  
+        Diversity_Object *obj = diversity_object_object_get(obj_path);
+        double lon, lat, width, height;
+        diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
+        printf("location geo get lon:%f lat:%f\n", lon, lat);
+        int type = diversity_object_type_get(obj);  
+        if(type==DIVERSITY_OBJECT_TYPE_TAG) 
+          {
+             Evas_Object *loc_obj = e_nav_world_item_location_add(nav, THEME_PATH,
+				     lon, lat, obj);
+             char *description = NULL;
+             diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
+             e_nav_world_item_location_name_set(loc_obj, "New Loc");
+             printf("description: %s\n", description);
+             e_nav_world_item_location_description_set(loc_obj, description);
+             e_ctrl_taglist_tag_add("New Loc", description, loc_obj); 
+          }
+        else
+        printf("other kind of object added\n");
+     }
+}
+
 // for test
 static void test_map(Evas* evas)
 {
@@ -341,6 +374,18 @@ static void test_map(Evas* evas)
     add_city(evas, 33.178711, -68.989925, "Mypmahck");
     add_city(evas, 116.28, -39.54, "Beijing");
     add_city(evas, -122.32974, -47.6035, "Seattle");
+    // create a viewport
+    if(world) 
+      {
+         worldview = diversity_world_viewport_add(world, -180, 90, 180, -90); // whole world viewport
+         diversity_dbus_signal_connect((Diversity_DBus *) worldview, 
+                                       DIVERSITY_DBUS_IFACE_VIEWPORT, 
+                                       "ObjectAdded", 
+                                       viewport_object_added,
+                                       NULL); 
+         printf("Create viewport for whole world\n");
+         diversity_viewport_start(worldview);
+      }
 }
 
 static void add_city(Evas* evas, double lon, double lat, const char* cityname)

@@ -54,9 +54,10 @@ typedef enum _E_Nav_World_Item_Type
 } E_Nav_World_Item_Type;
 
 /* object management */
-Evas_Object    *e_nav_add(Evas *e);
+Evas_Object    *e_nav_add(Evas *e, void *world);
 void            e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir);
 
+void           *e_nav_world_get();
     
 /* spatial & zoom controls */
 void            e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when);

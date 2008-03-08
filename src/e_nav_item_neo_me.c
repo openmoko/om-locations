@@ -23,6 +23,7 @@
 #include "e_spiralmenu.h"
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
+#include "e_nav_dbus.h"
 
 typedef struct _Neo_Me_Data Neo_Me_Data;
 
@@ -51,7 +52,7 @@ _e_nav_world_item_theme_obj_new(Evas *e, const char *custom_dir, const char *gro
    return o;
 }
 
-
+#if 0
 /* FIXME: real menu callbacks */
 static void
 _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
@@ -86,40 +87,7 @@ _e_nav_world_item_cb_menu_4(void *data, Evas_Object *obj, Evas_Object *src_obj)
    printf("cb4\n");
    e_spiralmenu_deactivate(obj);
 }
-
-static void
-_e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   Evas_Object *om;
-   
-   om = e_spiralmenu_add(evas);
-   e_spiralmenu_theme_source_set(om, data);
-   e_spiralmenu_autodelete_set(om, 1);
-   e_spiralmenu_deacdelete_set(om, 1);
-   e_spiralmenu_source_object_set(om, obj);
-   /* FIXME: real menu items */
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Zoom",
-			       _e_nav_world_item_cb_menu_1, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Visible",
-			       _e_nav_world_item_cb_menu_2, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Auto Join",
-			       _e_nav_world_item_cb_menu_3, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Information",
-			       _e_nav_world_item_cb_menu_4, NULL);
-   evas_object_show(om);
-   e_spiralmenu_activate(om);
-}
-
-static void
-_e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   Neo_Me_Data *neod;
-   
-   neod = evas_object_data_get(obj, "nav_world_item_neo_me_data");
-   if (!neod) return;
-   if (neod->name) evas_stringshare_del(neod->name);
-   free(neod);
-}
+#endif
 
 static void
 dialog_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
@@ -131,9 +99,19 @@ dialog_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("location save\n");
+   printf("location new\n");
+   if(!src_obj) return;
+   const char *title = e_dialog_textblock_text_get(obj, "Edit title");
+   const char *description = e_dialog_textblock_text_get(obj, "Edit message");
+   printf("title = %s\n", title);
+   printf("message = %s\n", description);
+   double lat, lon;
+   e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
+   printf("New a tag: %f, %f\n", lon, lat);
+
+   Diversity_World *world = (Diversity_World*)e_nav_world_get();
+   diversity_world_tag_add(world, lon, lat, description);
    e_dialog_deactivate(obj);
-   //ToDo:  Save to location book
 }
 
 static void 
@@ -156,6 +134,52 @@ save_current_location(void *data, Evas_Object *obj, Evas_Object *src_obj)
    
    evas_object_show(od);
    e_dialog_activate(od);
+}
+
+static void
+_e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   Evas_Object *om;
+   
+   om = e_flyingmenu_add(evas);
+   e_flyingmenu_theme_source_set(om, THEME_PATH);
+   e_flyingmenu_autodelete_set(om, 1);
+   e_flyingmenu_source_object_set(om, obj);
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 200, "Touch Me!",
+			       save_current_location, obj);  
+   evas_object_show(om);
+   e_flyingmenu_activate(om);
+#if 0
+   Evas_Object *om;
+   
+   om = e_spiralmenu_add(evas);
+   e_spiralmenu_theme_source_set(om, data);
+   e_spiralmenu_autodelete_set(om, 1);
+   e_spiralmenu_deacdelete_set(om, 1);
+   e_spiralmenu_source_object_set(om, obj);
+   /* FIXME: real menu items */
+   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Zoom",
+			       _e_nav_world_item_cb_menu_1, NULL);
+   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Visible",
+			       _e_nav_world_item_cb_menu_2, NULL);
+   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Auto Join",
+			       _e_nav_world_item_cb_menu_3, NULL);
+   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Information",
+			       _e_nav_world_item_cb_menu_4, NULL);
+   evas_object_show(om);
+   e_spiralmenu_activate(om);
+#endif
+}
+
+static void
+_e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   Neo_Me_Data *neod;
+   
+   neod = evas_object_data_get(obj, "nav_world_item_neo_me_data");
+   if (!neod) return;
+   if (neod->name) evas_stringshare_del(neod->name);
+   free(neod);
 }
 
 void
