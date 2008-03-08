@@ -30,7 +30,7 @@ typedef struct _Location_Data Location_Data;
 struct _Location_Data
 {
    const char             *name;
-   const char             *description;
+   const char             *note;
    unsigned char           visible : 1;
    double                  lat;
    double                  lon;
@@ -70,17 +70,26 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Location_Data *locd;
    locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
    if (!locd) return;
-   const char *title = e_dialog_textblock_text_get(obj, "Edit title");
-   const char *description = e_dialog_textblock_text_get(obj, "Edit message");
-   printf("title = %s\n", title);
-   printf("message = %s\n", description);
+   const char *name = e_dialog_textblock_text_get(obj, "Edit title");
+   const char *note = e_dialog_textblock_text_get(obj, "Edit message");
+   printf("title = %s\n", name);
+   printf("note = %s\n", note);
+   char *description; 
+   description = malloc(strlen(name) + 1 + strlen(note) + 1);
+   if (!description) return ;
+   sprintf(description, "%s%c%s", name, '\n', note);
+   printf("description is %s\n", description);
    int result = diversity_tag_prop_set(locd->tag, "description", description);
    if(result)
      {
-        if (locd->description) evas_stringshare_del(locd->description);
-        if (description) locd->description = evas_stringshare_add(description);
-        else locd->description = NULL;
-        e_ctrl_taglist_tag_set(title, description, src_obj);  
+        if (locd->name) evas_stringshare_del(locd->name);
+        if (name) locd->name = evas_stringshare_add(name);
+        else locd->name = NULL;
+
+        if (locd->note) evas_stringshare_del(locd->note);
+        if (note) locd->note = evas_stringshare_add(note);
+        else locd->note = NULL;
+        e_ctrl_taglist_tag_set(name, note, src_obj);  
      }
    e_dialog_deactivate(obj);
 }
@@ -94,10 +103,15 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Location_Data *locd;
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
    if (!locd) return;
-   printf("Send SMS the number is %s, the message is %s, %s\n", phone_number, locd->name, locd->description);
+   printf("Send SMS the number is %s, the message is %s, %s\n", phone_number, locd->name, locd->note);
+   char *message;
+   message = malloc(strlen(locd->name) + 1 + strlen(locd->note) + 1);
+   if (!message) return ;
+   sprintf(message, "%s%c%s", locd->name, '\n', locd->note);
+   printf("message is %s\n", message);
    int ask_ds = 0;
    Diversity_Sms *sms = diversity_sms_new();
-   diversity_sms_send(sms, phone_number, locd->description, ask_ds);
+   diversity_sms_send(sms, phone_number, message, ask_ds);
    diversity_sms_destroy(sms);
 
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
@@ -139,7 +153,7 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_title_set(od, "Edit your location", "Send your favorite location to friends by SMS");
    const char *title = e_nav_world_item_location_name_get(location_object);
    e_dialog_textblock_add(od, "Edit title", title, 40, obj);
-   const char *message = e_nav_world_item_location_description_get(location_object);
+   const char *message = e_nav_world_item_location_note_get(location_object);
    e_dialog_textblock_add(od, "Edit message", message, 120, obj);
    e_dialog_button_add(od, "Save", dialog_location_save, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
@@ -164,7 +178,7 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_title_set(od, "Send your location", "Send your favorite location to friends by SMS");
    const char *title = e_nav_world_item_location_name_get(location_object);
    e_dialog_textblock_add(od, "Edit title", title, 40, obj);
-   const char *message = e_nav_world_item_location_description_get(location_object);
+   const char *message = e_nav_world_item_location_note_get(location_object);
    e_dialog_textblock_add(od, "Edit message", message, 120, obj);
    e_dialog_button_add(od, "Send", dialog_location_send, data);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
@@ -200,7 +214,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
    locd = evas_object_data_get(obj, "nav_world_item_location_data");
    if (!locd) return;
    if (locd->name) evas_stringshare_del(locd->name);
-   if (locd->description) evas_stringshare_del(locd->description);
+   if (locd->note) evas_stringshare_del(locd->note);
    free(locd);
 }
 
@@ -260,25 +274,25 @@ e_nav_world_item_location_name_get(Evas_Object *item)
 }
 
 void
-e_nav_world_item_location_description_set(Evas_Object *item, const char *description)
+e_nav_world_item_location_note_set(Evas_Object *item, const char *note)
 {
    Location_Data *locd;
    
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
-   if (locd->description) evas_stringshare_del(locd->description);
-   if (description) locd->description = evas_stringshare_add(description);
-   else locd->description = NULL;
+   if (locd->note) evas_stringshare_del(locd->note);
+   if (note) locd->note = evas_stringshare_add(note);
+   else locd->note = NULL;
 }
 
 const char *
-e_nav_world_item_location_description_get(Evas_Object *item)
+e_nav_world_item_location_note_get(Evas_Object *item)
 {
    Location_Data *locd;
    
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return NULL;
-   return locd->description;
+   return locd->note;
 }
 
 void

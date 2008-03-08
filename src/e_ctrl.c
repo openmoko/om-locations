@@ -108,28 +108,29 @@ _e_nav_tag_sel(void *data, void *data2)
 }
 
 void
-e_ctrl_taglist_tag_set(const char *name, const char *description, void *object)
+e_ctrl_taglist_tag_set(const char *name, const char *note, void *object)
 {
-    // object is Location evas object
-    Evas_Object *location_obj = NULL;
-    int n;
-    int count = e_ilist_count(listpane); 
-    for(n=0; n<count; n++) 
-      {
-         e_ilist_selected_set(listpane, count);
-         location_obj = (Evas_Object*) e_ilist_selected_data2_get(listpane);
-         if(location_obj == object)
-           break;
-      }
-    if(location_obj) 
-      e_ilist_nth_label_set(listpane, n, description);
+   // object is Location evas object
+   Evas_Object *location_obj = NULL;
+   int n;
+   int count = e_ilist_count(listpane); 
+   for(n=0; n<count; n++) 
+     {
+        e_ilist_selected_set(listpane, count);
+        location_obj = (Evas_Object*) e_ilist_selected_data2_get(listpane);
+        if(location_obj == object)
+          break;
+     }
+   if(location_obj) 
+     {
+        e_ilist_nth_label_set(listpane, n, name);
+     }
 }
 
 void
-e_ctrl_taglist_tag_add(const char *name, const char *description, void *loc_object)
+e_ctrl_taglist_tag_add(const char *name, const char *note, void *loc_object)
 {
-   printf("description2: %s\n", description);
-   e_ilist_append(listpane, NULL, description, 20, _e_nav_tag_sel, NULL, ctrl, loc_object);
+   e_ilist_append(listpane, NULL, name, 20, _e_nav_tag_sel, NULL, ctrl, loc_object);
 }
 
 static void   

@@ -355,15 +355,16 @@ viewport_object_added(void *data, DBusMessage *msg)
           {
              Evas_Object *loc_obj = e_nav_world_item_location_add(nav, THEME_PATH,
 				     lon, lat, obj);
+             char *name = NULL;
              char *description = NULL;
              diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
-             e_nav_world_item_location_name_set(loc_obj, "New Loc");
-             printf("description: %s\n", description);
-             e_nav_world_item_location_description_set(loc_obj, description);
-             e_ctrl_taglist_tag_add("New Loc", description, loc_obj); 
+             name = strsep(&description, "\n");
+             e_nav_world_item_location_name_set(loc_obj, name);
+             e_nav_world_item_location_note_set(loc_obj, description);
+             e_ctrl_taglist_tag_add(name, description, loc_obj); 
           }
         else
-        printf("other kind of object added\n");
+          printf("other kind of object added\n");
      }
 }
 

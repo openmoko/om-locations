@@ -101,10 +101,16 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    printf("location new\n");
    if(!src_obj) return;
-   const char *title = e_dialog_textblock_text_get(obj, "Edit title");
-   const char *description = e_dialog_textblock_text_get(obj, "Edit message");
-   printf("title = %s\n", title);
-   printf("message = %s\n", description);
+   const char *name = e_dialog_textblock_text_get(obj, "Edit title");
+   const char *note = e_dialog_textblock_text_get(obj, "Edit message");
+   printf("title = %s\n", name);
+   printf("note = %s\n", note);
+   char *description; 
+   description = malloc(strlen(name) + 1 + strlen(note) + 1);
+   if (!description) return ;
+   sprintf(description, "%s%c%s", name, '\n', note);
+   printf("description is %s\n", description);
+
    double lat, lon;
    e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
    printf("New a tag: %f, %f\n", lon, lat);
@@ -117,9 +123,6 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void 
 save_current_location(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("You touch me !\n");
-   //Evas_Object *neo_me_object = (Evas_Object*)data;
-
    e_flyingmenu_deactivate(obj);
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);  
