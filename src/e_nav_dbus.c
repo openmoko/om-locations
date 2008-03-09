@@ -837,80 +837,127 @@ diversity_equipment_config_get(Diversity_Equipment *eqp, const char *key, void *
 }
 
 Diversity_Tag *
+diversity_tag_new(const char *path)
+{
+   Diversity_Tag *tag;
+
+   tag = (Diversity_Tag *)
+      diversity_object_new(path, sizeof(Diversity_Tag));
+
+   return tag;
+}
+
+void
+diversity_tag_destroy(Diversity_Tag *tag)
+{
+   diversity_object_destroy((Diversity_Object *) tag);
+}
+
+Diversity_Tag *
 diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description)
 {
-   E_DBus_Proxy *proxy = NULL;
-   proxy = diversity_dbus_proxy_get((Diversity_DBus*)world, DIVERSITY_DBUS_IFACE_WORLD);
-   printf("tag add at %f %f\n", lon, lat);
-   if (proxy)
+   E_DBus_Proxy *proxy;
+   Diversity_Tag *tag;
+   DBusError error;
+   char *path;
+
+   if (!world) return NULL;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
+	 	DIVERSITY_DBUS_IFACE_WORLD);
+   if (!proxy)
+     return NULL;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "TagAdd", &error,
+				 DBUS_TYPE_DOUBLE, &lon,
+				 DBUS_TYPE_DOUBLE, &lat,
+                                 DBUS_TYPE_STRING, &description,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_OBJECT_PATH, &path,
+				 DBUS_TYPE_INVALID))
      {
-        char *path;
-        if (e_dbus_proxy_simple_call(proxy, "TagAdd",
-                                     NULL,
-                                     DBUS_TYPE_DOUBLE, &lon,
-                                     DBUS_TYPE_DOUBLE, &lat,
-                                     DBUS_TYPE_STRING, &description, 
-                                     DBUS_TYPE_INVALID,
-                                     DBUS_TYPE_OBJECT_PATH, &path,
-                                     DBUS_TYPE_INVALID))
-          {
-             Diversity_Tag *tag;
-             tag = (Diversity_Tag *) diversity_object_new(path, sizeof(Diversity_Tag));
-             free(path);
-             return tag;
-          }
-        else
-          e_dbus_proxy_destroy(proxy);
+	printf("failed to add tag: %s\n", error.message);
+	dbus_error_free(&error);
+
+	return NULL;
      }
-   return NULL;
+
+   tag = diversity_tag_new(path);
+   free(path);
+
+   return tag;
+}
+
+void
+diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag)
+{
+   E_DBus_Proxy *proxy;
+   const char *path;
+
+   if (!world || !tag) return;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
+	 	DIVERSITY_DBUS_IFACE_WORLD);
+   if (!proxy) return;
+
+   path = diversity_dbus_path_get((Diversity_DBus *) tag);
+   e_dbus_proxy_simple_call(proxy,
+			    "TagRemove", NULL,
+			    DBUS_TYPE_OBJECT_PATH, &path,
+			    DBUS_TYPE_INVALID,
+			    DBUS_TYPE_INVALID);
+
+   diversity_tag_destroy(tag);
 }
 
 int
 diversity_tag_prop_set(Diversity_Tag *tag, const char *key, const char *val)
 {
-   E_DBus_Proxy *proxy = NULL;
-   proxy = diversity_dbus_proxy_get((Diversity_DBus*)tag, DIVERSITY_DBUS_IFACE_TAG);
+   E_DBus_Proxy *proxy;
 
-   if (proxy)
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) tag,
+	 	DIVERSITY_DBUS_IFACE_TAG);
+   if (!proxy)
+     return 0;
+
+   if (!e_dbus_proxy_simple_call(proxy, "Set",
+                                NULL,
+                                DBUS_TYPE_STRING, &key,
+                                DBUS_TYPE_STRING, &val,
+                                DBUS_TYPE_INVALID,
+                                DBUS_TYPE_INVALID))
      {
-        if (e_dbus_proxy_simple_call(proxy, "Set",
-                                     NULL,
-                                     DBUS_TYPE_STRING, &key,
-                                     DBUS_TYPE_STRING, &val,
-                                     DBUS_TYPE_INVALID,
-                                     DBUS_TYPE_INVALID))
-          {
-             return 1;
-          }
-        else
-          e_dbus_proxy_destroy(proxy);
+        printf("tag object prop set fail!\n");
+        return 0;
      }
-   printf("tag object prop set fail!\n");
-   return 0;
+
+   return 1;
 }
 
 int
 diversity_tag_prop_get(Diversity_Tag *tag, const char *key, char **val)
 {
-   E_DBus_Proxy *proxy = NULL;
-   proxy = diversity_dbus_proxy_get((Diversity_DBus*)tag, DIVERSITY_DBUS_IFACE_TAG);
+   E_DBus_Proxy *proxy;
 
-   if (proxy)
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) tag,
+	 	DIVERSITY_DBUS_IFACE_TAG);
+   if (!proxy)
+     return 0;
+
+   if (!e_dbus_proxy_simple_call(proxy, "Get",
+                                NULL,
+                                DBUS_TYPE_STRING, &key,
+                                DBUS_TYPE_INVALID,
+                                DBUS_TYPE_STRING, val,
+                                DBUS_TYPE_INVALID))
      {
-        if (e_dbus_proxy_simple_call(proxy, "Get",
-                                     NULL,
-                                     DBUS_TYPE_STRING, &key,
-                                     DBUS_TYPE_INVALID,
-                                     DBUS_TYPE_STRING, val,
-                                     DBUS_TYPE_INVALID))
-          {
-             return 1;
-          }
-        else
-          e_dbus_proxy_destroy(proxy);
+        printf("tag object prop get fail!\n");
+        return 0;
      }
-   printf("tag object prop get fail!\n");
-   return 0;
+
+   return 1;
 }
 
 Diversity_Sms *
@@ -951,6 +998,29 @@ diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, 
 				 DBUS_TYPE_INVALID))
      {
 	printf("failed to send SMS: %s | %s\n", error.name, error.message);
+	dbus_error_free(&error);
+     }
+}
+
+void
+diversity_sms_tag_share(Diversity_Sms *sms, const char *self, const char *tag)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) sms,
+	 	DIVERSITY_DBUS_IFACE_SMS);
+   if (!proxy) return;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "ShareTag", &error,
+                                 DBUS_TYPE_OBJECT_PATH, &self,
+                                 DBUS_TYPE_OBJECT_PATH, &tag,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to Tas Share: %s | %s\n", error.name, error.message);
 	dbus_error_free(&error);
      }
 }

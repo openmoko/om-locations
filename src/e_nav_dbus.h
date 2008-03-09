@@ -96,11 +96,15 @@ void                diversity_bard_destroy(Diversity_Bard *bard);
 Diversity_Equipment *diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name);
 
 Diversity_Tag      *diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description);
+void                diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag);
+Diversity_Tag      *diversity_tag_new(const char *path);
+void                diversity_tag_destroy(Diversity_Tag *tag);
 int                 diversity_tag_prop_set(Diversity_Tag *tag, const char *key, const char *val);
 int                 diversity_tag_prop_get(Diversity_Tag *tag, const char *key, char **val);
 
 Diversity_Sms      *diversity_sms_new(void);
 void                diversity_sms_destroy(Diversity_Sms *sms);
 void                diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, int ask_ds);
+void                diversity_sms_tag_share(Diversity_Sms *sms, const char *self, const char *tag);
 
 #endif
