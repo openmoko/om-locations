@@ -16,6 +16,7 @@ noinst_HEADERS =		\
 	e_spiralmenu.h		\
 	e_flyingmenu.h		\
 	e_nav_tileset.h		\
+        e_nav_taglist.h         \
 	e_nav_item_ap.h		\
 	e_nav_item_neo_me.h	\
 	e_nav_item_neo_other.h	\
@@ -32,6 +33,7 @@ diversity_nav_SOURCES =		\
 	e_spiralmenu.c		\
 	e_flyingmenu.c		\
 	e_nav_tileset.c		\
+        e_nav_taglist.c         \
 	e_nav_item_ap.c		\
 	e_nav_item_neo_me.c	\
 	e_nav_item_neo_other.c	\
