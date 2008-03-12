@@ -345,12 +345,18 @@ viewport_object_added(void *data, DBusMessage *msg)
      }
    else 
      {
-        printf("object added in the viewport, path:%s\n", obj_path);  
-        Diversity_Object *obj = diversity_object_new(obj_path);
+        Diversity_Object *obj;
         double lon, lat, width, height;
+	int type;
+
+        printf("object added in the viewport, path:%s\n", obj_path);  
+	obj = diversity_object_new(obj_path);
+	if (!obj)
+	  return;
+
         diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
         printf("location geo get lon:%f lat:%f\n", lon, lat);
-        int type = diversity_object_type_get(obj);  
+       	type = diversity_object_type_get(obj);  
         if(type==DIVERSITY_OBJECT_TYPE_TAG) 
           {
              Evas_Object *loc_obj = e_nav_world_item_location_add(nav, THEME_PATH,

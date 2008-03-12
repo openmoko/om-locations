@@ -414,6 +414,7 @@ diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, co
    return ret;
 }
 
+#if 0
 static void
 on_geometry_changed(void *data, DBusMessage *msg)
 {
@@ -427,6 +428,7 @@ on_geometry_changed(void *data, DBusMessage *msg)
 			      DBUS_TYPE_INVALID))
      return;
 }
+#endif
 
 static void *
 diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
@@ -465,11 +467,13 @@ diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
 
    obj->type = type;
 
+#if 0
    diversity_dbus_signal_connect((Diversity_DBus *) obj,
 				 DIVERSITY_DBUS_IFACE_OBJECT,
 				"GeometryChanged",
 				on_geometry_changed,
 				obj);
+#endif
 
    return obj;
 }
