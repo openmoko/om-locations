@@ -454,7 +454,7 @@ diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
 	 size = sizeof(Diversity_Bard);
 	 break;
       default:
-	 printf("unknown type %d", type);
+	 printf("unknown type %d\n", type);
 	 return NULL;
 	 break;
      }
