@@ -49,15 +49,15 @@ typedef enum {
      N_DIVERSITY_DBUS_IFACES
 } Diversity_DBus_IFace;
 
-enum _DiversityObjectType {
-        DIVERSITY_OBJECT_TYPE_OBJECT,
-        DIVERSITY_OBJECT_TYPE_VIEWPORT,
-        DIVERSITY_OBJECT_TYPE_TAG,
-        DIVERSITY_OBJECT_TYPE_BARD,
-        DIVERSITY_OBJECT_TYPE_AP,
-        DIVERSITY_OBJECT_TYPE_MAP,
-        NUM_DIVERSITY_OBJECT_TYPES,
-};
+typedef enum {
+     DIVERSITY_OBJECT_TYPE_OBJECT,
+     DIVERSITY_OBJECT_TYPE_VIEWPORT,
+     DIVERSITY_OBJECT_TYPE_TAG,
+     DIVERSITY_OBJECT_TYPE_BARD,
+     DIVERSITY_OBJECT_TYPE_AP,
+     DIVERSITY_OBJECT_TYPE_MAP,
+     N_DIVERSITY_OBJECT_TYPES,
+} Diversity_Object_Type;
 
 int                 e_nav_dbus_init(void);
 void                e_nav_dbus_shutdown(void);
@@ -70,15 +70,18 @@ void                diversity_dbus_signal_disconnect(Diversity_DBus *dbus, Diver
 int                 diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, int type, void *val);
 int                 diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, void *val);
 
+void               *diversity_object_new(const char *path);
+void                diversity_object_destroy(Diversity_Object *obj);
 void                diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, double width, double height);
 void                diversity_object_geometry_get(Diversity_Object *obj, double *lon, double *lat, double *width, double *height);
-int                 diversity_object_type_get(Diversity_Object *obj);
-Diversity_Object *  diversity_object_object_get(const char *obj_path);
+Diversity_Object_Type diversity_object_type_get(Diversity_Object *obj);
 
 Diversity_World    *diversity_world_new(void);
 void                diversity_world_destroy(Diversity_World *world);
 Diversity_Viewport *diversity_world_viewport_add(Diversity_World *world, double lon1, double lat1, double lon2, double lat2);
 void                diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view);
+Diversity_Tag      *diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description);
+void                diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag);
 Diversity_Bard     *diversity_world_get_self(Diversity_World *world);
 
 Diversity_Equipment *diversity_equipment_new(const char *path);
@@ -95,15 +98,11 @@ Diversity_Bard     *diversity_bard_new(const char *path);
 void                diversity_bard_destroy(Diversity_Bard *bard);
 Diversity_Equipment *diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name);
 
-Diversity_Tag      *diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description);
-void                diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag);
 Diversity_Tag      *diversity_tag_new(const char *path);
 void                diversity_tag_destroy(Diversity_Tag *tag);
 int                 diversity_tag_prop_set(Diversity_Tag *tag, const char *key, const char *val);
 int                 diversity_tag_prop_get(Diversity_Tag *tag, const char *key, char **val);
 
-Diversity_Sms      *diversity_sms_new(void);
-void                diversity_sms_destroy(Diversity_Sms *sms);
 void                diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, int ask_ds);
 void                diversity_sms_tag_share(Diversity_Sms *sms, const char *self, const char *tag);
 

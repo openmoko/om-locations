@@ -109,10 +109,10 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    if (!message) return ;
    sprintf(message, "%s%c%s", locd->name, '\n', locd->note);
    printf("message is %s\n", message);
-   int ask_ds = 0;
-   Diversity_Sms *sms = diversity_sms_new();
-   diversity_sms_send(sms, phone_number, message, ask_ds);
-   diversity_sms_destroy(sms);
+   //int ask_ds = 0;
+   //Diversity_Sms *sms = diversity_sms_new();
+   //diversity_sms_send(sms, phone_number, message, ask_ds);
+   //diversity_sms_destroy(sms);
 
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);

@@ -346,7 +346,7 @@ viewport_object_added(void *data, DBusMessage *msg)
    else 
      {
         printf("object added in the viewport, path:%s\n", obj_path);  
-        Diversity_Object *obj = diversity_object_object_get(obj_path);
+        Diversity_Object *obj = diversity_object_new(obj_path);
         double lon, lat, width, height;
         diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
         printf("location geo get lon:%f lat:%f\n", lon, lat);

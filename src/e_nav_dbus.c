@@ -47,6 +47,7 @@ struct _Diversity_DBus
 struct _Diversity_Object
 {
    Diversity_DBus dbus;
+   Diversity_Object_Type type;
    double lon, lat;
    double width, height;
 };
@@ -76,11 +77,6 @@ struct _Diversity_Tag
    Diversity_Object obj;
 };
 
-struct _Diversity_Sms
-{
-   Diversity_Object obj;
-};
-
 static E_DBus_Connection *e_conn = NULL;
 static int initialized = -1;
 
@@ -88,7 +84,6 @@ static int initialized = -1;
 #define DIVERSITY_DBUS_SERVICE			"org.openmoko.Diversity"
 #define DIVERSITY_DBUS_PATH			"/org/openmoko/Diversity"
 #define DIVERSITY_WORLD_DBUS_PATH 		"/org/openmoko/Diversity/world"
-#define DIVERSITY_SMS_DBUS_PATH                 "/org/openmoko/Diversity/objects/0/equipments/phonekit"
 
 int
 e_nav_dbus_init(void)
@@ -433,19 +428,42 @@ on_geometry_changed(void *data, DBusMessage *msg)
      return;
 }
 
-static Diversity_Object *
-diversity_object_new(const char *path, int size)
+static void *
+diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
 {
    E_DBus_Connection *connection;
    Diversity_Object *obj;
+   int size;
 
-   if (!path || size < sizeof(Diversity_Object)) return NULL;
+   if (!path) return NULL;
+
+   switch (type)
+     {
+      case DIVERSITY_OBJECT_TYPE_OBJECT:
+	 size = sizeof(Diversity_Object);
+	 break;
+      case DIVERSITY_OBJECT_TYPE_VIEWPORT:
+	 size = sizeof(Diversity_Viewport);
+	 break;
+      case DIVERSITY_OBJECT_TYPE_TAG:
+	 size = sizeof(Diversity_Tag);
+	 break;
+      case DIVERSITY_OBJECT_TYPE_BARD:
+	 size = sizeof(Diversity_Bard);
+	 break;
+      default:
+	 printf("unknown type %d", type);
+	 return NULL;
+	 break;
+     }
 
    connection = e_nav_dbus_connection_get();
    if (!connection) return NULL;
 
    obj = (Diversity_Object *) diversity_dbus_new(path, size);
    if (!obj) return NULL;
+
+   obj->type = type;
 
    diversity_dbus_signal_connect((Diversity_DBus *) obj,
 				 DIVERSITY_DBUS_IFACE_OBJECT,
@@ -456,10 +474,52 @@ diversity_object_new(const char *path, int size)
    return obj;
 }
 
-static void
+void
 diversity_object_destroy(Diversity_Object *obj)
 {
    diversity_dbus_destroy((Diversity_DBus *) obj);
+}
+
+void *
+diversity_object_new(const char *path)
+{
+   Diversity_Object *obj;
+   E_DBus_Proxy *proxy;
+   Diversity_Object_Type type;
+   DBusError error;
+
+   if (!path)
+     return NULL;
+
+   obj = diversity_object_new_with_type(path, DIVERSITY_OBJECT_TYPE_OBJECT);
+   if (!obj)
+     return NULL;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj,
+	 	DIVERSITY_DBUS_IFACE_OBJECT);
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "GetType", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INT32, &type,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to get object type: %s\n", error.message);
+
+	dbus_error_free(&error);
+
+	return NULL;
+     }
+
+   if (type == DIVERSITY_OBJECT_TYPE_OBJECT)
+     return obj;
+
+   diversity_object_destroy(obj);
+
+   obj = diversity_object_new_with_type(path, type);
+
+   return obj;
 }
 
 void
@@ -470,7 +530,6 @@ diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, dou
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj,
 	 	DIVERSITY_DBUS_IFACE_OBJECT);
-   if(!proxy) printf("proxy is NULL\n");
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
 				 "GeometrySet", &error,
@@ -484,8 +543,6 @@ diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, dou
 	printf("failed to set geometry: %s\n", error.message);
 	dbus_error_free(&error);
      }
-   else
-      printf("Set object geo OK\n");
 }
 
 void
@@ -512,35 +569,13 @@ diversity_object_geometry_get(Diversity_Object *obj, double *lon, double *lat, d
      }
 }
 
-Diversity_Object * 
-diversity_object_object_get(const char *obj_path)
-{
-   Diversity_Object *obj = diversity_object_new(obj_path,  sizeof(Diversity_Object));
-   return obj;
-}
-
-int
+Diversity_Object_Type
 diversity_object_type_get(Diversity_Object *obj)
 {
-   E_DBus_Proxy *proxy;
-   DBusError error;
+   if (!obj)
+     return DIVERSITY_OBJECT_TYPE_OBJECT;
 
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj,
-	 	DIVERSITY_DBUS_IFACE_OBJECT);
-
-   dbus_error_init(&error);
-   int type = DIVERSITY_OBJECT_TYPE_OBJECT;
-   if (!e_dbus_proxy_simple_call(proxy,
-				 "GetType", &error,
-				 DBUS_TYPE_INVALID,
-				 DBUS_TYPE_INT32, &type,
-				 DBUS_TYPE_INVALID))
-     {
-	printf("failed to get object type: %s\n", error.message);
-	dbus_error_free(&error);
-     }
-   return type;
-
+   return obj->type;
 }
 
 Diversity_World *
@@ -638,6 +673,65 @@ diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view
    diversity_viewport_destroy(view);
 }
 
+Diversity_Tag *
+diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description)
+{
+   E_DBus_Proxy *proxy;
+   Diversity_Tag *tag;
+   DBusError error;
+   char *path;
+
+   if (!world) return NULL;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
+	 	DIVERSITY_DBUS_IFACE_WORLD);
+   if (!proxy)
+     return NULL;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "TagAdd", &error,
+				 DBUS_TYPE_DOUBLE, &lon,
+				 DBUS_TYPE_DOUBLE, &lat,
+                                 DBUS_TYPE_STRING, &description,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_OBJECT_PATH, &path,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to add tag: %s\n", error.message);
+	dbus_error_free(&error);
+
+	return NULL;
+     }
+
+   tag = diversity_tag_new(path);
+   free(path);
+
+   return tag;
+}
+
+void
+diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag)
+{
+   E_DBus_Proxy *proxy;
+   const char *path;
+
+   if (!world || !tag) return;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
+	 	DIVERSITY_DBUS_IFACE_WORLD);
+   if (!proxy) return;
+
+   path = diversity_dbus_path_get((Diversity_DBus *) tag);
+   e_dbus_proxy_simple_call(proxy,
+			    "TagRemove", NULL,
+			    DBUS_TYPE_OBJECT_PATH, &path,
+			    DBUS_TYPE_INVALID,
+			    DBUS_TYPE_INVALID);
+
+   diversity_tag_destroy(tag);
+}
+
 Diversity_Bard *
 diversity_world_get_self(Diversity_World *world)
 {
@@ -676,7 +770,7 @@ diversity_viewport_new(const char *path)
    Diversity_Viewport *view;
 
    view = (Diversity_Viewport *)
-      diversity_object_new(path, sizeof(Diversity_Viewport));
+      diversity_object_new_with_type(path, DIVERSITY_OBJECT_TYPE_VIEWPORT);
 
    return view;
 }
@@ -735,7 +829,7 @@ diversity_bard_new(const char *path)
    Diversity_Bard *bard;
 
    bard = (Diversity_Bard *)
-      diversity_object_new(path, sizeof(Diversity_Bard));
+      diversity_object_new_with_type(path, DIVERSITY_OBJECT_TYPE_BARD);
 
    return bard;
 }
@@ -753,7 +847,9 @@ diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name)
    const char *bpath;
    char *path;
 
-   if (strcmp(eqp_name, "osm") != 0)
+   if (strcmp(eqp_name, "osm") != 0 &&
+       strcmp(eqp_name, "nmea") != 0 &&
+       strcmp(eqp_name, "phonekit") != 0)
      return NULL;
 
    bpath = diversity_dbus_path_get((Diversity_DBus *) bard);
@@ -842,7 +938,7 @@ diversity_tag_new(const char *path)
    Diversity_Tag *tag;
 
    tag = (Diversity_Tag *)
-      diversity_object_new(path, sizeof(Diversity_Tag));
+      diversity_object_new_with_type(path, DIVERSITY_OBJECT_TYPE_TAG);
 
    return tag;
 }
@@ -851,65 +947,6 @@ void
 diversity_tag_destroy(Diversity_Tag *tag)
 {
    diversity_object_destroy((Diversity_Object *) tag);
-}
-
-Diversity_Tag *
-diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description)
-{
-   E_DBus_Proxy *proxy;
-   Diversity_Tag *tag;
-   DBusError error;
-   char *path;
-
-   if (!world) return NULL;
-
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
-	 	DIVERSITY_DBUS_IFACE_WORLD);
-   if (!proxy)
-     return NULL;
-
-   dbus_error_init(&error);
-   if (!e_dbus_proxy_simple_call(proxy,
-				 "TagAdd", &error,
-				 DBUS_TYPE_DOUBLE, &lon,
-				 DBUS_TYPE_DOUBLE, &lat,
-                                 DBUS_TYPE_STRING, &description,
-				 DBUS_TYPE_INVALID,
-				 DBUS_TYPE_OBJECT_PATH, &path,
-				 DBUS_TYPE_INVALID))
-     {
-	printf("failed to add tag: %s\n", error.message);
-	dbus_error_free(&error);
-
-	return NULL;
-     }
-
-   tag = diversity_tag_new(path);
-   free(path);
-
-   return tag;
-}
-
-void
-diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag)
-{
-   E_DBus_Proxy *proxy;
-   const char *path;
-
-   if (!world || !tag) return;
-
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
-	 	DIVERSITY_DBUS_IFACE_WORLD);
-   if (!proxy) return;
-
-   path = diversity_dbus_path_get((Diversity_DBus *) tag);
-   e_dbus_proxy_simple_call(proxy,
-			    "TagRemove", NULL,
-			    DBUS_TYPE_OBJECT_PATH, &path,
-			    DBUS_TYPE_INVALID,
-			    DBUS_TYPE_INVALID);
-
-   diversity_tag_destroy(tag);
 }
 
 int
@@ -960,24 +997,6 @@ diversity_tag_prop_get(Diversity_Tag *tag, const char *key, char **val)
    return 1;
 }
 
-Diversity_Sms *
-diversity_sms_new(void)
-{
-   Diversity_Sms *sms;
-
-   sms = (Diversity_Sms *)
-      diversity_dbus_new( DIVERSITY_SMS_DBUS_PATH, sizeof(Diversity_Sms));
-
-   return sms;
-}
-
-void
-diversity_sms_destroy(Diversity_Sms *sms)
-{
-   if (sms)
-     diversity_dbus_destroy((Diversity_DBus *) sms);
-}
-
 void
 diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, int ask_ds)
 {
@@ -1024,4 +1043,3 @@ diversity_sms_tag_share(Diversity_Sms *sms, const char *self, const char *tag)
 	dbus_error_free(&error);
      }
 }
-
