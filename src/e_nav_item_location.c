@@ -91,6 +91,18 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
         else locd->note = NULL;
         e_ctrl_taglist_tag_set(name, note, src_obj);  
      }
+   free(description);
+   e_dialog_deactivate(obj);
+}
+
+static void
+dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   Location_Data *locd;
+   locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
+   if (!locd) return;
+   Diversity_World *world = e_nav_world_get();
+   diversity_world_tag_remove(world, locd->tag);
    e_dialog_deactivate(obj);
 }
 
@@ -114,6 +126,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    //diversity_sms_send(sms, phone_number, message, ask_ds);
    //diversity_sms_destroy(sms);
 
+   free(message);
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);
    e_dialog_source_object_set(od, src_obj);     // dialog's src_obj is location item
@@ -156,6 +169,7 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    const char *message = e_nav_world_item_location_note_get(location_object);
    e_dialog_textblock_add(od, "Edit message", message, 120, obj);
    e_dialog_button_add(od, "Save", dialog_location_save, od);
+   e_dialog_button_add(od, "Delete", dialog_location_delete, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    
    e_flyingmenu_deactivate(obj);
@@ -210,7 +224,6 @@ static void
 _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    Location_Data *locd;
-   
    locd = evas_object_data_get(obj, "nav_world_item_location_data");
    if (!locd) return;
    if (locd->name) evas_stringshare_del(locd->name);

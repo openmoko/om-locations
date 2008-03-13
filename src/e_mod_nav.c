@@ -48,6 +48,7 @@ static Evas_Object *nav   = NULL;
 static Diversity_World *world = NULL;
 static Diversity_Bard  *self  = NULL;
 static Diversity_Viewport *worldview = NULL;
+static Ecore_Hash *objectStore = NULL;
 
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
@@ -128,9 +129,37 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_location_name_set(loc_obj, name);
              e_nav_world_item_location_note_set(loc_obj, description);
              e_ctrl_taglist_tag_add(name, description, loc_obj); 
+             ecore_hash_set(objectStore, (void *)obj_path, (void *)loc_obj);
           }
         else
           printf("other kind of object added\n");
+     }
+}
+
+static void
+viewport_object_removed(void *data, DBusMessage *msg)
+{
+   const char *obj_path;
+   DBusError error;
+   dbus_error_init(&error);
+   if (!dbus_message_get_args(msg, &error,
+			      DBUS_TYPE_OBJECT_PATH, &obj_path,
+			      DBUS_TYPE_INVALID))
+     {
+        printf("object removed parse error: %s\n", error.message);
+	dbus_error_free(&error);
+        return;
+     }
+   else 
+     {
+        Evas_Object *world_item = ecore_hash_get(objectStore, obj_path);
+        if(world_item) 
+          {
+             e_ctrl_taglist_tag_delete(world_item);
+             ecore_hash_remove(objectStore, obj_path);
+             e_nav_world_item_delete(nav, world_item);
+             evas_object_del(world_item);
+          }
      }
 }
 
@@ -150,6 +179,10 @@ _e_mod_nav_init(Evas *evas)
    nt = osm_tileset_add(nav);
    evas_object_show(nt);
 
+   objectStore = ecore_hash_new(ecore_str_hash, ecore_str_compare);
+   if(!objectStore)
+     return; 
+
    ctrl = e_ctrl_add(evas);
    e_ctrl_theme_source_set(ctrl, THEME_PATH);
    e_ctrl_nav_set(nav);
@@ -162,6 +195,11 @@ _e_mod_nav_init(Evas *evas)
                                       DIVERSITY_DBUS_IFACE_VIEWPORT, 
                                       "ObjectAdded", 
                                       viewport_object_added,
+                                      NULL); 
+        diversity_dbus_signal_connect((Diversity_DBus *) worldview, 
+                                      DIVERSITY_DBUS_IFACE_VIEWPORT, 
+                                      "ObjectRemoved", 
+                                      viewport_object_removed,
                                       NULL); 
 	printf("Create viewport for whole world\n");
 	diversity_viewport_start(worldview);
@@ -214,7 +252,8 @@ _e_mod_nav_shutdown(void)
      }
 
    e_nav_dbus_shutdown();
-
+   ecore_hash_destroy(objectStore);
    evas_object_del(nav);
    nav = NULL;
 }
+

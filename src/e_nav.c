@@ -325,6 +325,15 @@ e_nav_world_item_add(Evas_Object *obj, Evas_Object *item)
 }
 
 void
+e_nav_world_item_delete(Evas_Object *obj, Evas_Object *item)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+   sd->world_items = evas_list_remove(sd->world_items, item);
+}
+
+void
 e_nav_world_item_type_set(Evas_Object *item, E_Nav_World_Item_Type type)
 {
    E_Nav_World_Item *nwi;
@@ -1130,7 +1139,7 @@ _e_nav_world_item_cb_item_del(void *data, Evas *evas, Evas_Object *obj, void *ev
 {
    E_Smart_Data *sd;
    E_Nav_World_Item *nwi;
-   
+
    nwi = evas_object_data_get(obj, "nav_world_item");
    if (!nwi) return;
    sd = evas_object_smart_data_get(nwi->obj);

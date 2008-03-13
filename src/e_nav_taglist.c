@@ -98,6 +98,15 @@ e_nav_taglist_theme_source_set(Evas_Object *obj, const char *custom_dir)
 }
 
 void
+e_nav_taglist_tag_add(Evas_Object *obj, const char *name, const char *description, void (*func) (void *data, void *data2), void *data1, void *data2)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+   e_ilist_append(sd->list_object, NULL, name, 20, func, NULL, data1, data2);
+}
+
+void
 e_nav_taglist_tag_update(Evas_Object *obj, const char *name, const char *description, void *object)
 {
    E_Smart_Data *sd;
@@ -105,25 +114,43 @@ e_nav_taglist_tag_update(Evas_Object *obj, const char *name, const char *descrip
    SMART_CHECK(obj, ;);
    Evas_Object *location_obj = NULL;
    int n;
-   int count = e_ilist_count(sd->list_object); 
-   for(n=0; n<count; n++) 
+   Evas_List *items = e_ilist_items_get(sd->list_object);
+   int count = evas_list_count(items);
+   E_Ilist_Item *item;
+   for(n=0; n<count; n++)
      {
-        e_ilist_selected_set(sd->list_object, n);
-        location_obj = (Evas_Object*) e_ilist_selected_data2_get(sd->list_object);
+        item = evas_list_nth(items, n);
+        location_obj = item->data2;
         if(location_obj == object)
           break;
+        location_obj = NULL;
      }
    if(location_obj) 
      e_ilist_nth_label_set(sd->list_object, n, name);
 }
 
 void
-e_nav_taglist_tag_add(Evas_Object *obj, const char *name, const char *description, void (*func) (void *data, void *data2), void *data1, void *data2)
+e_nav_taglist_tag_remove(Evas_Object *obj, Evas_Object *tag)
 {
    E_Smart_Data *sd;
    
    SMART_CHECK(obj, ;);
-   e_ilist_append(sd->list_object, NULL, name, 20, func, NULL, data1, data2);
+   Evas_Object *location_obj = NULL;
+   int n;
+   Evas_List *items = e_ilist_items_get(sd->list_object);
+   int count = evas_list_count(items);
+   E_Ilist_Item *item;
+   for(n=0; n<count; n++)
+     {
+        item = evas_list_nth(items, n);
+        location_obj = item->data2;
+        if(location_obj == tag)
+          break;
+        location_obj = NULL;
+     }
+
+   if(location_obj)
+     e_ilist_remove_num(sd->list_object, n);
 }
 
 void

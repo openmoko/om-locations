@@ -68,6 +68,7 @@ double          e_nav_zoom_get(Evas_Object *obj);
 
 /* world items */
 void                   e_nav_world_item_add(Evas_Object *obj, Evas_Object *item);
+void                   e_nav_world_item_delete(Evas_Object *obj, Evas_Object *item);
 void                   e_nav_world_item_type_set(Evas_Object *item, E_Nav_World_Item_Type type);
 E_Nav_World_Item_Type  e_nav_world_item_type_get(Evas_Object *item);
 void                   e_nav_world_item_geometry_set(Evas_Object *item, double x, double y, double w, double h);

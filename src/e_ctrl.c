@@ -111,6 +111,14 @@ e_ctrl_taglist_tag_add(const char *name, const char *note, void *loc_object)
    e_nav_taglist_tag_add(sd->listview, name, note, _e_nav_tag_sel, ctrl, loc_object);
 }
 
+void
+e_ctrl_taglist_tag_delete(void *loc_object)
+{
+   E_Smart_Data *sd;
+   sd = evas_object_smart_data_get(ctrl);
+   e_nav_taglist_tag_remove(sd->listview, loc_object);
+}
+
 static void   
 _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {

@@ -26,6 +26,7 @@
 Evas_Object    *e_nav_taglist_add(Evas *e);
 void            e_nav_taglist_theme_source_set(Evas_Object *obj, const char *custom_dir);
 void            e_nav_taglist_tag_add(Evas_Object *obj, const char *name, const char *description,  void (*func) (void *data, void *data2), void *data1, void *data2);
+void            e_nav_taglist_tag_remove(Evas_Object *obj, Evas_Object *tag);
 void            e_nav_taglist_tag_update(Evas_Object *obj, const char *name, const char *description, void *object);
 void            e_nav_taglist_activate(Evas_Object *obj);
 void            e_nav_taglist_deactivate(Evas_Object *obj);
