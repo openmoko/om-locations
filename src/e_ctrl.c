@@ -25,6 +25,7 @@
 #include "e_nav_taglist.h"
 
 static Evas_Object *ctrl = NULL;
+static Diversity_Bard *self = NULL;
 
 typedef struct _E_Smart_Data E_Smart_Data;
 static Evas_Object * _e_ctrl_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
@@ -139,6 +140,8 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
 static void   
 _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
+   double lon, lat, w, h;
+   int accuracy;
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
    if(!sd) {
@@ -146,8 +149,12 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
        return;
    }
    evas_object_hide(sd->listview);
-   //ToDo: Remove hard code below line
-   e_nav_coord_set(sd->nav, 151.205907, 33.875938, 0.0);
+
+   if (!self) return;
+   diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+   if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;   // not fixed yet
+   diversity_object_geometry_get((Diversity_Object *)self, &lon, &lat, &w, &h);
+   e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
 }
@@ -264,12 +271,19 @@ e_ctrl_edje_object_set(Evas_Object *o, const char *category, const char *group)
    return ok;
 }
 
-void e_ctrl_nav_set(Evas_Object* obj)
+void
+e_ctrl_nav_set(Evas_Object* obj)
 {
    if(!ctrl) return;
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(ctrl);
    sd->nav = obj;
+}
+
+void
+e_ctrl_self_set(void* obj)
+{
+   self = (Diversity_Bard *)obj;
 }
 
 /* internal calls */
@@ -369,7 +383,6 @@ _e_ctrl_smart_show(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    evas_object_show(sd->clip);
-   _e_ctrl_buttons_set(obj);
 }
 
 static void

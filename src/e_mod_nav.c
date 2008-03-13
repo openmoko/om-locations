@@ -186,6 +186,7 @@ _e_mod_nav_init(Evas *evas)
    ctrl = e_ctrl_add(evas);
    e_ctrl_theme_source_set(ctrl, THEME_PATH);
    e_ctrl_nav_set(nav);
+   e_ctrl_self_set(self);
    evas_object_show(ctrl);
 
    if(world) 

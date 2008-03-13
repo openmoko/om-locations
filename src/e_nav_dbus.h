@@ -59,6 +59,13 @@ typedef enum {
      N_DIVERSITY_OBJECT_TYPES,
 } Diversity_Object_Type;
 
+typedef enum {
+     DIVERSITY_OBJECT_ACCURACY_NONE,
+     DIVERSITY_OBJECT_ACCURACY_DERIVED,
+     DIVERSITY_OBJECT_ACCURACY_DIRECT, /* from GPS, and etc. */
+     DIVERSITY_OBJECT_ACCURACY_EXACT,
+}Diversity_Object_Accuracy;
+
 int                 e_nav_dbus_init(void);
 void                e_nav_dbus_shutdown(void);
 E_DBus_Connection  *e_nav_dbus_connection_get(void);
