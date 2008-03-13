@@ -251,9 +251,9 @@ _e_mod_nav_shutdown(void)
 	world = NULL;
      }
 
-   e_nav_dbus_shutdown();
    ecore_hash_destroy(objectStore);
    evas_object_del(nav);
    nav = NULL;
+   e_nav_dbus_shutdown();
 }
 
