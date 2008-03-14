@@ -23,6 +23,7 @@
 #include "e_nav_tileset.h"
 #include "e_nav_item_location.h"
 #include "e_nav_taglist.h"
+#include "e_spreadmenu.h"
 
 static Evas_Object *ctrl = NULL;
 static Diversity_Bard *self = NULL;
@@ -40,11 +41,7 @@ struct _E_Smart_Data
    Evas_Object *map_overlay;   
    Evas_Object *nav;
    Evas_Object *listview;   
-
-   Evas_Object *button1;
-   Evas_Object *button2;
-   Evas_Object *button3;
-   Evas_Object *button4;
+   Evas_Object *spread_btn;
 
    Evas_Coord x, y, w, h;
    const char      *dir;
@@ -121,9 +118,8 @@ e_ctrl_taglist_tag_delete(void *loc_object)
 }
 
 static void   
-_e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_nav_list_button_cb_mouse_down(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("show items in ilist\n");
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
    if(!sd) {
@@ -138,7 +134,7 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
 }
 
 static void   
-_e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_nav_refresh_button_cb_mouse_down(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    double lon, lat, w, h;
    int accuracy;
@@ -152,7 +148,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
 
    if (!self) return;
    diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-   if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;   // not fixed yet
+   if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;   // if not fixed yet
    diversity_object_geometry_get((Diversity_Object *)self, &lon, &lat, &w, &h);
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
@@ -160,7 +156,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
 }
 
 static void
-_e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_nav_map_button_cb_mouse_down(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(data);
@@ -170,44 +166,37 @@ _e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
 }
 
 static void
-_e_ctrl_buttons_set(Evas_Object *obj)
+_e_nav_spread_btn_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
-   E_Smart_Data *sd;
-   SMART_CHECK(obj, ;);
-
    int screen_x, screen_y, screen_w, screen_h;
    evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h); 
    int indent=2;
-   int button_w, button_h;
+   int button_w;
    button_w = (screen_w/4) - indent;
-   button_h = screen_h/13; 
-   evas_object_resize(sd->button1, button_w, button_h);
-   evas_object_resize(sd->button2, button_w, button_h);
-   evas_object_resize(sd->button3, button_w, button_h);
-   evas_object_resize(sd->button4, button_w, button_h);
-   evas_object_move(sd->button1, 0, (screen_h-indent-button_h) );
-   evas_object_move(sd->button2, (screen_w/4)*1, (screen_h-indent-button_h) );
-   evas_object_move(sd->button3, (screen_w/4)*2, (screen_h-indent-button_h) );
-   evas_object_move(sd->button4, (screen_w/4)*3, (screen_h-indent-button_h) );
 
-   evas_object_event_callback_add(sd->button2, EVAS_CALLBACK_MOUSE_UP, _e_nav_map_button_cb_mouse_down, obj);
-   evas_object_event_callback_add(sd->button3, EVAS_CALLBACK_MOUSE_UP, _e_nav_refresh_button_cb_mouse_down, obj);
-   evas_object_event_callback_add(sd->button4, EVAS_CALLBACK_MOUSE_UP, _e_nav_list_button_cb_mouse_down, obj);
-   edje_object_part_text_set(sd->button1, "text", "*");
-   edje_object_part_text_set(sd->button2, "text", "MAP");
-   edje_object_part_text_set(sd->button3, "text", "REFRESH");
-   edje_object_part_text_set(sd->button4, "text", "LIST");
-   evas_object_show(sd->button1);
-   evas_object_show(sd->button2);
-   evas_object_show(sd->button3);
-   evas_object_show(sd->button4);
+   Evas_Object *om;
+   om = e_spreadmenu_add(evas);
+   e_spreadmenu_theme_source_set(om, data);
+   e_spreadmenu_autodelete_set(om, 1);
+   e_spreadmenu_source_object_set(om, obj);
+   e_spreadmenu_theme_item_add(om, "modules/diversity_nav/button", button_w, "MAP",
+			       _e_nav_map_button_cb_mouse_down, ctrl);
+   e_spreadmenu_theme_item_add(om, "modules/diversity_nav/button", button_w, "REFRESH",
+			       _e_nav_refresh_button_cb_mouse_down, ctrl);
+   e_spreadmenu_theme_item_add(om, "modules/diversity_nav/button", button_w, "LIST",
+			       _e_nav_list_button_cb_mouse_down, ctrl);
+   evas_object_show(om);
+   e_spreadmenu_activate(om);
 }
 
 void
 e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 {
+   int screen_x, screen_y, screen_w, screen_h;
+   int indent=2;
+   int button_w, button_h;
+
    E_Smart_Data *sd;
-   
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
@@ -228,17 +217,20 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    sd->listview = e_nav_taglist_add(evas_object_evas_get(obj));
    e_nav_taglist_theme_source_set(sd->listview, THEME_PATH);
    evas_object_hide(sd->listview);
-  
-   sd->button1 = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
-                                      "modules/diversity_nav/button"); 
-   sd->button2 = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
-                                      "modules/diversity_nav/button"); 
-   sd->button3 = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
-                                      "modules/diversity_nav/button"); 
-   sd->button4 = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
-                                      "modules/diversity_nav/button"); 
-     
-   _e_ctrl_buttons_set(obj);
+
+   sd->spread_btn = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
+                                         "modules/diversity_nav/button");
+   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h); 
+   button_w = (screen_w/4) - indent;
+   button_h = screen_h/13; 
+   evas_object_resize(sd->spread_btn, button_w, button_h);
+   evas_object_move(sd->spread_btn, 0, (screen_h-indent-button_h) );
+   edje_object_part_text_set(sd->spread_btn, "text", "*");
+   evas_object_event_callback_add(sd->spread_btn, EVAS_CALLBACK_MOUSE_DOWN,
+				  _e_nav_spread_btn_cb_mouse_down,
+				  THEME_PATH);
+   evas_object_show(sd->spread_btn);
+
 }
 
 static Evas_Object *
@@ -457,7 +449,7 @@ void e_ctrl_latitude_set(const char* buf)
    if(!ctrl) return;
    edje_object_part_text_set(sd->map_overlay, "e.text.latitude", buf);
 }
- 
+
 static void
 _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source)
 {
