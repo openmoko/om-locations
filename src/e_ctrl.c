@@ -141,16 +141,18 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas_Object *obj, Evas_Object *s
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
    if(!sd) {
-       printf("sd is NULL\n");
        return;
    }
-   evas_object_hide(sd->listview);
 
    if (!self) return;
    diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-   if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;   // if not fixed yet
+   /* if not fixed yet, no action */
+   if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;   
    diversity_object_geometry_get((Diversity_Object *)self, &lon, &lat, &w, &h);
+   lat = -lat;
+   // ToDo:  set Follow me flag
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
+   evas_object_hide(sd->listview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
 }
