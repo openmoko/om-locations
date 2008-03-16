@@ -189,6 +189,60 @@ _e_nav_spread_btn_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    e_spreadmenu_activate(om);
 }
 
+static void
+_e_nav_level_up(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   Evas_Object *ctrl_obj = (Evas_Object *)data; 
+   E_Smart_Data *sd;
+   SMART_CHECK(ctrl_obj, ;);
+   e_nav_level_up(sd->nav);
+}
+
+static void
+_e_nav_level_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   Evas_Object *ctrl_obj = (Evas_Object *)data; 
+   E_Smart_Data *sd;
+   SMART_CHECK(ctrl_obj, ;);
+   e_nav_level_down(sd->nav);
+}
+
+static void
+_e_nav_view_up(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   Evas_Object *ctrl_obj = (Evas_Object *)data; 
+   E_Smart_Data *sd;
+   SMART_CHECK(ctrl_obj, ;);
+   e_nav_move_up(sd->nav);
+}
+
+static void
+_e_nav_view_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   Evas_Object *ctrl_obj = (Evas_Object *)data; 
+   E_Smart_Data *sd;
+   SMART_CHECK(ctrl_obj, ;);
+   e_nav_move_down(sd->nav);
+}
+
+static void
+_e_nav_view_left(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   Evas_Object *ctrl_obj = (Evas_Object *)data; 
+   E_Smart_Data *sd;
+   SMART_CHECK(ctrl_obj, ;);
+   e_nav_move_left(sd->nav);
+}
+
+static void
+_e_nav_view_right(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   Evas_Object *ctrl_obj = (Evas_Object *)data; 
+   E_Smart_Data *sd;
+   SMART_CHECK(ctrl_obj, ;);
+   e_nav_move_right(sd->nav);
+}
+
 void
 e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 {
@@ -213,6 +267,31 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    edje_object_signal_callback_add(sd->map_overlay, "drag,stop", "*", _e_ctrl_cb_signal_drag_stop, sd);
    edje_object_signal_callback_add(sd->map_overlay, "drag,step", "*", _e_ctrl_cb_signal_drag_stop, sd);
    edje_object_signal_callback_add(sd->map_overlay, "drag,set", "*", _e_ctrl_cb_signal_drag_stop, sd);
+   Evas_Object *zoomin, *zoomout, *up, *down, *left, *right; 
+   zoomin = edje_object_part_object_get(sd->map_overlay, "zoom_in"); 
+   zoomout = edje_object_part_object_get(sd->map_overlay, "zoom_out"); 
+   up = edje_object_part_object_get(sd->map_overlay, "up"); 
+   down = edje_object_part_object_get(sd->map_overlay, "down"); 
+   left = edje_object_part_object_get(sd->map_overlay, "left"); 
+   right = edje_object_part_object_get(sd->map_overlay, "right"); 
+   evas_object_event_callback_add(zoomin, EVAS_CALLBACK_MOUSE_DOWN,
+				  _e_nav_level_up,
+				  obj);
+   evas_object_event_callback_add(zoomout, EVAS_CALLBACK_MOUSE_DOWN,
+				  _e_nav_level_down,
+				  obj);
+   evas_object_event_callback_add(up, EVAS_CALLBACK_MOUSE_DOWN,
+				  _e_nav_view_up,
+				  obj);
+   evas_object_event_callback_add(down, EVAS_CALLBACK_MOUSE_DOWN,
+				  _e_nav_view_down,
+				  obj);
+   evas_object_event_callback_add(left, EVAS_CALLBACK_MOUSE_DOWN,
+				  _e_nav_view_left,
+				  obj);
+   evas_object_event_callback_add(right, EVAS_CALLBACK_MOUSE_DOWN,
+				  _e_nav_view_right,
+				  obj);
 
    sd->listview = e_nav_taglist_add(evas_object_evas_get(obj));
    e_nav_taglist_theme_source_set(sd->listview, THEME_PATH);

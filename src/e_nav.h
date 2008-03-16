@@ -65,6 +65,12 @@ double          e_nav_coord_lon_get(Evas_Object *obj);
 double          e_nav_coord_lat_get(Evas_Object *obj);
 void            e_nav_zoom_set(Evas_Object *obj, double zoom, double when);
 double          e_nav_zoom_get(Evas_Object *obj);
+void            e_nav_level_up(Evas_Object *obj);
+void            e_nav_level_down(Evas_Object *obj);
+void            e_nav_move_up(Evas_Object *obj);
+void            e_nav_move_down(Evas_Object *obj);
+void            e_nav_move_left(Evas_Object *obj);
+void            e_nav_move_right(Evas_Object *obj);
 
 /* world items */
 void                   e_nav_world_item_add(Evas_Object *obj, Evas_Object *item);

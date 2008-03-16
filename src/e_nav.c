@@ -244,6 +244,129 @@ e_nav_coord_lat_get(Evas_Object *obj)
 }
 
 void
+e_nav_move_up(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+   int screen_x, screen_y, screen_w, screen_h;
+   int span; 
+   double y;
+
+   sd = evas_object_smart_data_get(obj);
+   for (l = sd->tilesets; l; l = l->next)
+     {
+	Evas_Object *nt = l->data;
+        span = e_nav_tileset_span_get(nt);
+        evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
+        y = (180.0 / span ) * screen_h * (1.0/3); 
+        e_nav_coord_set(obj, sd->lon, sd->lat - y, 0.0);
+     }
+}
+
+void
+e_nav_move_down(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+   int screen_x, screen_y, screen_w, screen_h;
+   int span; 
+   double y;
+
+   sd = evas_object_smart_data_get(obj);
+   for (l = sd->tilesets; l; l = l->next)
+     {
+	Evas_Object *nt = l->data;
+        span = e_nav_tileset_span_get(nt);
+        evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
+        y = (180.0 / span ) * screen_h * (1.0/3); 
+        e_nav_coord_set(obj, sd->lon, sd->lat + y, 0.0);
+     }
+}
+
+void
+e_nav_move_left(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+   int screen_x, screen_y, screen_w, screen_h;
+   int span; 
+   double x;
+
+   sd = evas_object_smart_data_get(obj);
+   for (l = sd->tilesets; l; l = l->next)
+     {
+	Evas_Object *nt = l->data;
+        span = e_nav_tileset_span_get(nt);
+        evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
+        x = (360.0 / span ) * screen_w * (1.0/3); 
+        e_nav_coord_set(obj, sd->lon - x, sd->lat, 0.0);
+     }
+}
+
+void
+e_nav_move_right(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+   int screen_x, screen_y, screen_w, screen_h;
+   int span; 
+   double x;
+
+   sd = evas_object_smart_data_get(obj);
+   for (l = sd->tilesets; l; l = l->next)
+     {
+	Evas_Object *nt = l->data;
+        span = e_nav_tileset_span_get(nt);
+        evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
+        x = (360.0 / span ) * screen_w * (1.0/3); 
+        e_nav_coord_set(obj, sd->lon + x, sd->lat, 0.0);
+     }
+}
+
+#define E_NAV_SPAN_ZOOM(span)  ((M_EARTH_RADIUS * M_PI * 2 / (span)))
+void
+e_nav_level_up(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+   double zoom;
+   int span, level;
+
+   sd = evas_object_smart_data_get(obj);
+   for (l = sd->tilesets; l; l = l->next)
+     {
+	Evas_Object *nt = l->data;
+
+        level = e_nav_tileset_level_get(nt); 
+        e_nav_tileset_level_set(nt, level+1); 
+        span = e_nav_tileset_span_get(nt);
+        zoom = E_NAV_SPAN_ZOOM(span);       
+        e_nav_zoom_set(obj, zoom, 0.0);
+     }
+}
+
+void
+e_nav_level_down(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+   double zoom;
+   int span, level;
+
+   sd = evas_object_smart_data_get(obj);
+   for (l = sd->tilesets; l; l = l->next)
+     {
+	Evas_Object *nt = l->data;
+
+        level = e_nav_tileset_level_get(nt); 
+        e_nav_tileset_level_set(nt, level-1); 
+        span = e_nav_tileset_span_get(nt);
+        zoom = E_NAV_SPAN_ZOOM(span);       
+        e_nav_zoom_set(obj, zoom, 0.0);
+     }
+}
+
+void
 e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
 {
    E_Smart_Data *sd;

@@ -12,12 +12,121 @@ images {
    image: "neo.png" COMP;
    image: "neo_other.png" COMP;
    image: "location.png" COMP;
+   image: "zoomin.png" COMP;
+   image: "zoomout.png" COMP;
+   image: "down.png" COMP;
+   image: "up.png" COMP;
+   image: "left.png" COMP;
+   image: "right.png" COMP;
 }
 
 group {
    /* the main object here */
    name: "modules/diversity_nav/main";
    parts {
+      part { name: "zoom_in";
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            min: 48 48;
+            rel1 {
+               relative: 0.0 0.0;
+               offset: -1 -1;
+            }
+            rel2 {
+               relative: 0.0 0.0;
+               offset: -1 -1;
+            }
+            align: 0.0 0.0;
+            image.normal: "zoomin.png";
+         }
+      }
+      part { name: "zoom_out";
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            min: 48 48;
+            rel1 {
+               relative: 0.0 1.0;
+               offset: 0 -48;
+            }
+            rel2 {
+               relative: 0.0 1.0;
+               offset: 0 -48;
+            }
+            align: 0.0 1.0;
+            image.normal: "zoomout.png";
+         }
+      }
+      part { name: "up";
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            min: 48 48;
+            rel1 {
+               to: "down";
+               relative: 0.0 0.0;
+               offset: 0 -48;
+            }
+            rel2 {
+               to: "down";
+               relative: 0.0 0.0;
+               offset: 0 -1;
+            }
+            align: 0.0 1.0;
+            image.normal: "up.png";
+         }
+      }
+      part { name: "left";
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            min: 48 48;
+            max: 48 48;
+            rel1 {
+               to: "down";
+               relative: 0.0 0.0;
+               offset: -144 0;
+            }
+            rel2 {
+               to: "down";
+               relative: 0.0 1.0;
+               offset: -1 0;
+            }
+            align: 0.0 1.0;
+            image.normal: "left.png";
+         }
+      }
+      part { name: "right";
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            min: 48 48;
+            rel1 {
+               to: "down";
+               relative: 1.0 0.0;
+               offset: 96 0;
+            }
+            rel2 {
+               to: "down";
+               relative: 1.0 1.0;
+               offset: 0 0;
+            }
+            align: 0.0 1.0;
+            image.normal: "right.png";
+         }
+      }
+      part { name: "down";
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            min: 48 48;
+            rel1 {
+               relative: 0.5 1.0;
+               offset: 0 -48;
+            }
+            rel2 {
+               relative: 0.5 1.0;
+               offset: 0 -48;
+            }
+            align: 0.5 1.0;
+            image.normal: "down.png";
+         }
+      }
       part { name: "zoom_base";
          type: RECT;
          mouse_events: 0;
@@ -30,7 +139,7 @@ group {
                offset: 0 48;
             }
             rel2 {
-               to: "zoom_length";
+               to: "zoom_out";
                relative: 0.0 0.0;
                offset: 0 -1;
             }
