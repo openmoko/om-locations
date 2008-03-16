@@ -163,6 +163,29 @@ viewport_object_removed(void *data, DBusMessage *msg)
      }
 }
 
+static void
+on_geometry_changed(void *data, DBusMessage *msg)
+{
+   Evas_Object *nwi = data;
+   double lon, lat;
+   double dummy1, dummy2;
+   static int follow = 1;
+
+   diversity_object_geometry_get((Diversity_Object *) self,
+	 &lon, &lat, &dummy1, &dummy2);
+
+   //printf("Me @ %f %f\n", lon, lat);
+
+   lat = -lat;
+   e_nav_world_item_geometry_set(nwi, lon, lat, 0.0, 0.0);
+   e_nav_world_item_update(nwi);
+
+   if (follow) {
+     e_nav_coord_set(nav, lon, lat, 0.0);
+     follow = 0;
+   }
+}
+
 void
 _e_mod_nav_init(Evas *evas)
 {
@@ -211,6 +234,27 @@ _e_mod_nav_init(Evas *evas)
 				     151.210000, 33.870000);
    e_nav_world_item_neo_me_name_set(nwi, "Me");
    show_welcome_message(nwi);
+     {
+	Diversity_Equipment *eqp = NULL;
+	const char *dev;
+
+	if (self)
+	  eqp = diversity_bard_equipment_get(self, "nmea");
+
+	if (eqp) {
+	     dev = "/dev/ttySAC1:9600";
+	     diversity_equipment_config_set(eqp, "device-path",
+		   DBUS_TYPE_STRING, &dev);
+	     /* enable logging */
+	     dev = "/tmp/nmea.log";
+	     diversity_equipment_config_set(eqp, "log",
+		   DBUS_TYPE_STRING, &dev);
+	}
+
+	diversity_dbus_signal_connect((Diversity_DBus *) self,
+	      DIVERSITY_DBUS_IFACE_OBJECT,
+	      "GeometryChanged", on_geometry_changed, nwi);
+     }
 
    /* start off at a zoom level and location instantly */
    e_nav_zoom_set(nav, 5, 0.0);
