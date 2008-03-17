@@ -531,6 +531,11 @@ group {
             max: 48 48;
             image.normal: "neo.png";
          }
+         description { state: "fixed" 0.0;
+            min: 48 48;
+            max: 48 48;
+            image.normal: "neo_other.png";
+         }
       }
       part { name: "e.text.name";
          type: TEXT;
@@ -560,6 +565,20 @@ group {
       }
    }
    programs { /* programs - where we react to events/signals */
+      program {
+         name: "fixed";
+         signal: "FIXED";
+         source: "*";
+         action: STATE_SET "fixed" 0.0;
+         target: "phone";
+      }
+      program {
+         name: "nonfixed";
+         signal: "NONFIXED";
+         source: "*";
+         action: STATE_SET "default" 0.0;
+         target: "phone";
+      }
    }
 }
 

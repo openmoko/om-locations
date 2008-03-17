@@ -186,6 +186,19 @@ on_geometry_changed(void *data, DBusMessage *msg)
    }
 }
 
+static void
+on_property_changed(void *data, DBusMessage *msg)
+{
+   Evas_Object *nwi = data;
+   int accuracy = 0;
+   static int fixed = 0;
+   diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+   if( fixed && accuracy == DIVERSITY_OBJECT_ACCURACY_NONE )
+     cosplay(nwi, 0);   
+   else if ( !fixed && accuracy != DIVERSITY_OBJECT_ACCURACY_NONE )
+     cosplay(nwi, 1);
+}
+
 void
 _e_mod_nav_init(Evas *evas)
 {
@@ -254,6 +267,9 @@ _e_mod_nav_init(Evas *evas)
 	diversity_dbus_signal_connect((Diversity_DBus *) self,
 	      DIVERSITY_DBUS_IFACE_OBJECT,
 	      "GeometryChanged", on_geometry_changed, nwi);
+	diversity_dbus_signal_connect((Diversity_DBus *) self,
+	      DIVERSITY_DBUS_IFACE_OBJECT,
+	      "PropertyChanged", on_property_changed, nwi);
      }
 
    /* start off at a zoom level and location instantly */

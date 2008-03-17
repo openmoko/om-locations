@@ -201,6 +201,15 @@ show_welcome_message(Evas_Object *item)
    e_flyingmenu_activate(om);
 }
 
+void
+cosplay(Evas_Object *item, int fixed)
+{
+   if (fixed)
+     edje_object_signal_emit(item, "FIXED", "phone");
+   else
+     edje_object_signal_emit(item, "NONFIXED", "phone");
+}
+
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
 e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon, double lat)
