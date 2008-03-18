@@ -161,8 +161,6 @@ void
 e_spreadmenu_activate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
-   E_Spreadmenu_Item *si;
    
    SMART_CHECK(obj, ;);
    evas_object_show(sd->event);
@@ -170,11 +168,6 @@ e_spreadmenu_activate(Evas_Object *obj)
    sd->activate_deactivate = 1;
    sd->active = 1;
    sd->activate_time = ecore_time_get();
-   for (l = sd->items; l; l = l->next)
-     {
-	si = l->data;
-        evas_object_show(si->item_obj); 
-     }
    if (sd->animator) return;
    sd->animator = ecore_animator_add(_e_spreadmenu_cb_animator, obj);
 }
