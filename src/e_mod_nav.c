@@ -194,9 +194,15 @@ on_property_changed(void *data, DBusMessage *msg)
    static int fixed = 0;
    diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
    if( fixed && accuracy == DIVERSITY_OBJECT_ACCURACY_NONE )
-     cosplay(nwi, 0);   
+     {
+        cosplay(nwi, 0);   
+        fixed = 0;
+     }
    else if ( !fixed && accuracy != DIVERSITY_OBJECT_ACCURACY_NONE )
-     cosplay(nwi, 1);
+     {
+        cosplay(nwi, 1);
+        fixed = 1;
+     }
 }
 
 void
