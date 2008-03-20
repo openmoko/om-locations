@@ -103,6 +103,7 @@ dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
    if (!locd) return;
    Diversity_World *world = e_nav_world_get();
    diversity_world_tag_remove(world, locd->tag);
+   locd->tag = NULL;
    e_dialog_deactivate(obj);
 }
 
