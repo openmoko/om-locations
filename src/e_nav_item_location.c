@@ -99,11 +99,15 @@ static void
 dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Location_Data *locd;
+   int ok;
    locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
    if (!locd) return;
    Diversity_World *world = e_nav_world_get();
-   diversity_world_tag_remove(world, locd->tag);
-   locd->tag = NULL;
+   ok = diversity_world_tag_remove(world, locd->tag);
+   if(ok) 
+     {
+        locd->tag = NULL;
+     }
    e_dialog_deactivate(obj);
 }
 

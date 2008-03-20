@@ -655,26 +655,31 @@ diversity_world_viewport_add(Diversity_World *world, double lon1, double lat1, d
    return view;
 }
 
-void
+int
 diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view)
 {
    E_DBus_Proxy *proxy;
    const char *path;
+   int ok = 0;
 
-   if (!world || !view) return;
+   if (!world || !view) return ok;
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
 	 	DIVERSITY_DBUS_IFACE_WORLD);
-   if (!proxy) return;
+   if (!proxy) return ok;
 
    path = diversity_dbus_path_get((Diversity_DBus *) world);
-   e_dbus_proxy_simple_call(proxy,
+   ok = e_dbus_proxy_simple_call(proxy,
 			    "ViewportRemove", NULL,
 			    DBUS_TYPE_OBJECT_PATH, &path,
 			    DBUS_TYPE_INVALID,
 			    DBUS_TYPE_INVALID);
-
-   diversity_viewport_destroy(view);
+   if(ok)
+     {
+        diversity_viewport_destroy(view);
+     }
+   
+   return ok;
 }
 
 Diversity_Tag *
@@ -714,26 +719,31 @@ diversity_world_tag_add(Diversity_World *world, double lon, double lat, const ch
    return tag;
 }
 
-void
+int
 diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag)
 {
    E_DBus_Proxy *proxy;
    const char *path;
+   int ok = 0;
 
-   if (!world || !tag) return;
+   if (!world || !tag) return ok;
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
 	 	DIVERSITY_DBUS_IFACE_WORLD);
-   if (!proxy) return;
+   if (!proxy) return ok;
 
    path = diversity_dbus_path_get((Diversity_DBus *) tag);
-   e_dbus_proxy_simple_call(proxy,
+   ok = e_dbus_proxy_simple_call(proxy,
 			    "TagRemove", NULL,
 			    DBUS_TYPE_OBJECT_PATH, &path,
 			    DBUS_TYPE_INVALID,
 			    DBUS_TYPE_INVALID);
+   if(ok)
+     {
+        diversity_tag_destroy(tag);
+     }
 
-   diversity_tag_destroy(tag);
+   return ok;
 }
 
 Diversity_Bard *
