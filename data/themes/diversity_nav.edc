@@ -511,7 +511,7 @@ group {
             color3: 0 0 0 32;
             text {
                font: "Sans:style=Bold,Edje-Vera-Bold";
-               size: 10;
+               size: 14;
                min: 1 1;
                align: 0.5 0.0;
             }
@@ -557,7 +557,7 @@ group {
             color3: 0 0 0 32;
             text {
                font: "Sans:style=Bold,Edje-Vera-Bold";
-               size: 10;
+               size: 14;
                min: 1 1;
                align: 0.5 0.0;
             }

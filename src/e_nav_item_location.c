@@ -90,6 +90,7 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
         if (note) locd->note = evas_stringshare_add(note);
         else locd->note = NULL;
         e_ctrl_taglist_tag_set(name, note, src_obj);  
+        e_nav_world_item_location_name_set(src_obj, name);
      }
    free(description);
    e_dialog_deactivate(obj);
