@@ -20,9 +20,16 @@
 
 #ifndef E_NAV_ITEM_NEO_OTHER_H
 #define E_NAV_ITEM_NEO_OTHER_H
+#include "e_nav_dbus.h"
 
-Evas_Object            *e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double lon, double lat);
+Evas_Object            *e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Object *bard);
 void                    e_nav_world_item_neo_other_name_set(Evas_Object *item, const char *name);
 const char             *e_nav_world_item_neo_other_name_get(Evas_Object *item);
+void                    e_nav_world_item_neo_other_phone_set(Evas_Object *item, const char *phone);
+const char             *e_nav_world_item_neo_other_phone_get(Evas_Object *item);
+void                    e_nav_world_item_neo_other_alias_set(Evas_Object *item, const char *alias);
+const char             *e_nav_world_item_neo_other_alias_get(Evas_Object *item);
+void                    e_nav_world_item_neo_other_twitter_set(Evas_Object *item, const char *twitter);
+const char             *e_nav_world_item_neo_other_twitter_get(Evas_Object *item);
     
 #endif

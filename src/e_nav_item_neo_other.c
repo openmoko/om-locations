@@ -28,6 +28,10 @@ typedef struct _Neo_Other_Data Neo_Other_Data;
 struct _Neo_Other_Data
 {
    const char             *name;
+   const char             *phone;
+   const char             *alias;
+   const char             *twitter;
+   Diversity_Bard         *bard;
 };
 
 static Evas_Object *
@@ -116,12 +120,15 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
    neod = evas_object_data_get(obj, "nav_world_item_neo_other_data");
    if (!neod) return;
    if (neod->name) evas_stringshare_del(neod->name);
+   if (neod->phone) evas_stringshare_del(neod->phone);
+   if (neod->alias) evas_stringshare_del(neod->alias);
+   if (neod->twitter) evas_stringshare_del(neod->twitter);
    free(neod);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
-e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double lon, double lat)
+e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Object *bard)
 {
    Evas_Object *o;
    Neo_Other_Data *neod;
@@ -130,6 +137,7 @@ e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double l
     * evas object */
    neod = calloc(1, sizeof(Neo_Other_Data));
    if (!neod) return NULL;
+   neod->bard = (Diversity_Bard *) bard;
    o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/neo/other");
    edje_object_part_text_set(o, "e.text.name", "???");
@@ -169,4 +177,70 @@ e_nav_world_item_neo_other_name_get(Evas_Object *item)
    neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
    if (!neod) return NULL;
    return neod->name;
+}
+
+void
+e_nav_world_item_neo_other_phone_set(Evas_Object *item, const char *phone)
+{
+   Neo_Other_Data *neod;
+   
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return;
+   if (neod->phone) evas_stringshare_del(neod->phone);
+   if (phone) neod->phone = evas_stringshare_add(phone);
+   else neod->phone = NULL;
+}
+
+const char *
+e_nav_world_item_neo_other_phone_get(Evas_Object *item)
+{
+   Neo_Other_Data *neod;
+   
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return NULL;
+   return neod->phone;
+}
+
+void
+e_nav_world_item_neo_other_alias_set(Evas_Object *item, const char *alias)
+{
+   Neo_Other_Data *neod;
+   
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return;
+   if (neod->alias) evas_stringshare_del(neod->alias);
+   if (alias) neod->alias = evas_stringshare_add(alias);
+   else neod->alias = NULL;
+}
+
+const char *
+e_nav_world_item_neo_other_alias_get(Evas_Object *item)
+{
+   Neo_Other_Data *neod;
+   
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return NULL;
+   return neod->alias;
+}
+
+void
+e_nav_world_item_neo_other_twitter_set(Evas_Object *item, const char *twitter)
+{
+   Neo_Other_Data *neod;
+   
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return;
+   if (neod->twitter) evas_stringshare_del(neod->twitter);
+   if (twitter) neod->twitter = evas_stringshare_add(twitter);
+   else neod->twitter = NULL;
+}
+
+const char *
+e_nav_world_item_neo_other_twitter_get(Evas_Object *item)
+{
+   Neo_Other_Data *neod;
+   
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return NULL;
+   return neod->twitter;
 }

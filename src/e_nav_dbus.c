@@ -881,6 +881,54 @@ diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name)
    return eqp;
 }
 
+int
+diversity_bard_prop_set(Diversity_Bard *bard, const char *key, const char *val)
+{
+   E_DBus_Proxy *proxy;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) bard,
+	 	DIVERSITY_DBUS_IFACE_BARD);
+   if (!proxy)
+     return 0;
+
+   if (!e_dbus_proxy_simple_call(proxy, "Set",
+                                NULL,
+                                DBUS_TYPE_STRING, &key,
+                                DBUS_TYPE_STRING, &val,
+                                DBUS_TYPE_INVALID,
+                                DBUS_TYPE_INVALID))
+     {
+        printf("bard object prop set fail!\n");
+        return 0;
+     }
+
+   return 1;
+}
+
+int
+diversity_bard_prop_get(Diversity_Bard *bard, const char *key, char **val)
+{
+   E_DBus_Proxy *proxy;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) bard,
+	 	DIVERSITY_DBUS_IFACE_BARD);
+   if (!proxy)
+     return 0;
+
+   if (!e_dbus_proxy_simple_call(proxy, "Get",
+                                NULL,
+                                DBUS_TYPE_STRING, &key,
+                                DBUS_TYPE_INVALID,
+                                DBUS_TYPE_STRING, val,
+                                DBUS_TYPE_INVALID))
+     {
+        printf("bard object prop get fail!\n");
+        return 0;
+     }
+
+   return 1;
+}
+
 Diversity_Equipment *
 diversity_equipment_new(const char *path)
 {

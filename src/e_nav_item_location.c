@@ -59,26 +59,21 @@ _e_nav_world_item_theme_obj_new(Evas *e, const char *custom_dir, const char *gro
 static void
 dialog_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("dialog exit\n");
    e_dialog_deactivate(obj);
 }
 
 static void
 dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("location save\n");
    Location_Data *locd;
    locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
    if (!locd) return;
    const char *name = e_dialog_textblock_text_get(obj, "Edit title");
    const char *note = e_dialog_textblock_text_get(obj, "Edit message");
-   printf("title = %s\n", name);
-   printf("note = %s\n", note);
    char *description; 
    description = malloc(strlen(name) + 1 + strlen(note) + 1);
    if (!description) return ;
    sprintf(description, "%s%c%s", name, '\n', note);
-   printf("description is %s\n", description);
    int result = diversity_tag_prop_set(locd->tag, "description", description);
    if(result)
      {
@@ -146,7 +141,6 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("location send\n"); 
    Evas_Object *teo = e_textedit_add( evas_object_evas_get(obj) );
    e_textedit_theme_source_set(teo, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
  
@@ -186,7 +180,6 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("cb2\n");
    Evas_Object *location_object = (Evas_Object*)data;
    Location_Data *locd;
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");

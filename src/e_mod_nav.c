@@ -131,6 +131,15 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_ctrl_taglist_tag_add(name, description, loc_obj); 
              ecore_hash_set(objectStore, (void *)obj_path, (void *)loc_obj);
           }
+        else if(type==DIVERSITY_OBJECT_TYPE_BARD) 
+          {
+             Evas_Object *nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH,
+				     lon, lat, obj);
+             char *name = NULL;
+             diversity_bard_prop_get((Diversity_Bard *) obj, "fullname", &name); 
+             e_nav_world_item_neo_other_name_set(nwi, name);
+             ecore_hash_set(objectStore, (void *)obj_path, (void *)nwi);
+          }
         else
           printf("other kind of object added\n");
      }

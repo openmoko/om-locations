@@ -104,6 +104,8 @@ void                diversity_viewport_stop(Diversity_Viewport *view);
 Diversity_Bard     *diversity_bard_new(const char *path);
 void                diversity_bard_destroy(Diversity_Bard *bard);
 Diversity_Equipment *diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name);
+int                 diversity_bard_prop_set(Diversity_Bard *bard, const char *key, const char *val);
+int                 diversity_bard_prop_get(Diversity_Bard *bard, const char *key, char **val);
 
 Diversity_Tag      *diversity_tag_new(const char *path);
 void                diversity_tag_destroy(Diversity_Tag *tag);
