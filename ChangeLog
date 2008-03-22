@@ -1,4 +1,8 @@
 2008-03-21  Daniel Willman  <daniel@openmoko.org>
+	* src/e_nav_item_neo_other.c (e_nav_world_item_neo_other_add): Sign handling
+	of latitude is reversed. Fix this here until someone who knows the code can
+	do it properly.
+2008-03-21  Daniel Willman  <daniel@openmoko.org>
 	* src/e_ctrl.c (_e_ctrl_cb_signal_drag),
 	src/e_nav.c (e_nav_zoom_set): Use a logarithmic scale for the
 	zoom slider
