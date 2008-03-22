@@ -371,22 +371,15 @@ e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
 {
    E_Smart_Data *sd;
    double t, y;
-   
+
    SMART_CHECK(obj, ;);
+
    if (zoom > E_NAV_ZOOM_MAX) zoom = E_NAV_ZOOM_MAX;
    else if (zoom < E_NAV_ZOOM_MIN) zoom = E_NAV_ZOOM_MIN;
 
    y = (zoom - E_NAV_ZOOM_MIN) / (E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN);
-   if(y > (E_NAV_DRAG_BIFURCATION / E_NAV_ZOOM_COEFFICIENT) )
-     {
-        y = (y - (E_NAV_DRAG_BIFURCATION / E_NAV_ZOOM_COEFFICIENT)) / (1.0 - (E_NAV_DRAG_BIFURCATION / E_NAV_ZOOM_COEFFICIENT));
-        y = y * (1.0-E_NAV_DRAG_BIFURCATION);
-        y = y + E_NAV_DRAG_BIFURCATION;
-     }
-   else 
-     {
-        y = y * E_NAV_ZOOM_COEFFICIENT; 
-     }
+
+   y = log(y*22026+1)/10;
    e_ctrl_zoom_drag_value_set(y);
 
    if (when == 0.0)

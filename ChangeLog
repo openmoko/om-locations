@@ -1,0 +1,4 @@
+2008-03-21  Daniel Willman  <daniel@openmoko.org>
+	* src/e_ctrl.c (_e_ctrl_cb_signal_drag),
+	src/e_nav.c (e_nav_zoom_set): Use a logarithmic scale for the
+	zoom slider
