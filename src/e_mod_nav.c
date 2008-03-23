@@ -91,6 +91,9 @@ osm_tileset_add(Evas_Object *nav)
 }
 
 static void
+on_geometry_changed(void *data, DBusMessage *msg);
+
+static void
 viewport_object_added(void *data, DBusMessage *msg)
 {
    const char *obj_path;
@@ -139,6 +142,8 @@ viewport_object_added(void *data, DBusMessage *msg)
              diversity_bard_prop_get((Diversity_Bard *) obj, "fullname", &name); 
              e_nav_world_item_neo_other_name_set(nwi, name);
              ecore_hash_set(objectStore, (void *)obj_path, (void *)nwi);
+             diversity_dbus_signal_connect((Diversity_DBus *) obj,
+                  DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_geometry_changed, nwi);
           }
         else
           printf("other kind of object added\n");
@@ -176,12 +181,18 @@ static void
 on_geometry_changed(void *data, DBusMessage *msg)
 {
    Evas_Object *nwi = data;
+   DBusError err;
    double lon, lat;
    double dummy1, dummy2;
    static int follow = 1;
 
-   diversity_object_geometry_get((Diversity_Object *) self,
-	 &lon, &lat, &dummy1, &dummy2);
+   dbus_error_init(&err);
+   dbus_message_get_args(msg, &err, DBUS_TYPE_DOUBLE, &lon, DBUS_TYPE_DOUBLE, &lat,
+       DBUS_TYPE_DOUBLE, &dummy1, DBUS_TYPE_DOUBLE, &dummy2, DBUS_TYPE_INVALID);
+   if (dbus_error_is_set(&err)) {
+      printf("Error: %s - %s\n", err.name, err.message);
+      return;
+   }
 
    //printf("Me @ %f %f\n", lon, lat);
 

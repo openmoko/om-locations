@@ -1,3 +1,10 @@
+2008-03-22  Daniel Willman  <daniel@openmoko.org>
+
+	* src/e_mod_nav.c (viewport_object_added): Also monitor GeometryChanged
+	signals from other neos
+	* src/e_mod_nav.c (on_geometry_changed): The new geometry is sent with the
+	signal so just parse them instead of querying.
+
 2008-03-21  Daniel Willman  <daniel@openmoko.org>
 	* src/e_nav_item_neo_other.c (e_nav_world_item_neo_other_add): Sign handling
 	of latitude is reversed. Fix this here until someone who knows the code can
