@@ -825,19 +825,32 @@ job_load(E_Nav_Tile_Job *job)
 	return;
      }
 
-   snprintf(buf, sizeof(buf), "%s/%d/%d/%d",
-	 sd->src, job->level, job->x, job->y);
-
-   for (l = sd->maps; l; l = l->next)
+   if (sd->maps)
      {
-	evas_object_image_file_set(job->obj, l->data, buf);
-	err = evas_object_image_load_error_get(job->obj);
+	char key[64];
 
-	if (err == EVAS_LOAD_ERROR_NONE)
-	  break;
+	snprintf(key, sizeof(key), "%s/%d/%d/%d",
+	      sd->src, job->level, job->x, job->y);
+
+	for (l = sd->maps; l; l = l->next)
+	  {
+	     evas_object_image_file_set(job->obj, l->data, key);
+	     err = evas_object_image_load_error_get(job->obj);
+
+	     if (err == EVAS_LOAD_ERROR_NONE)
+	       break;
+	  }
+
+	/* `buf' is reloaded when job is done */
+	if (err != EVAS_LOAD_ERROR_NONE)
+	  evas_object_image_file_set(job->obj, buf, NULL);
      }
    
-   if (err != EVAS_LOAD_ERROR_NONE)
+   if (err == EVAS_LOAD_ERROR_NONE)
+     {
+	evas_object_show(job->obj);
+     }
+   else
      {
 	evas_object_hide(job->obj);
 
