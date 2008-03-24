@@ -52,6 +52,7 @@ Makefile
 diversity-nav.desktop
 src/Makefile
 src/widgets/Makefile
+tools/Makefile
 dbus/Makefile
 po/Makefile
 data/Makefile
