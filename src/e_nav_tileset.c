@@ -23,6 +23,13 @@
 #include <e_dbus_proxy.h>
 #include <math.h>
 
+#include <Ecore_File.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <string.h>
+
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _E_Nav_Tile_Job E_Nav_Tile_Job;
 
@@ -40,10 +47,13 @@ struct _E_Smart_Data
 
    E_Nav_Tileset_Format format;
    char *dir;
-   char *map;
+   char *src;
    char *suffix;
    int size;
    int min_level, max_level;
+
+   Evas_List *maps;
+   Ecore_Hash *mons;
 
    double lon, lat;
    int span;
@@ -128,7 +138,7 @@ e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir
 
    sd->format = format;
    sd->dir = strdup(dir);
-   sd->map = strdup("tah");
+   sd->src = strdup("tah");
    sd->suffix = strdup("png");
    sd->size = 256;
    sd->min_level = 0;
@@ -377,6 +387,135 @@ e_nav_tileset_proxy_get(Evas_Object *obj)
    return sd->proxy;
 }
 
+static void
+on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Event event, const char *path)
+{
+   E_Smart_Data *sd;
+   struct stat st;
+   const char *p;
+   Evas_List *l;
+
+   SMART_CHECK(obj, ;);
+
+   switch (event)
+     {
+      case ECORE_FILE_EVENT_CREATED_FILE:
+      case ECORE_FILE_EVENT_DELETED_FILE:
+	 p = strrchr(path, '/');
+	 if (!p || p[1] == '.')
+	   return;
+
+	 p = strrchr(p, '.');
+	 if (!p || strcmp(p + 1, "eet") != 0)
+	   return;
+	 break;
+      default:
+	 return;
+	 break;
+     }
+
+   if (event == ECORE_FILE_EVENT_CREATED_FILE)
+     {
+	if (access(path, R_OK) != 0)
+	  return;
+
+	stat(path, &st);
+	if (S_ISREG(st.st_mode))
+	  {
+	     //printf("add %s\n", path);
+
+	     sd->maps = evas_list_prepend(sd->maps, strdup(path));
+	  }
+     }
+   else
+     {
+	for (l = sd->maps; l; l = l->next)
+	  {
+	     if (strcmp(l->data, path) == 0)
+	       {
+		  //printf("del %s\n", (char *) l->data);
+
+		  free(l->data);
+		  sd->maps = evas_list_remove_list(sd->maps, l);
+
+		  break;
+	       }
+	  }
+     }
+}
+
+void
+e_nav_tileset_monitor_add(Evas_Object *obj, const char *dn)
+{
+   E_Smart_Data *sd;
+   Ecore_File_Monitor *mon;
+   DIR *dir;
+   struct dirent *d;
+   char path[PATH_MAX + 1], *p;
+   int len;
+
+   SMART_CHECK(obj, ;);
+
+   if (ecore_hash_get(sd->mons, dn))
+     return;
+
+   len = strlen(dn);
+   if (len + 6 > PATH_MAX)
+     return;
+
+   dir = opendir(dn);
+   if (!dir) return;
+
+   strcpy(path, dn);
+   p = path + len;
+   *p++ = '/';
+
+   while ((d = readdir(dir)))
+     {
+	if (len + 1 + strlen(d->d_name) > PATH_MAX)
+	  continue;
+
+	strcpy(p, d->d_name);
+	on_path_changed(obj, NULL, ECORE_FILE_EVENT_CREATED_FILE, path);
+     }
+
+   closedir(dir);
+
+   mon = ecore_file_monitor_add(dn, on_path_changed, obj);
+   ecore_hash_set(sd->mons, strdup(dn), mon);
+}
+
+void
+e_nav_tileset_monitor_del(Evas_Object *obj, const char *dn)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+
+   SMART_CHECK(obj, ;);
+
+   if (!ecore_hash_remove(sd->mons, dn))
+     return;
+
+   //printf("del mon %s\n", dn);
+
+   l = sd->maps;
+   for (l = sd->maps; l; l = l->next)
+     {
+	char *p = l->data;
+	int len = strlen(dn);
+
+	if (strncmp(p, dn, len) == 0 && p[len] == '/' &&
+	    !strchr(p + len + 1, '/'))
+	  {
+	     printf("del %s\n", p);
+	     free(p);
+
+	     l = l->prev;
+	     sd->maps = evas_list_remove_list(sd->maps, l->next);
+	  }
+     }
+}
+
 /* internal calls */
 static void
 _e_nav_tileset_smart_init(void)
@@ -431,6 +570,12 @@ _e_nav_tileset_smart_add(Evas_Object *obj)
 
    sd->jobs = ecore_hash_new(ecore_direct_hash, ecore_direct_compare);
 
+   ecore_file_init();
+   sd->mons = ecore_hash_new(ecore_str_hash, ecore_str_compare);
+   ecore_hash_free_key_cb_set(sd->mons, free);
+   ecore_hash_free_value_cb_set(sd->mons,
+	 (Ecore_Free_Cb) ecore_file_monitor_del);
+
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -442,8 +587,17 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
+   ecore_hash_destroy(sd->mons);
+   ecore_file_shutdown();
+
+   while (sd->maps)
+     {
+	free(sd->maps->data);
+	sd->maps = evas_list_remove_list(sd->maps, sd->maps);
+     }
+
    if (sd->dir) free(sd->dir);
-   if (sd->map) free(sd->map);
+   if (sd->src) free(sd->src);
    if (sd->suffix) free(sd->suffix);
 
    evas_object_del(sd->underlay);
@@ -578,7 +732,7 @@ job_submit(E_Nav_Tile_Job *job, int force)
    sd = evas_object_smart_data_get(job->nt);
    if (!sd || !sd->proxy) return 0;
 
-   printf("submit job for tile (%d,%d)@%d\n", job->x, job->y, sd->level);
+   //printf("submit job for tile (%d,%d)@%d\n", job->x, job->y, sd->level);
 
    if (job->id)
      return 1;
@@ -596,8 +750,6 @@ job_submit(E_Nav_Tile_Job *job, int force)
 
 	return 0;
      }
-
-   printf("job %u submitted\n", id);
 
    job->id = id;
    job->timestamp = ecore_time_get();
@@ -623,7 +775,7 @@ job_cancel(E_Nav_Tile_Job *job)
 			    DBUS_TYPE_INVALID,
 			    DBUS_TYPE_INVALID);
 
-   printf("job %u cancelled\n", job->id);
+   //printf("job %u cancelled\n", job->id);
 
    ecore_hash_remove(sd->jobs, (void *) job->id);
    job->id = 0;
@@ -652,6 +804,7 @@ static void
 job_load(E_Nav_Tile_Job *job)
 {
    E_Smart_Data *sd;
+   Evas_List *l;
    char buf[PATH_MAX];
    int err;
 
@@ -659,17 +812,33 @@ job_load(E_Nav_Tile_Job *job)
    if (!sd) return;
 
    snprintf(buf, sizeof(buf), "%s/%s/%d/%d/%d.%s",
-	 sd->dir, sd->map,
+	 sd->dir, sd->src,
 	 job->level, job->x, job->y, sd->suffix);
 
    evas_object_image_file_set(job->obj, buf, NULL);
    err = evas_object_image_load_error_get(job->obj);
 
    if (err == EVAS_LOAD_ERROR_NONE)
-     evas_object_show(job->obj);
-   else
      {
-	printf("%p load %s failed\n", job->obj, buf);
+	evas_object_show(job->obj);
+
+	return;
+     }
+
+   snprintf(buf, sizeof(buf), "%s/%d/%d/%d",
+	 sd->src, job->level, job->x, job->y);
+
+   for (l = sd->maps; l; l = l->next)
+     {
+	evas_object_image_file_set(job->obj, l->data, buf);
+	err = evas_object_image_load_error_get(job->obj);
+
+	if (err == EVAS_LOAD_ERROR_NONE)
+	  break;
+     }
+   
+   if (err != EVAS_LOAD_ERROR_NONE)
+     {
 	evas_object_hide(job->obj);
 
 	job_submit(job, 1);
@@ -700,7 +869,7 @@ _e_nav_tileset_tile_completed_cb(Evas_Object *obj, DBusMessage *message)
    if (!job)
      return;
 
-   printf("job %u completed with status %d\n", id, status);
+   //printf("job %u completed with status %d\n", id, status);
    if (status == 0 && job->obj)
      {
 	evas_object_image_reload(job->obj);

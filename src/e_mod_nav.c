@@ -81,6 +81,8 @@ osm_tileset_add(Evas_Object *nav)
 	     nt = e_nav_tileset_add(nav,
 		   E_NAV_TILESET_FORMAT_OSM, path);
 	     e_nav_tileset_proxy_set(nt, proxy);
+	     e_nav_tileset_monitor_add(nt, path);
+
 	     free(path);
 	  }
 	else
