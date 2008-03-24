@@ -38,9 +38,8 @@
 #define NAV_UNIT_M / ((40000.0 * 1000.0) / 360.0)
 #define NAV_UNIT_KM / (40000.0 / 360.0)
 #define E_NAV_ZOOM_MAX (M_EARTH_RADIUS / 50)
-#define E_NAV_ZOOM_MIN 0.5
-#define E_NAV_DRAG_BIFURCATION 0.9
-#define E_NAV_ZOOM_COEFFICIENT 2500.0
+#define E_NAV_ZOOM_MIN 1
+#define E_NAV_ZOOM_SENSITIVITY 18
 
 /* types */
 typedef struct _E_Nav_Location E_Nav_Location; /* opaque object */

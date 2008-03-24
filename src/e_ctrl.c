@@ -526,7 +526,8 @@ _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const
 	
 	edje_object_part_drag_value_get(sd->map_overlay, "e.dragable.zoom", &x, &y);
 
-	y = (exp(y*10)-1)/22026;
+	y = (pow(2.0, y * E_NAV_ZOOM_SENSITIVITY) - 1.0)
+		/ (1 << E_NAV_ZOOM_SENSITIVITY);
 
 	z = E_NAV_ZOOM_MIN + ((E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN) * y);
 	e_nav_zoom_set(sd->nav, z, 0.2);
