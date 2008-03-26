@@ -22,13 +22,35 @@
 
 #ifndef E_NAV_TAGLIST_H
 #define E_NAV_TAGLIST_H
+#include <ewl/Ewl.h>
 
-Evas_Object    *e_nav_taglist_add(Evas *e);
-void            e_nav_taglist_theme_source_set(Evas_Object *obj, const char *custom_dir);
-void            e_nav_taglist_tag_add(Evas_Object *obj, const char *name, const char *description,  void (*func) (void *data, void *data2), void *data1, void *data2);
-void            e_nav_taglist_tag_remove(Evas_Object *obj, Evas_Object *tag);
-void            e_nav_taglist_tag_update(Evas_Object *obj, const char *name, const char *description, void *object);
-void            e_nav_taglist_activate(Evas_Object *obj);
-void            e_nav_taglist_deactivate(Evas_Object *obj);
+typedef struct _Tag_List Tag_List;
+struct _Tag_List
+{
+   Evas_Coord       x, y, w, h;
+   Evas_Object     *obj;
+   Evas_Object     *frame;
+   Evas_Object     *embed_eo;
+   Ewl_Widget      *scrollpane;
+   Ewl_Widget      *embed;
+   Ewl_Widget      *tree;
+};
+
+typedef struct _Tag_List_Item Tag_List_Item;
+struct _Tag_List_Item 
+{
+   char *name;
+   char *description;
+   void (*func) (void *data, void *data2);
+   void *data, *data2;
+};
+
+Tag_List        *e_nav_taglist_new(Evas_Object *obj, const char *custom_dir);
+void            e_nav_taglist_tag_add(Tag_List *obj, const char *name, const char *description,  void (*func) (void *data, void *data2), void *data1, void *data2);
+void            e_nav_taglist_tag_remove(Tag_List *obj, Evas_Object *tag);
+void            e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *description, void *object);
+void            e_nav_taglist_clear(Tag_List *obj);
+void            e_nav_taglist_activate(Tag_List *tl);
+void            e_nav_taglist_deactivate(Tag_List *tl);
 
 #endif

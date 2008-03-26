@@ -22,311 +22,241 @@
 
 #include "e_nav.h"
 #include "e_nav_taglist.h"
-#include "widgets/e_nav_titlepane.h"
-#include "widgets/e_ilist.h"
 #include "widgets/e_nav_theme.h"
+#include <stdlib.h>
+#define E_NEW(s, n) (s *)calloc(n, sizeof(s))
+static void _e_taglist_update(Tag_List *sd);
 
-typedef struct _E_Smart_Data E_Smart_Data;
-
-struct _E_Smart_Data
+static Ewl_Widget *
+test_data_header_fetch(void *data , unsigned int column)
 {
-   Evas_Coord       x, y, w, h;
-   Evas_Object     *obj;
-   Evas_Object     *bg_object;
-   Evas_Object     *title_object;
-   Evas_Object     *list_object;
+   Ewl_Widget *l;
+   l = ewl_label_new();
+   ewl_object_custom_h_set(EWL_OBJECT(l), 60);
+   ewl_label_text_set(EWL_LABEL(l), "View Tags");
+   ewl_widget_show(l);
+   return l;
+}
 
-   Evas_Object     *clip;
-   /* directory to find theme .edj files from the module - if there is one */
-   const char      *dir;
-   
-};
-
-static void _e_taglist_smart_init(void);
-static void _e_taglist_smart_add(Evas_Object *obj);
-static void _e_taglist_smart_del(Evas_Object *obj);
-static void _e_taglist_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
-static void _e_taglist_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
-static void _e_taglist_smart_show(Evas_Object *obj);
-static void _e_taglist_smart_hide(Evas_Object *obj);
-static void _e_taglist_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
-static void _e_taglist_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
-static void _e_taglist_smart_clip_unset(Evas_Object *obj);
-
-static void _e_taglist_update(Evas_Object *obj);
-
-static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_taglist")) return ret
-
-Evas_Object *
-e_nav_taglist_add(Evas *e)
+static Ewl_Widget *
+tree_test_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
 {
-   _e_taglist_smart_init();
-   return evas_object_smart_add(e, _e_smart);
+   Tag_List_Item *d;
+   Ewl_Widget *w = NULL;
+   switch (column) {
+      case 0:
+         d = data;
+         w = ewl_label_new();
+         ewl_object_custom_h_set(EWL_OBJECT(w), 60);
+         ewl_label_text_set(EWL_LABEL(w), d->name);
+         break;
+   }
+   ewl_widget_show(w);
+   return w;
+}
+
+static void
+tree_cb_value_changed(Ewl_Widget *w, void *ev, void *data )
+{
+   Ecore_List *selected;
+   Ewl_Selection *sel;
+   selected = ewl_mvc_selected_list_get(EWL_MVC(w));
+   ecore_list_first_goto(selected);
+
+   while ((sel = ecore_list_next(selected)))
+     {
+        if (sel->type == EWL_SELECTION_TYPE_INDEX)
+          {
+             unsigned int col;
+             Ewl_Selection_Idx *idx;
+             idx = EWL_SELECTION_IDX(sel);
+             col = idx->column;
+             Tag_List_Item *ti;
+             ti = sel->model->fetch(sel->data, idx->row, col);
+             if (ti->func) ti->func(ti->data, ti->data2);
+          }
+     }
+}
+
+Tag_List *
+e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
+{
+   Ecore_Evas *ee;
+   Evas *evas;
+   Ewl_Model *model;
+   Ewl_View  *view;
+   Ecore_List *data;
+   Evas_Coord x, y, w, h;
+  
+   Tag_List * tl = (Tag_List *)malloc (sizeof(Tag_List));
+   memset(tl, 0, sizeof(Tag_List)); 
+
+   tl->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/taglist"); 
+   evas_object_smart_member_add(tl->frame, obj);
+
+   /*
+    * Setup the ewl embed
+    */
+   tl->embed = ewl_embed_new();
+   ewl_object_fill_policy_set(EWL_OBJECT(tl->embed), EWL_FLAG_FILL_ALL);
+   evas = evas_object_evas_get(obj);
+   ee = ecore_evas_ecore_evas_get(evas);
+   tl->embed_eo = ewl_embed_canvas_set(EWL_EMBED(tl->embed), evas,
+                     (void *) ecore_evas_software_x11_window_get(ee));   
+   ewl_embed_focus_set(EWL_EMBED(tl->embed), TRUE);
+
+   /*
+    * swallow it into the edje
+    */
+   evas_output_viewport_get(evas_object_evas_get(obj), &x, &y, &w, &h);
+   evas_object_move(tl->embed_eo, x, y);
+   evas_object_resize(tl->embed_eo, w, h);
+   edje_object_part_swallow(tl->frame, "swallow", tl->embed_eo);
+
+   /*
+    * fill it with content
+    */
+   tl->scrollpane = ewl_scrollpane_new();
+   ewl_container_child_append(EWL_CONTAINER(tl->embed), tl->scrollpane);
+
+   data = ecore_list_new();
+
+   model = ewl_model_ecore_list_get();
+   view = ewl_label_view_get();
+   ewl_view_header_fetch_set(view, test_data_header_fetch);
+   ewl_view_widget_fetch_set(view, tree_test_cb_widget_fetch);
+
+   tl->tree = ewl_tree_new();
+   ewl_tree_headers_visible_set(EWL_TREE(tl->tree), TRUE);
+   ewl_tree_fixed_rows_set(EWL_TREE(tl->tree), FALSE);
+
+   ewl_tree_kinetic_scrolling_set(EWL_TREE(tl->tree), EWL_KINETIC_SCROLL_EMBEDDED);
+   ewl_tree_kinetic_fps_set(EWL_TREE(tl->tree), 30);
+   ewl_tree_kinetic_dampen_set(EWL_TREE(tl->tree), 0.99);
+   ewl_tree_column_count_set(EWL_TREE(tl->tree), 1);
+   ewl_mvc_model_set(EWL_MVC(tl->tree), model);
+   ewl_mvc_view_set(EWL_MVC(tl->tree), view);
+   ewl_mvc_data_set(EWL_MVC(tl->tree), data);
+   ewl_container_child_append(EWL_CONTAINER(tl->scrollpane), tl->tree);
+   ewl_callback_append(tl->tree, EWL_CALLBACK_VALUE_CHANGED,
+                       tree_cb_value_changed, NULL);
+   ewl_object_fill_policy_set(EWL_OBJECT(tl->tree), EWL_FLAG_FILL_ALL);
+   return tl;
 }
 
 void
-e_nav_taglist_theme_source_set(Evas_Object *obj, const char *custom_dir)
+e_nav_taglist_tag_add(Tag_List *obj, const char *name, const char *description, void (*func) (void *data, void *data2), void *data1, void *data2)
 {
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   
-   sd->dir = custom_dir;
-   sd->bg_object = evas_object_rectangle_add(evas_object_evas_get(obj)); 
-   evas_object_smart_member_add(sd->bg_object, obj);
-   evas_object_move(sd->bg_object, sd->x, sd->y);
-   evas_object_resize(sd->bg_object, sd->w, sd->h);
-   evas_object_color_set(sd->bg_object, 0, 0, 0, 255);
-   evas_object_clip_set(sd->bg_object, sd->clip);
-   evas_object_repeat_events_set(sd->bg_object, 1);
+   Tag_List_Item *item;
+   Ecore_List *list;    
+   item = E_NEW(Tag_List_Item, 1);
+   item->name = strdup(name); 
+   item->description = strdup(description);
+   item->func = func;
+   item->data = data1;
+   item->data2 = data2;
 
-   sd->title_object = e_nav_titlepane_add(evas_object_evas_get(obj));
-   e_nav_titlepane_theme_source_set(sd->title_object, THEME_PATH);
-   e_nav_titlepane_set_message(sd->title_object, "View Tags");
-   e_nav_titlepane_hide_buttons(sd->title_object);
-   evas_object_smart_member_add(sd->title_object, obj);   
-   evas_object_clip_set(sd->title_object, sd->clip);
-
-   sd->list_object = e_ilist_add( evas_object_evas_get(obj) );
-   evas_object_smart_member_add(sd->list_object, obj);
-   evas_object_clip_set( sd->list_object, sd->clip);   
+   list = ewl_mvc_data_get(EWL_MVC(obj->tree));
+   ecore_list_append(list, item);
+   ewl_mvc_data_set(EWL_MVC(obj->tree), list);
 }
 
 void
-e_nav_taglist_tag_add(Evas_Object *obj, const char *name, const char *description, void (*func) (void *data, void *data2), void *data1, void *data2)
+e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *description, void *object)
 {
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   e_ilist_append(sd->list_object, NULL, name, 20, func, NULL, data1, data2);
-}
-
-void
-e_nav_taglist_tag_update(Evas_Object *obj, const char *name, const char *description, void *object)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
    Evas_Object *location_obj = NULL;
    int n;
-   Evas_List *items = e_ilist_items_get(sd->list_object);
-   int count = evas_list_count(items);
-   E_Ilist_Item *item;
+   Ecore_List *list = ewl_mvc_data_get(EWL_MVC(obj->tree));   
+   int count = ecore_list_count(list);
+   Tag_List_Item *item;
+
    for(n=0; n<count; n++)
      {
-        item = evas_list_nth(items, n);
+        item = ecore_list_index_goto(list, n);
         location_obj = item->data2;
         if(location_obj == object)
-          break;
+          {
+             if(name)
+               {
+                  free(item->name);
+                  item->name = strdup(name);
+               }
+             if(description)
+               {
+                  free(item->description);
+                  item->description = strdup(description);
+               }
+          }
         location_obj = NULL;
      }
-   if(location_obj) 
-     e_ilist_nth_label_set(sd->list_object, n, name);
+   ewl_mvc_data_set(EWL_MVC(obj->tree), list);
 }
 
 void
-e_nav_taglist_tag_remove(Evas_Object *obj, Evas_Object *tag)
+e_nav_taglist_tag_remove(Tag_List *obj, Evas_Object *tag)
 {
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
    Evas_Object *location_obj = NULL;
    int n;
-   Evas_List *items = e_ilist_items_get(sd->list_object);
-   int count = evas_list_count(items);
-   E_Ilist_Item *item;
+   Ecore_List *list = ewl_mvc_data_get(EWL_MVC(obj->tree));   
+   int count = ecore_list_count(list);
+   Tag_List_Item *item;
    for(n=0; n<count; n++)
      {
-        item = evas_list_nth(items, n);
+        item = ecore_list_index_goto(list, n);
         location_obj = item->data2;
         if(location_obj == tag)
-          break;
+          {
+             ecore_list_remove_destroy(list); 
+             break;
+          }
         location_obj = NULL;
      }
 
-   if(location_obj)
-     e_ilist_remove_num(sd->list_object, n);
+   ewl_mvc_data_set(EWL_MVC(obj->tree), list);
+}
+
+void 
+e_nav_taglist_clear(Tag_List *obj)
+{
+   Ecore_List *list = ewl_mvc_data_get(EWL_MVC(obj->tree));   
+   int n;
+   int count = ecore_list_count(list);
+   ecore_list_first_goto(list);
+   for(n=0; n<count; n++)
+     {
+        ecore_list_remove_destroy(list);
+     }
+   ewl_mvc_data_set(EWL_MVC(obj->tree), list);
 }
 
 void
-e_nav_taglist_activate(Evas_Object *obj)
+e_nav_taglist_activate(Tag_List *tl)
 {
-   _e_taglist_update(obj);
+   _e_taglist_update(tl);
 }
 
 void
-e_nav_taglist_deactivate(Evas_Object *obj)
+e_nav_taglist_deactivate(Tag_List *tl)
 {
-   _e_taglist_smart_hide(obj);
+   evas_object_hide(tl->frame);
+   evas_object_hide(tl->embed_eo);
+   ewl_widget_hide(tl->embed);
+   ewl_widget_hide(tl->scrollpane);
+   ewl_widget_hide(tl->tree);
 }
 
 static void
-_e_taglist_update(Evas_Object *obj)
+_e_taglist_update(Tag_List *tl)
 {
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-
-   int screen_x, screen_y, screen_w, screen_h;
-   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
-   evas_object_move(sd->bg_object, screen_x, screen_y);
-   evas_object_resize(sd->bg_object, screen_w, screen_h);
-   evas_object_show(sd->bg_object);
-
-   if(sd->title_object)
-     {
-        evas_object_resize(sd->title_object, screen_w, screen_h*(1.0/10) );
-        evas_object_move(sd->title_object, screen_x, screen_y );
-        evas_object_show(sd->title_object);
-     }
-   if(sd->list_object)
-     {
-        int count = e_ilist_count(sd->list_object);
-        evas_object_move(sd->list_object, 0, screen_h*(1.0/10));
-        evas_object_resize(sd->list_object, screen_w, count * 70);   
-        evas_object_show(sd->list_object);
-     }
+   Evas_Coord screen_x, screen_y, screen_w, screen_h;
+   if(tl==NULL) return;
+   evas_output_viewport_get(evas_object_evas_get(tl->frame), &screen_x, &screen_y, &screen_w, &screen_h);
+   evas_object_show(tl->frame);
+   evas_object_move(tl->embed_eo, screen_x, screen_y);
+   evas_object_resize(tl->embed_eo, screen_w, screen_h);
+   evas_object_show(tl->embed_eo);
+   ewl_widget_show(tl->embed);
+   ewl_widget_show(tl->scrollpane);
+   ewl_widget_show(tl->tree);
 }
-
-/* internal calls */
-static void
-_e_taglist_smart_init(void)
-{
-   if (_e_smart) return;
-     {
-	static const Evas_Smart_Class sc =
-	  {
-	     "e_taglist",
-	       EVAS_SMART_CLASS_VERSION,
-	       _e_taglist_smart_add,
-	       _e_taglist_smart_del,
-	       _e_taglist_smart_move,
-	       _e_taglist_smart_resize,
-	       _e_taglist_smart_show,
-	       _e_taglist_smart_hide,
-	       _e_taglist_smart_color_set,
-	       _e_taglist_smart_clip_set,
-	       _e_taglist_smart_clip_unset,
-	       
-	       NULL /* data */
-	  };
-	_e_smart = evas_smart_class_new(&sc);
-     }
-}
-
-static void
-_e_taglist_smart_add(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   sd = calloc(1, sizeof(E_Smart_Data));
-   if (!sd) return;
-   sd->obj = obj;
-   
-   sd->x = 0;
-   sd->y = 0;
-   sd->w = 0;
-   sd->h = 0;
-   sd->clip = evas_object_rectangle_add(evas_object_evas_get(obj));
-   evas_object_smart_member_add(sd->clip, obj);
-   evas_object_move(sd->clip, -10000, -10000);
-   evas_object_resize(sd->clip, 30000, 30000);
-   evas_object_color_set(sd->clip, 255, 255, 255, 255);  
-   evas_object_show(sd->clip);
-   evas_object_smart_data_set(obj, sd);
-}
-
-static void
-_e_taglist_smart_del(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   if(sd->bg_object) evas_object_del(sd->bg_object);
-   if(sd->title_object) evas_object_del(sd->title_object);
-   if(sd->list_object) evas_object_del(sd->list_object);
-   evas_object_del(sd->clip);
-}
-                    
-static void
-_e_taglist_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   sd->x = x;
-   sd->y = y;
-   _e_taglist_update(obj);
-}
-
-static void
-_e_taglist_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   sd->w = w;
-   sd->h = h;
-   _e_taglist_update(obj);
-}
-
-static void
-_e_taglist_smart_show(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   evas_object_show(sd->clip);
-}
-
-static void
-_e_taglist_smart_hide(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   evas_object_hide(sd->clip);
-}
-
-static void
-_e_taglist_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   evas_object_color_set(sd->clip, r, g, b, a);
-}
-
-static void
-_e_taglist_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   evas_object_clip_set(sd->clip, clip);
-}
-
-static void
-_e_taglist_smart_clip_unset(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   evas_object_clip_unset(sd->clip);
-} 
-
 

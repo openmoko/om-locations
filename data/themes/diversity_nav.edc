@@ -19,6 +19,33 @@ images {
    image: "left.png" COMP;
    image: "right.png" COMP;
 }
+
+group {
+   name: "modules/diversity_nav/taglist";
+   parts {
+      part { name: "background";
+         type: RECT;
+         description {
+            state: "default" 0.0;
+            rel1.offset: 10 10;
+            rel2.offset: -10 -10;
+            color: 0 0 0 255;
+         }     
+      }
+      part { name: "swallow";
+         type: SWALLOW;
+         description {
+            state: "default" 0.0;
+            rel1.offset: 10 10;
+            rel1.to:     "background";
+            rel2.offset: -10 -10;
+            rel2.to:     "background";
+         } 
+      }
+   }
+}
+
+
 group {
    name: "modules/diversity_nav/panel";
    parts {

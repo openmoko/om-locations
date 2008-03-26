@@ -9,7 +9,6 @@ AM_CPPFLAGS =			\
 noinst_LTLIBRARIES = libwidget.la
 
 noinst_HEADERS =		\
-        e_ilist.h               \
         e_box.h                 \
         e_icon.h                \
         e_nav_titlepane.h       \
@@ -24,7 +23,6 @@ noinst_HEADERS =		\
 
 
 libwidget_la_SOURCES =		\
-        e_ilist.c               \
 	e_box.c                 \
         e_icon.c                \
         e_nav_titlepane.c       \

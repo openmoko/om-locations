@@ -1,3 +1,15 @@
+2008-03-27  Jeremy Chang  <jeremy@openmoko.com>
+
+	* Use EWL widgets in place of e_ilist to make list
+	* configure.in: Check EWL
+	* src/e_ctrl.c: Modify the type of the listview object
+	* src/e_nav_taglist.[ch]: Use EWL embed, scrollpane, tree, etc. to
+	make the list 
+	* src/e_mod_main.c: Add ewl_init()
+	* src/widgets/Makefile.am: Remove e_ilist.[ch] files
+	* data/themes/diversity_nav.edc: Add "modules/diversity_nav/taglist"
+	group
+
 2008-03-22  Daniel Willman  <daniel@openmoko.org>
 
 	* src/e_mod_nav.c (viewport_object_added): Also monitor GeometryChanged

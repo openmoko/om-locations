@@ -21,6 +21,7 @@
 #include "e_nav.h"
 #include "e_mod_nav.h"
 #include <libintl.h>
+#include <ewl/Ewl.h>
 
 #ifdef AS_MODULE
 #include "e_mod_main.h"
@@ -104,6 +105,7 @@ main(int argc, char **argv)
    if (!ecore_init()) { printf("failed to init ecore\n"); return -1; }
    if (!ecore_evas_init()) { printf("failed to init ecore_evas\n"); return -1; }
    if (!edje_init()) { printf("failed to init edje\n"); return -1; }
+   if (!ewl_init(&argc, argv)) {printf("failed to init ewl\n"); return -1; }
 
    ecore_app_args_set(argc, (const char **) argv);
 
