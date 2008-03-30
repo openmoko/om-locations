@@ -45,7 +45,8 @@ struct _Tag_List_Item
    void *data, *data2;
 };
 
-Tag_List        *e_nav_taglist_new(Evas_Object *obj, const char *custom_dir);
+Tag_List       *e_nav_taglist_new(Evas_Object *obj, const char *custom_dir);
+void            e_nav_taglist_destroy(Tag_List *obj);
 void            e_nav_taglist_tag_add(Tag_List *obj, const char *name, const char *description,  void (*func) (void *data, void *data2), void *data1, void *data2);
 void            e_nav_taglist_tag_remove(Tag_List *obj, Evas_Object *tag);
 void            e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *description, void *object);

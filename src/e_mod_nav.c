@@ -112,6 +112,7 @@ viewport_object_added(void *data, DBusMessage *msg)
    else 
      {
         Diversity_Object *obj;
+        Evas_Object *nwi = NULL;
         double lon, lat, width, height;
 	int type;
 
@@ -125,27 +126,51 @@ viewport_object_added(void *data, DBusMessage *msg)
        	type = diversity_object_type_get(obj);  
         if(type==DIVERSITY_OBJECT_TYPE_TAG) 
           {
-             Evas_Object *loc_obj = e_nav_world_item_location_add(nav, THEME_PATH,
-				     lon, lat, obj);
              char *name = NULL;
              char *description = NULL;
+             nwi = e_nav_world_item_location_add(nav, THEME_PATH,
+				     lon, lat, obj);
              diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
              name = strsep(&description, "\n");
-             e_nav_world_item_location_name_set(loc_obj, name);
-             e_nav_world_item_location_note_set(loc_obj, description);
-             e_ctrl_taglist_tag_add(name, description, loc_obj); 
-             ecore_hash_set(objectStore, (void *)obj_path, (void *)loc_obj);
+             e_nav_world_item_location_name_set(nwi, name);
+             e_nav_world_item_location_note_set(nwi, description);
+             e_ctrl_taglist_tag_add(name, description, nwi); 
+             ecore_hash_set(objectStore, (void *)obj_path, (void *)nwi);
           }
         else if(type==DIVERSITY_OBJECT_TYPE_BARD) 
           {
-             Evas_Object *nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH,
-				     lon, lat, obj);
              char *name = NULL;
+             char *phone = NULL;
+             char *alias = NULL;
+             char *twitter = NULL;
+             int accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;
+             Neo_Other_Data *neod;
+
              diversity_bard_prop_get((Diversity_Bard *) obj, "fullname", &name); 
+             diversity_bard_prop_get((Diversity_Bard *) obj, "phone", &phone); 
+             diversity_bard_prop_get((Diversity_Bard *) obj, "alias", &alias); 
+             diversity_bard_prop_get((Diversity_Bard *) obj, "twitter", &twitter); 
+             neod = calloc(1, sizeof(Neo_Other_Data));
+             if (!neod) return;
+             if(name) neod->name = strdup(name);
+             if(phone) neod->phone = strdup(phone);
+             if(alias) neod->alias = strdup(alias);
+             if(twitter) neod->twitter = strdup(twitter);
+             neod->bard = (Diversity_Bard *) obj;
+             e_ctrl_contact_add(obj_path, neod);
+
+             /* ignore bard object if its position not accurate */
+             diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+             if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;  
+
+             nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH, lon, lat, obj);
              e_nav_world_item_neo_other_name_set(nwi, name);
+             e_nav_world_item_neo_other_phone_set(nwi, phone);
+             e_nav_world_item_neo_other_alias_set(nwi, alias);
+             e_nav_world_item_neo_other_twitter_set(nwi, twitter);
              ecore_hash_set(objectStore, (void *)obj_path, (void *)nwi);
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
-                  DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_geometry_changed, nwi);
+                       DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_geometry_changed, nwi);
           }
         else
           printf("other kind of object added\n");
@@ -266,7 +291,6 @@ _e_mod_nav_init(Evas *evas)
                                       "ObjectRemoved", 
                                       viewport_object_removed,
                                       NULL); 
-	printf("Create viewport for whole world\n");
 	diversity_viewport_start(worldview);
      }
 

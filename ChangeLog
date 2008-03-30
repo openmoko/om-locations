@@ -1,3 +1,20 @@
+2008-03-30  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_nav_item_location.c,
+	  src/widgets/e_nav_textedit.[ch], 
+	  data/themes/diversity_nav.edc: Replace the entry with EWL widgets.
+	* src/e_mod_nav.c, 
+	  src/e_nav_item_neo_other.[ch],
+	  src/e_ctr.[ch]: Support bard contacts management. 
+	* src/e_nav_item_neo_me.c: Add self properties. 
+	* src/e_nav_taglist.[ch]: Add taglist_destroy function.
+	* diversity-nav/data/themes/default.edc,
+	  src/widgets/Makefile.am,
+	  diversity-nav/data/themes/Makefile.am: Remove some unused code, src/widgets/e_box.[ch],
+	src/widgets/e_icon.[ch],  data/themes/default_ilist.edc
+
+	* TODO: Complete Tag share function
+
 2008-03-27  Jeremy Chang  <jeremy@openmoko.com>
 
 	* Use EWL widgets in place of e_ilist to make list

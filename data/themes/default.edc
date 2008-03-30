@@ -23,7 +23,6 @@ collections {
 #include "diversity_nav.edc"
 #include "default_nav_dialog.edc"
 #include "default_nav_button.edc"
-#include "default_ilist.edc"
 #include "default_titlepane.edc"
 #include "default_textblock.edc"
 #include "default_entry.edc"

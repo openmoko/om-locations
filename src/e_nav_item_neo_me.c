@@ -30,6 +30,8 @@ typedef struct _Neo_Me_Data Neo_Me_Data;
 struct _Neo_Me_Data
 {
    const char             *name;
+   const char             *alias;
+   const char             *twitter;
    unsigned char           visible : 1;
 };
 

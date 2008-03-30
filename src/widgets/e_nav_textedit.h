@@ -23,6 +23,12 @@
 #ifndef E_NAV_TEXTEDIT_H
 #define E_NAV_TEXTEDIT_H
 
+typedef enum {
+     TEXTEDIT_CANDIDATE_MODE_NONE,
+     TEXTEDIT_CANDIDATE_MODE_FALSE,
+     TEXTEDIT_CANDIDATE_MODE_TRUE,
+}TEXTEDIT_CANDIDATE_MODE;
+
 /* object management */
 Evas_Object    *e_textedit_add(Evas *e);
 void            e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data2);
@@ -32,6 +38,10 @@ void            e_textedit_activate(Evas_Object *obj);
 void            e_textedit_deactivate(Evas_Object *obj);
 void            e_textedit_input_set(Evas_Object *obj, const char *name, const char *input);
 const char     *e_textedit_input_get(Evas_Object *obj);
+void            e_textedit_candidate_list_set(Evas_Object *obj, Ecore_List *list);
+Ecore_List     *e_textedit_candidate_list_get(Evas_Object *obj);
+void            e_textedit_candidate_mode_set(Evas_Object *obj, unsigned int candidate_mode);
+unsigned int    e_textedit_candidate_mode_get(Evas_Object *obj);
     
 #endif
 

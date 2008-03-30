@@ -110,8 +110,13 @@ dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   const char* phone_number = strdup(e_textedit_input_get(obj)); 
-
+   const char *input = e_textedit_input_get(obj); 
+   if(input==NULL)
+     { 
+        e_textedit_deactivate(obj);   
+        return;
+     }
+   const char* phone_number = strdup(input); 
    Evas_Object *location_object = (Evas_Object*)data;
    Location_Data *locd;
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
@@ -143,13 +148,14 @@ dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Evas_Object *teo = e_textedit_add( evas_object_evas_get(obj) );
    e_textedit_theme_source_set(teo, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
- 
    e_textedit_source_object_set(teo, data);  //  src_object is location item evas object 
    e_textedit_input_set(teo, "To:", "");
+   Ecore_List *contacts = e_ctrl_contacts_get(); 
+   e_textedit_candidate_list_set(teo, contacts);
+   e_textedit_candidate_mode_set(teo, TEXTEDIT_CANDIDATE_MODE_TRUE);
    e_dialog_deactivate(obj);
    evas_object_show(teo);
    e_textedit_activate(teo);
-   //ToDo: choose  contact, select one contact 
 }
 
 static void

@@ -27,6 +27,7 @@
 
 static Evas_Object *ctrl = NULL;
 static Diversity_Bard *self = NULL;
+static Ecore_Hash *bardRoster = NULL;
 
 typedef struct _E_Smart_Data E_Smart_Data;
 static Evas_Object * _e_ctrl_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
@@ -116,6 +117,47 @@ e_ctrl_taglist_tag_delete(void *loc_object)
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(ctrl);
    e_nav_taglist_tag_remove(sd->listview, loc_object);
+}
+
+int
+e_ctrl_contact_add(const char *id, Neo_Other_Data *data)
+{
+   return ecore_hash_set(bardRoster, (void *)id, (void *)data);
+}
+
+Neo_Other_Data *
+e_ctrl_contact_get(const char *id)
+{
+   return (Neo_Other_Data *)ecore_hash_get(bardRoster, (void *)id);
+}
+
+Ecore_List *
+e_ctrl_contacts_get(void)
+{
+   Ecore_List *values;
+   Ecore_List *keys = ecore_hash_keys(bardRoster);
+   int count = ecore_list_count(keys);
+   int n;
+
+   values = ecore_list_new();
+   Neo_Other_Data *neod;
+   for(n=0; n<count; n++)
+     {
+        char *key = ecore_list_index_goto(keys, n);
+        neod = (Neo_Other_Data *)ecore_hash_get(bardRoster, (void *)key);
+        if(neod)
+          ecore_list_append(values, (void *)neod->name);
+     }
+   return values;
+}
+
+void
+e_ctrl_contact_remove(const char *id)
+{
+   Neo_Other_Data *neod = ecore_hash_remove(bardRoster, (void *)id);
+   if (!neod) return;
+   if (neod->bard) diversity_bard_destroy(neod->bard);
+   free(neod);
 }
 
 static void   

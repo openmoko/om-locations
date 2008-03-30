@@ -23,29 +23,24 @@
 #include <Ecore.h>
 #include <Evas.h>
 #include <Edje.h>
+#include "e_nav_item_neo_other.h"
 
-typedef enum _E_Nav_Show_Mode {
-   E_NAV_SHOW_MODE_TAGLESS,
-   E_NAV_SHOW_MODE_TAG,
-} E_Nav_Show_Mode;
+Evas_Object        *e_ctrl_add(Evas *e);
+void                e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir);
+void                e_ctrl_nav_set(Evas_Object* obj);
+void                e_ctrl_self_set(void* obj);
+void                e_ctrl_zoom_drag_value_set(double y); 
+void                e_ctrl_zoom_text_value_set(const char* buf);
+void                e_ctrl_longitude_set(const char* buf);
+void                e_ctrl_latitude_set(const char* buf);
+int                 e_ctrl_edje_object_set(Evas_Object *o, const char *category, const char *group);
+void                e_ctrl_taglist_tag_add(const char *name, const char *note, void *object);
+void                e_ctrl_taglist_tag_set(const char *name, const char *note, void *object);
+void                e_ctrl_taglist_tag_delete(void *loc_object);
+int                 e_ctrl_contact_add(const char *id, Neo_Other_Data *data);
+Neo_Other_Data     *e_ctrl_contact_get(const char *id);
+Ecore_List         *e_ctrl_contacts_get(void);
+void                e_ctrl_contact_remove(const char *id);
 
-typedef enum _E_Nav_View_Mode {
-   E_NAV_VIEW_MODE_MAP,
-   E_NAV_VIEW_MODE_SAT,
-   E_NAV_VIEW_MODE_LIST,
-} E_Nav_View_Mode;
-
-Evas_Object * e_ctrl_add(Evas *e);
-void e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir);
-void e_ctrl_nav_set(Evas_Object* obj);
-void e_ctrl_self_set(void* obj);
-void e_ctrl_zoom_drag_value_set(double y); 
-void e_ctrl_zoom_text_value_set(const char* buf);
-void e_ctrl_longitude_set(const char* buf);
-void e_ctrl_latitude_set(const char* buf);
-int  e_ctrl_edje_object_set(Evas_Object *o, const char *category, const char *group);
-void e_ctrl_taglist_tag_add(const char *name, const char *note, void *object);
-void e_ctrl_taglist_tag_set(const char *name, const char *note, void *object);
-void e_ctrl_taglist_tag_delete(void *loc_object);
 
 #endif

@@ -23,17 +23,6 @@
 #include "e_spiralmenu.h"
 
 
-typedef struct _Neo_Other_Data Neo_Other_Data;
-
-struct _Neo_Other_Data
-{
-   const char             *name;
-   const char             *phone;
-   const char             *alias;
-   const char             *twitter;
-   Diversity_Bard         *bard;
-};
-
 static Evas_Object *
 _e_nav_world_item_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
 {
@@ -133,8 +122,6 @@ e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double l
    Evas_Object *o;
    Neo_Other_Data *neod;
 
-   /* FIXME: allocate extra data struct for AP properites and attach to the
-    * evas object */
    neod = calloc(1, sizeof(Neo_Other_Data));
    if (!neod) return NULL;
    neod->bard = (Diversity_Bard *) bard;

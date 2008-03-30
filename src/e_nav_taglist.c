@@ -145,6 +145,16 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
 }
 
 void
+e_nav_taglist_destroy(Tag_List *obj)
+{
+   ewl_widget_destroy(obj->tree);
+   ewl_widget_destroy(obj->scrollpane);
+   ewl_widget_destroy(obj->embed);
+   evas_object_del(obj->embed_eo);
+   evas_object_del(obj->frame);
+}
+
+void
 e_nav_taglist_tag_add(Tag_List *obj, const char *name, const char *description, void (*func) (void *data, void *data2), void *data1, void *data2)
 {
    Tag_List_Item *item;
