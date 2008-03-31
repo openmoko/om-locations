@@ -160,8 +160,10 @@ e_nav_taglist_tag_add(Tag_List *obj, const char *name, const char *description, 
    Tag_List_Item *item;
    Ecore_List *list;    
    item = E_NEW(Tag_List_Item, 1);
-   item->name = strdup(name); 
-   item->description = strdup(description);
+   if (name)
+     item->name = strdup(name); 
+   if (description)
+     item->description = strdup(description);
    item->func = func;
    item->data = data1;
    item->data2 = data2;
