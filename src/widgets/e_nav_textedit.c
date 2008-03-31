@@ -138,7 +138,7 @@ textedit_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 
 static void
 _e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
-{     // data is location_data, bi->obj is textedit object,  
+{       
    E_Button_Item *bi;
    E_Smart_Data *sd;
      
@@ -161,10 +161,17 @@ _e_nav_textedit_entry_cb_key_down(Ewl_Widget *w, void *ev, void *data)
    prefix_filter = strdup(filter);
 }
 
-/*
+
 static Ewl_Widget *
 list_view_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
 {
+   Textedit_List_Item *tli;
+   Ewl_Widget *w = NULL;
+   w = ewl_label_new();
+   tli = (Textedit_List_Item *)data;
+   ewl_label_text_set(EWL_LABEL(w), tli->name);
+   return w;
+#if 0
    Ewl_Widget *w = NULL;
    int prefix_size = 0;
    if(prefix_filter) prefix_size = strlen(prefix_filter);
@@ -183,8 +190,9 @@ list_view_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
          break;
    }
    return w;
+#endif
 }
-*/
+
 
 static void
 list_cb_value_changed(Ewl_Widget *w, void *ev, void *data)
@@ -194,6 +202,7 @@ list_cb_value_changed(Ewl_Widget *w, void *ev, void *data)
    Ewl_Selection_Idx *idx;
    E_Smart_Data *sd;
    Evas_Object *obj;
+   Textedit_List_Item *tli;
         
    obj = (Evas_Object *)data;
    SMART_CHECK(obj, ;);
@@ -203,7 +212,8 @@ list_cb_value_changed(Ewl_Widget *w, void *ev, void *data)
    idx = ewl_mvc_selected_get(EWL_MVC(list));
 
    ecore_list_index_goto(el, idx->row);
-   ewl_text_text_set(EWL_TEXT(sd->embed->entry), (char *)ecore_list_current(el));
+   tli = (Textedit_List_Item *) ecore_list_current(el);
+   ewl_text_text_set(EWL_TEXT(sd->embed->entry), tli->name);
 }
 
 void
@@ -302,6 +312,7 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
 
    model = ewl_model_ecore_list_get();
    view = ewl_label_view_get();
+   ewl_view_widget_fetch_set(view, list_view_cb_widget_fetch);
 
    cl->list = ewl_list_new();
    ewl_container_child_append(EWL_CONTAINER(cl->scrollpane), cl->list);
@@ -581,6 +592,7 @@ e_textedit_candidate_list_set(Evas_Object *obj, Ecore_List *list)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
+   if(!sd->embed->candidate_mode == TEXTEDIT_CANDIDATE_MODE_TRUE) return;
    Ecore_List *cl = ewl_mvc_data_get(EWL_MVC(sd->embed->candidate_list->list));   
    ecore_list_append_list(cl, list);
 }
@@ -590,8 +602,47 @@ e_textedit_candidate_list_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, NULL;);
-   Ecore_List *list = ewl_mvc_data_get(EWL_MVC(sd->embed->candidate_list->list));   
-   return list;
+   if(!sd->embed->candidate_mode == TEXTEDIT_CANDIDATE_MODE_TRUE) 
+     return NULL;
+   return ewl_mvc_data_get(EWL_MVC(sd->embed->candidate_list->list));   
+}
+
+void *
+e_textedit_list_selected_get(Evas_Object *obj)
+{
+   Ecore_List *cl;
+   E_Smart_Data *sd;
+   SMART_CHECK(obj, NULL;);
+
+   if(!sd->embed->candidate_mode == TEXTEDIT_CANDIDATE_MODE_TRUE) 
+     return NULL;
+
+   cl = ewl_mvc_data_get(EWL_MVC(sd->embed->candidate_list->list));   
+   return ecore_list_current(cl);   
+}
+
+void *
+e_textedit_list_item_get_by_name(Evas_Object *obj, const char *name)
+{
+   Ecore_List *cl;
+   int lstcount;
+   int n;
+   Textedit_List_Item *item;
+   E_Smart_Data *sd;
+   SMART_CHECK(obj, NULL;);
+
+   if(!sd->embed->candidate_mode == TEXTEDIT_CANDIDATE_MODE_TRUE) 
+     return NULL;
+
+   cl = ewl_mvc_data_get(EWL_MVC(sd->embed->candidate_list->list));   
+   lstcount = ecore_list_count(cl);
+   for(n=0; n<lstcount; n++)
+     {
+        item =  ecore_list_index_goto(cl, n); 
+        if(item && !strcmp(item->name, name))
+          return item;
+     }
+   return NULL;   
 }
 
 static void

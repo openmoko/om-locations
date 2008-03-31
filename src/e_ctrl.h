@@ -28,7 +28,8 @@
 Evas_Object        *e_ctrl_add(Evas *e);
 void                e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir);
 void                e_ctrl_nav_set(Evas_Object* obj);
-void                e_ctrl_self_set(void* obj);
+void                e_ctrl_self_set(Evas_Object *obj, void *bard);
+void               *e_ctrl_self_get(void);
 void                e_ctrl_zoom_drag_value_set(double y); 
 void                e_ctrl_zoom_text_value_set(const char* buf);
 void                e_ctrl_longitude_set(const char* buf);

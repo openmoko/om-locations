@@ -1,3 +1,18 @@
+2008-03-31  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_ctrl.c,
+	src/e_ctrl.h: Improve self get and set interface
+
+	* src/e_nav_dbus.c,
+	src/e_nav_dbus.h: Improve tag share and sms sending interface
+
+	* src/widgets/e_nav_textedit.c,
+	src/widgets/e_nav_textedit.h,
+	src/e_nav_item_location.c,
+	src/e_mod_nav.c: Add Tag share function
+
+	* src/widgets/e_nav_dialog.c: Don't strdup NULL string
+
 2008-03-30  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_nav_item_location.c,

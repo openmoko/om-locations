@@ -29,6 +29,14 @@ typedef enum {
      TEXTEDIT_CANDIDATE_MODE_TRUE,
 }TEXTEDIT_CANDIDATE_MODE;
 
+typedef struct _Textedit_List_Item Textedit_List_Item;
+
+struct _Textedit_List_Item
+{
+   const char             *name;
+   void                   *data;
+};
+
 /* object management */
 Evas_Object    *e_textedit_add(Evas *e);
 void            e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data2);
@@ -42,6 +50,8 @@ void            e_textedit_candidate_list_set(Evas_Object *obj, Ecore_List *list
 Ecore_List     *e_textedit_candidate_list_get(Evas_Object *obj);
 void            e_textedit_candidate_mode_set(Evas_Object *obj, unsigned int candidate_mode);
 unsigned int    e_textedit_candidate_mode_get(Evas_Object *obj);
+void           *e_textedit_list_selected_get(Evas_Object *obj);
+void           *e_textedit_list_item_get_by_name(Evas_Object *obj, const char *name);
     
 #endif
 

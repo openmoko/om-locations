@@ -122,7 +122,8 @@ e_ctrl_taglist_tag_delete(void *loc_object)
 int
 e_ctrl_contact_add(const char *id, Neo_Other_Data *data)
 {
-   return ecore_hash_set(bardRoster, (void *)id, (void *)data);
+   if(!id) return FALSE;
+   return ecore_hash_set(bardRoster, (void *)strdup(id), (void *)data);
 }
 
 Neo_Other_Data *
@@ -141,12 +142,15 @@ e_ctrl_contacts_get(void)
 
    values = ecore_list_new();
    Neo_Other_Data *neod;
+    printf("contact count is %d\n", count);
    for(n=0; n<count; n++)
      {
         char *key = ecore_list_index_goto(keys, n);
         neod = (Neo_Other_Data *)ecore_hash_get(bardRoster, (void *)key);
         if(neod)
-          ecore_list_append(values, (void *)neod->name);
+          {
+             ecore_list_append(values, (void *)neod);
+          }
      }
    return values;
 }
@@ -373,9 +377,15 @@ e_ctrl_nav_set(Evas_Object* obj)
 }
 
 void
-e_ctrl_self_set(void* obj)
+e_ctrl_self_set(Evas_Object *obj, void *bard)
 {
-   self = (Diversity_Bard *)obj;
+   self = (Diversity_Bard *)bard;
+}
+
+void *
+e_ctrl_self_get(void)
+{
+   return self;
 }
 
 /* internal calls */
@@ -423,6 +433,8 @@ _e_ctrl_smart_add(Evas_Object *obj)
    evas_object_smart_member_add(sd->clip, obj);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
    evas_object_smart_data_set(obj, sd);
+
+   bardRoster = ecore_hash_new(ecore_str_hash, ecore_str_compare);
 }
 
 static void

@@ -110,35 +110,116 @@ dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
+   Diversity_Bard *self;
+   Diversity_Equipment *eqp = NULL;
+   Textedit_List_Item *item;
+   Neo_Other_Data *neod;
+
+   int ok = FALSE;
    const char *input = e_textedit_input_get(obj); 
+
    if(input==NULL)
      { 
         e_textedit_deactivate(obj);   
         return;
      }
-   const char* phone_number = strdup(input); 
+
    Evas_Object *location_object = (Evas_Object*)data;
    Location_Data *locd;
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
    if (!locd) return;
-   printf("Send SMS the number is %s, the message is %s, %s\n", phone_number, locd->name, locd->note);
+
+   self = (Diversity_Bard *)e_ctrl_self_get();
+   if (self)
+     eqp = diversity_bard_equipment_get(self, "phonekit");
+   if (!eqp) return;
+
+   void *selected_item = e_textedit_list_selected_get(obj);
+   if(selected_item)
+     {
+        item = (Textedit_List_Item *)selected_item;
+        neod = (Neo_Other_Data *)item->data;
+        if(!neod) return;
+        if(!strcmp(neod->name, input))
+          {
+             printf("PhoneKit equipment Got , tag share ..... \n");
+             ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
+
+             Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
+             e_dialog_theme_source_set(od, THEME_PATH);
+             e_dialog_source_object_set(od, src_obj);     // dialog's src_obj is location item
+             if (ok)
+               {
+                  e_dialog_title_set(od, "Success", "Tag sent");
+                  e_dialog_button_add(od, "OK", dialog_exit, od);
+               }
+             else 
+               {
+                  e_dialog_title_set(od, "Fail", "Tag sent");
+                  e_dialog_button_add(od, "OK", dialog_exit, od);
+               }
+             e_textedit_deactivate(obj);   
+             evas_object_show(od);
+             e_dialog_activate(od); 
+             return;
+          }
+     }
+
+   /* lookup contact by name  */
+   /* FIXME: add support of looking up by phone number*/
+   item = e_textedit_list_item_get_by_name(obj, input);
+   if(item)
+     {
+        neod = (Neo_Other_Data *)item->data;
+        if(!neod) return;
+        ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
+        Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
+        e_dialog_theme_source_set(od, THEME_PATH);
+        e_dialog_source_object_set(od, src_obj);     
+        if (ok)
+          {
+             e_dialog_title_set(od, "Success", "Tag sent");
+             e_dialog_button_add(od, "OK", dialog_exit, od);
+          }
+        else 
+          {
+             e_dialog_title_set(od, "Fail", "Tag sent");
+             e_dialog_button_add(od, "OK", dialog_exit, od);
+          }
+        e_textedit_deactivate(obj);   
+        evas_object_show(od);
+        e_dialog_activate(od); 
+        return;
+     }
+   
+   /* Treat input as phone number; using phone number to send */
+   char *phone_number;
    char *message;
+   int ask_ds = 0;
+   phone_number = strdup(input); 
    message = malloc(strlen(locd->name) + 1 + strlen(locd->note) + 1);
    if (!message) return ;
    sprintf(message, "%s%c%s", locd->name, '\n', locd->note);
-   printf("message is %s\n", message);
-   //int ask_ds = 0;
-   //Diversity_Sms *sms = diversity_sms_new();
-   //diversity_sms_send(sms, phone_number, message, ask_ds);
-   //diversity_sms_destroy(sms);
+   printf("phone number is %s, message is %s\n", phone_number, message);
 
+   ok = diversity_sms_send((Diversity_Sms *)eqp, phone_number, message, ask_ds);
+   free(phone_number);
    free(message);
+
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);
-   e_dialog_source_object_set(od, src_obj);     // dialog's src_obj is location item
-   e_dialog_title_set(od, "Success", "Tag sent");
-   e_dialog_button_add(od, "OK", dialog_exit, od);
-   e_textedit_deactivate(obj);   // object is textedit object
+   e_dialog_source_object_set(od, src_obj);     
+   if(ok)
+     {
+        e_dialog_title_set(od, "Success", "Tag sent");
+        e_dialog_button_add(od, "OK", dialog_exit, od);
+     }
+   else
+     {
+        e_dialog_title_set(od, "Fail", "Tag sent");
+        e_dialog_button_add(od, "OK", dialog_exit, od);
+     }
+   e_textedit_deactivate(obj);   
    evas_object_show(od);
    e_dialog_activate(od); 
 }
@@ -151,7 +232,27 @@ dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_textedit_source_object_set(teo, data);  //  src_object is location item evas object 
    e_textedit_input_set(teo, "To:", "");
    Ecore_List *contacts = e_ctrl_contacts_get(); 
-   e_textedit_candidate_list_set(teo, contacts);
+   int count = ecore_list_count(contacts);
+   int n;
+   Ecore_List *list;
+   Textedit_List_Item *tli;
+   list = ecore_list_new();
+   for(n=0; n<count; n++)
+     {
+        Neo_Other_Data *neod = ecore_list_index_goto(contacts, n);
+        if(neod)
+          {
+              tli = calloc(1, sizeof(Textedit_List_Item));
+              if (!tli) return; 
+              if (neod->name)
+                tli->name = strdup(neod->name);
+              else 
+                tli->name = strdup("");
+              tli->data = neod;
+              ecore_list_append(list, tli);
+          }
+     }
+   e_textedit_candidate_list_set(teo, list);
    e_textedit_candidate_mode_set(teo, TEXTEDIT_CANDIDATE_MODE_TRUE);
    e_dialog_deactivate(obj);
    evas_object_show(teo);

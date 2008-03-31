@@ -420,7 +420,10 @@ e_dialog_textblock_text_set(void *obj, const char *input)
 {
    E_TextBlock_Item *tbi = (E_TextBlock_Item*)obj;
    if(tbi->input) free((void*)tbi->input);
-   tbi->input = strdup(input);
+   if(input)
+     tbi->input = strdup(input);
+   else
+     tbi->input = strdup("");
    e_widget_textblock_plain_set(tbi->item_obj, tbi->input);
    _e_dialog_update(tbi->obj);
 }
@@ -467,7 +470,10 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
    SMART_CHECK(obj, ;);
    tbi = calloc(1, sizeof(E_TextBlock_Item));
    tbi->obj = obj;
-   tbi->label = strdup(label);
+   if (label)
+     tbi->label = strdup(label);
+   else 
+     tbi->label = strdup("");
    Evas_Object *text_object;
    text_object = evas_object_text_add( evas_object_evas_get(obj) ); 
    evas_object_text_text_set(text_object, label);
@@ -477,7 +483,10 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
    evas_object_smart_member_add(tbi->label_obj, obj);
    evas_object_clip_set(tbi->label_obj, sd->clip);
 
-   tbi->input = strdup(input);
+   if (input)
+     tbi->input = strdup(input);
+   else
+     tbi->input = strdup("");
    if(size < 30) size=30;
    if(size > 150) size=150;
    tbi->sz = size;

@@ -884,49 +884,13 @@ diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name)
 int
 diversity_bard_prop_set(Diversity_Bard *bard, const char *key, const char *val)
 {
-   E_DBus_Proxy *proxy;
-
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) bard,
-	 	DIVERSITY_DBUS_IFACE_BARD);
-   if (!proxy)
-     return 0;
-
-   if (!e_dbus_proxy_simple_call(proxy, "Set",
-                                NULL,
-                                DBUS_TYPE_STRING, &key,
-                                DBUS_TYPE_STRING, &val,
-                                DBUS_TYPE_INVALID,
-                                DBUS_TYPE_INVALID))
-     {
-        printf("bard object prop set fail!\n");
-        return 0;
-     }
-
-   return 1;
+   return diversity_dbus_property_set((Diversity_DBus *) bard, DIVERSITY_DBUS_IFACE_BARD, key, DBUS_TYPE_STRING, (void *)val);
 }
 
 int
 diversity_bard_prop_get(Diversity_Bard *bard, const char *key, char **val)
 {
-   E_DBus_Proxy *proxy;
-
-   proxy = diversity_dbus_proxy_get((Diversity_DBus *) bard,
-	 	DIVERSITY_DBUS_IFACE_BARD);
-   if (!proxy)
-     return 0;
-
-   if (!e_dbus_proxy_simple_call(proxy, "Get",
-                                NULL,
-                                DBUS_TYPE_STRING, &key,
-                                DBUS_TYPE_INVALID,
-                                DBUS_TYPE_STRING, val,
-                                DBUS_TYPE_INVALID))
-     {
-        printf("bard object prop get fail!\n");
-        return 0;
-     }
-
-   return 1;
+   return diversity_dbus_property_get((Diversity_DBus *) bard, DIVERSITY_DBUS_IFACE_BARD, key, val);
 }
 
 Diversity_Equipment *
@@ -1059,7 +1023,7 @@ diversity_tag_prop_get(Diversity_Tag *tag, const char *key, char **val)
    return 1;
 }
 
-void
+int
 diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, int ask_ds)
 {
    E_DBus_Proxy *proxy;
@@ -1067,7 +1031,7 @@ diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, 
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) sms,
 	 	DIVERSITY_DBUS_IFACE_SMS);
-   if (!proxy) return;
+   if (!proxy) return FALSE;
 
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
@@ -1080,28 +1044,38 @@ diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, 
      {
 	printf("failed to send SMS: %s | %s\n", error.name, error.message);
 	dbus_error_free(&error);
+        return FALSE;
      }
+   return TRUE;
 }
 
-void
-diversity_sms_tag_share(Diversity_Sms *sms, const char *self, const char *tag)
+int
+diversity_sms_tag_share(Diversity_Sms *sms, Diversity_Bard *bard, Diversity_Tag *tag)
 {
    E_DBus_Proxy *proxy;
    DBusError error;
+   const char *bard_path;
+   const char *tag_path;
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) sms,
 	 	DIVERSITY_DBUS_IFACE_SMS);
-   if (!proxy) return;
+   if (!proxy) return FALSE;
+
+   bard_path = diversity_dbus_path_get((Diversity_DBus *)bard);
+   tag_path = diversity_dbus_path_get((Diversity_DBus *)tag);
+   if(!bard_path || !tag_path) return FALSE;
 
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
 				 "ShareTag", &error,
-                                 DBUS_TYPE_OBJECT_PATH, &self,
-                                 DBUS_TYPE_OBJECT_PATH, &tag,
+                                 DBUS_TYPE_OBJECT_PATH, &bard_path,
+                                 DBUS_TYPE_OBJECT_PATH, &tag_path,
 				 DBUS_TYPE_INVALID,
 				 DBUS_TYPE_INVALID))
      {
 	printf("failed to Tas Share: %s | %s\n", error.name, error.message);
 	dbus_error_free(&error);
+        return FALSE;
      }
+   return TRUE;
 }

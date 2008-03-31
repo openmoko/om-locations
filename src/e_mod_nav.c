@@ -99,6 +99,7 @@ static void
 viewport_object_added(void *data, DBusMessage *msg)
 {
    const char *obj_path;
+   int ok;
    DBusError error;
    dbus_error_init(&error);
    if (!dbus_message_get_args(msg, &error,
@@ -157,7 +158,10 @@ viewport_object_added(void *data, DBusMessage *msg)
              if(alias) neod->alias = strdup(alias);
              if(twitter) neod->twitter = strdup(twitter);
              neod->bard = (Diversity_Bard *) obj;
-             e_ctrl_contact_add(obj_path, neod);
+             printf("Add a bard contact: name:%s, phone:%s, alias:%s, twitter:%s\n", name, phone, alias, twitter);
+             ok = e_ctrl_contact_add(obj_path, neod);
+             if(!ok) printf("there is an error on add bard contact for %s\n", obj_path);
+            
 
              /* ignore bard object if its position not accurate */
              diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
@@ -275,7 +279,7 @@ _e_mod_nav_init(Evas *evas)
    ctrl = e_ctrl_add(evas);
    e_ctrl_theme_source_set(ctrl, THEME_PATH);
    e_ctrl_nav_set(nav);
-   e_ctrl_self_set(self);
+   e_ctrl_self_set(ctrl, self);
    evas_object_show(ctrl);
 
    if(world) 
