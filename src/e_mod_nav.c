@@ -260,6 +260,7 @@ void
 _e_mod_nav_init(Evas *evas)
 {
    Evas_Object *nwi, *nt;
+   int accuracy;
 
    if (nav) return;
 
@@ -301,6 +302,12 @@ _e_mod_nav_init(Evas *evas)
    /* test NEO ME object */
    nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
 				     151.210000, 33.870000);
+   /* if already fixed, change the skin.   */
+   accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;   
+   diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+   if(accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)   
+     cosplay(nwi, 1);
+
    e_nav_world_item_neo_me_name_set(nwi, "Me");
    show_welcome_message(nwi);
      {

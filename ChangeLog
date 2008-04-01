@@ -1,3 +1,8 @@
+2008-04-01  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_mod_nav.c: If neo was already fixed while diversity starting
+	up, change the skin of neo_me. 
+
 2008-03-31  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_ctrl.c,
