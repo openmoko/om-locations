@@ -19,6 +19,7 @@
  */
 
 #include "e_nav.h"
+#include "e_mod_config.h"
 #include "e_mod_nav.h"
 #include "e_spiralmenu.h"
 #include "e_nav_item_ap.h"
@@ -43,12 +44,16 @@
 
 /* create (and destroy) a nav object on the desktop bg */
 /* setup and teardown */
-static Evas_Object *ctrl  = NULL;
-static Evas_Object *nav   = NULL;
+static Evas_Object *ctrl   = NULL;
+static Evas_Object *nav    = NULL;
+static Evas_Object *neo_me = NULL;
+static Diversity_Nav_Config *cfg = NULL; 
+
 static Diversity_World *world = NULL;
 static Diversity_Bard  *self  = NULL;
 static Diversity_Viewport *worldview = NULL;
 static Ecore_Hash *objectStore = NULL;
+static void _e_mod_neo_me_init(Evas *evas);
 
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
@@ -230,6 +235,8 @@ on_geometry_changed(void *data, DBusMessage *msg)
    lat = -lat;
    e_nav_world_item_geometry_set(nwi, lon, lat, 0.0, 0.0);
    e_nav_world_item_update(nwi);
+   dn_config_float_set(cfg, "neo_me_lon", lon);
+   dn_config_float_set(cfg, "neo_me_lat", lat);
 
    if (follow) {
      e_nav_coord_set(nav, lon, lat, 0.0);
@@ -251,6 +258,7 @@ on_property_changed(void *data, DBusMessage *msg)
      }
    else if ( !fixed && accuracy != DIVERSITY_OBJECT_ACCURACY_NONE )
      {
+        dn_config_int_set(cfg, "ever_fixed", 1);
         cosplay(nwi, 1);
         fixed = 1;
      }
@@ -259,10 +267,11 @@ on_property_changed(void *data, DBusMessage *msg)
 void
 _e_mod_nav_init(Evas *evas)
 {
-   Evas_Object *nwi, *nt;
-   int accuracy;
+   Evas_Object *nt;
+   double lat, lon, scale;
 
    if (nav) return;
+   cfg = dn_config_new();
 
    e_nav_dbus_init();
    world = diversity_world_new();
@@ -299,14 +308,45 @@ _e_mod_nav_init(Evas *evas)
 	diversity_viewport_start(worldview);
      }
 
+   if(dn_config_int_get(cfg, "ever_fixed"))
+     _e_mod_neo_me_init(evas);
+
+   /* start off at a zoom level and location instantly */
+   lat = dn_config_float_get(cfg, "lat");
+   lon = dn_config_float_get(cfg, "lon");
+   scale = dn_config_float_get(cfg, "scale");
+
+   e_nav_zoom_set(nav, scale, 0.0);
+   e_nav_coord_set(nav, lon, lat, 0.0);
+            
+   _e_mod_nav_update(evas);
+   evas_object_show(nav);
+   evas_object_show(ctrl);
+}
+
+static void
+_e_mod_neo_me_init(Evas *evas)
+{
+   Evas_Object *nwi;
+   int accuracy;
+   double neo_me_lat, neo_me_lon;
+
+   if(neo_me) return;
+
    /* test NEO ME object */
+   neo_me_lat = dn_config_float_get(cfg, "neo_me_lat");
+   neo_me_lon = dn_config_float_get(cfg, "neo_me_lon");
    nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
-				     151.210000, 33.870000);
+				     neo_me_lon, neo_me_lat);
+
    /* if already fixed, change the skin.   */
    accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;   
    diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
    if(accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)   
-     cosplay(nwi, 1);
+     {
+       dn_config_int_set(cfg, "ever_fixed", 1);
+       cosplay(nwi, 1);
+     }
 
    e_nav_world_item_neo_me_name_set(nwi, "Me");
    show_welcome_message(nwi);
@@ -334,14 +374,7 @@ _e_mod_nav_init(Evas *evas)
 	      DIVERSITY_DBUS_IFACE_OBJECT,
 	      "PropertyChanged", on_property_changed, nwi);
      }
-
-   /* start off at a zoom level and location instantly */
-   e_nav_zoom_set(nav, 5, 0.0);
-   e_nav_coord_set(nav, 151.205907, 33.875938, 0.0);
-            
-   _e_mod_nav_update(evas);
-   evas_object_show(nav);
-   evas_object_show(ctrl);
+   neo_me = nwi;
 }
 
 void
@@ -362,7 +395,21 @@ _e_mod_nav_update(Evas *evas)
 void
 _e_mod_nav_shutdown(void)
 {
+   double lat, lon, scale;
+
    if (!nav) return;
+
+   lat = e_nav_coord_lat_get(nav);
+   lon = e_nav_coord_lon_get(nav);
+   scale = e_nav_zoom_get(nav);
+
+   dn_config_float_set(cfg, "lat", lat);
+   dn_config_float_set(cfg, "lon", lon);
+   dn_config_float_set(cfg, "scale", scale);
+
+
+   dn_config_save(cfg);
+   dn_config_destroy(cfg);
 
    if (world)
      {

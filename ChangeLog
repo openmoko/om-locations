@@ -1,3 +1,19 @@
+2008-04-03  Jeremy Chang  <jeremy@openmoko.com>
+
+	* configure.in,
+	  data/config,
+	  data/config/diversity-nav.cfg,
+	  data/config/Makefile.am, 
+	  data/Makefile.am: Add config directory and add default config
+	  file.
+
+	* src/e_mod_nav.c: Remember the fix position and viewport coordinate
+	and scale last time so that can be used next time launching diversity-nav.
+
+	* src/e_mod_config.[ch],
+	  src/Makefile.am: Add config new/save interface. 
+
+
 2008-04-01  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_mod_nav.c: If neo was already fixed while diversity starting

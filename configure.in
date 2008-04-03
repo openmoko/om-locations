@@ -56,6 +56,7 @@ tools/Makefile
 dbus/Makefile
 po/Makefile
 data/Makefile
+data/config/Makefile
 data/themes/Makefile
 data/themes/fonts/Makefile
 data/themes/images/Makefile

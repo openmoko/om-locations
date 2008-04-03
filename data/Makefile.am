@@ -1,5 +1,5 @@
 MAINTAINERCLEANFILES = Makefile.in
-SUBDIRS = themes 
+SUBDIRS = themes config
 
 pixmapdir = $(datadir)/pixmaps
 pixmap_DATA = diversity-nav.png

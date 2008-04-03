@@ -7,10 +7,12 @@ AM_CPPFLAGS =			\
 	$(EFL_CFLAGS)		\
 	$(EDBUS_CFLAGS)		\
 	-I$(top_srcdir)/dbus	\
-	-DTHEME_PATH=\"$(pkgdatadir)\"
+	-DTHEME_PATH=\"$(pkgdatadir)\" \
+        -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
 
 noinst_HEADERS =		\
 	e_mod_main.h		\
+        e_mod_config.h          \
 	e_mod_nav.h		\
 	e_nav.h			\
 	e_spiralmenu.h		\
@@ -29,6 +31,7 @@ noinst_HEADERS =		\
 bin_PROGRAMS = diversity-nav
 diversity_nav_SOURCES =		\
 	e_mod_main.c		\
+        e_mod_config.c          \
 	e_mod_nav.c		\
 	e_nav.c			\
 	e_spiralmenu.c		\
