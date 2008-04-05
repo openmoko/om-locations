@@ -53,7 +53,8 @@ static Diversity_World *world = NULL;
 static Diversity_Bard  *self  = NULL;
 static Diversity_Viewport *worldview = NULL;
 static Ecore_Hash *objectStore = NULL;
-static void _e_mod_neo_me_init(Evas *evas);
+static void _e_mod_neo_me_init();
+static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
 
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
@@ -96,9 +97,6 @@ osm_tileset_add(Evas_Object *nav)
 
    return nt;
 }
-
-static void
-on_geometry_changed(void *data, DBusMessage *msg);
 
 static void
 viewport_object_added(void *data, DBusMessage *msg)
@@ -179,7 +177,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_neo_other_twitter_set(nwi, twitter);
              ecore_hash_set(objectStore, (void *)obj_path, (void *)nwi);
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
-                       DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_geometry_changed, nwi);
+                  DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_neo_other_geometry_changed, nwi);
           }
         else
           printf("other kind of object added\n");
@@ -213,10 +211,38 @@ viewport_object_removed(void *data, DBusMessage *msg)
      }
 }
 
+
+/* 
+ * neo_other geometry changed cb function 
+ */
+static void
+on_neo_other_geometry_changed(void *data, DBusMessage *msg)
+{
+   Evas_Object *nwi = data;
+   DBusError err;
+   double lon, lat;
+   double dummy1, dummy2;
+
+   dbus_error_init(&err);
+   dbus_message_get_args(msg, &err, DBUS_TYPE_DOUBLE, &lon, DBUS_TYPE_DOUBLE, &lat,
+       DBUS_TYPE_DOUBLE, &dummy1, DBUS_TYPE_DOUBLE, &dummy2, DBUS_TYPE_INVALID);
+   if (dbus_error_is_set(&err)) {
+      printf("Error: %s - %s\n", err.name, err.message);
+      return;
+   }
+
+   lat = -lat;
+   e_nav_world_item_geometry_set(nwi, lon, lat, 0.0, 0.0);
+   e_nav_world_item_update(nwi);
+}
+
+/* 
+ * neo_me geometry changed cb function 
+ */
 static void
 on_geometry_changed(void *data, DBusMessage *msg)
 {
-   Evas_Object *nwi = data;
+   Evas_Object *nwi;
    DBusError err;
    double lon, lat;
    double dummy1, dummy2;
@@ -230,13 +256,17 @@ on_geometry_changed(void *data, DBusMessage *msg)
       return;
    }
 
-   //printf("Me @ %f %f\n", lon, lat);
+   dn_config_float_set(cfg, "neo_me_lon", lon);
+   dn_config_float_set(cfg, "neo_me_lat", lat);
+
+   if(!neo_me)
+     _e_mod_neo_me_init(); 
+
+   nwi = neo_me;
 
    lat = -lat;
    e_nav_world_item_geometry_set(nwi, lon, lat, 0.0, 0.0);
    e_nav_world_item_update(nwi);
-   dn_config_float_set(cfg, "neo_me_lon", lon);
-   dn_config_float_set(cfg, "neo_me_lat", lat);
 
    if (follow) {
      e_nav_coord_set(nav, lon, lat, 0.0);
@@ -244,13 +274,33 @@ on_geometry_changed(void *data, DBusMessage *msg)
    }
 }
 
+/* 
+ * neo_me property changed cb function 
+ */
 static void
 on_property_changed(void *data, DBusMessage *msg)
 {
-   Evas_Object *nwi = data;
+   Evas_Object *nwi;
    int accuracy = 0;
    static int fixed = 0;
+   double lon, lat;
+   double dummy1, dummy2;
+
    diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+
+   if(!neo_me && accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)
+     {
+        diversity_object_geometry_get((Diversity_Object *) self,
+                                      &lon, &lat, &dummy1, &dummy2);
+        dn_config_float_set(cfg, "neo_me_lon", lon);
+        dn_config_float_set(cfg, "neo_me_lat", lat);
+        _e_mod_neo_me_init();
+     }
+
+   if(!neo_me) return;
+
+   nwi = neo_me;
+     
    if( fixed && accuracy == DIVERSITY_OBJECT_ACCURACY_NONE )
      {
         cosplay(nwi, 0);   
@@ -294,7 +344,7 @@ _e_mod_nav_init(Evas *evas)
 
    if(world) 
      {
-	worldview = diversity_world_viewport_add(world, -180, 90, 180, -90); // whole world viewport
+	worldview = diversity_world_viewport_add(world, -180, 90, 180, -90); 
 	diversity_dbus_signal_connect((Diversity_DBus *) worldview, 
                                       DIVERSITY_DBUS_IFACE_VIEWPORT, 
                                       "ObjectAdded", 
@@ -309,47 +359,8 @@ _e_mod_nav_init(Evas *evas)
      }
 
    if(dn_config_int_get(cfg, "ever_fixed"))
-     _e_mod_neo_me_init(evas);
+     _e_mod_neo_me_init();
 
-   /* start off at a zoom level and location instantly */
-   lat = dn_config_float_get(cfg, "lat");
-   lon = dn_config_float_get(cfg, "lon");
-   scale = dn_config_float_get(cfg, "scale");
-
-   e_nav_zoom_set(nav, scale, 0.0);
-   e_nav_coord_set(nav, lon, lat, 0.0);
-            
-   _e_mod_nav_update(evas);
-   evas_object_show(nav);
-   evas_object_show(ctrl);
-}
-
-static void
-_e_mod_neo_me_init(Evas *evas)
-{
-   Evas_Object *nwi;
-   int accuracy;
-   double neo_me_lat, neo_me_lon;
-
-   if(neo_me) return;
-
-   /* test NEO ME object */
-   neo_me_lat = dn_config_float_get(cfg, "neo_me_lat");
-   neo_me_lon = dn_config_float_get(cfg, "neo_me_lon");
-   nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
-				     neo_me_lon, neo_me_lat);
-
-   /* if already fixed, change the skin.   */
-   accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;   
-   diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-   if(accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)   
-     {
-       dn_config_int_set(cfg, "ever_fixed", 1);
-       cosplay(nwi, 1);
-     }
-
-   e_nav_world_item_neo_me_name_set(nwi, "Me");
-   show_welcome_message(nwi);
      {
 	Diversity_Equipment *eqp = NULL;
 	const char *dev;
@@ -369,11 +380,54 @@ _e_mod_neo_me_init(Evas *evas)
 
 	diversity_dbus_signal_connect((Diversity_DBus *) self,
 	      DIVERSITY_DBUS_IFACE_OBJECT,
-	      "GeometryChanged", on_geometry_changed, nwi);
+	      "GeometryChanged", on_geometry_changed, NULL);
 	diversity_dbus_signal_connect((Diversity_DBus *) self,
 	      DIVERSITY_DBUS_IFACE_OBJECT,
-	      "PropertyChanged", on_property_changed, nwi);
+	      "PropertyChanged", on_property_changed, NULL);
      }
+
+   /* start off at a zoom level and location instantly */
+   lat = dn_config_float_get(cfg, "lat");
+   lon = dn_config_float_get(cfg, "lon");
+   scale = dn_config_float_get(cfg, "scale");
+
+   e_nav_zoom_set(nav, scale, 0.0);
+   e_nav_coord_set(nav, lon, lat, 0.0);
+            
+   _e_mod_nav_update(evas);
+   evas_object_show(nav);
+   evas_object_show(ctrl);
+}
+
+/* 
+ * Create neo_me evas object on map 
+ */
+static void
+_e_mod_neo_me_init()
+{
+   Evas_Object *nwi;
+   int accuracy;
+   double neo_me_lat, neo_me_lon;
+
+   if(neo_me) return;
+
+   neo_me_lat = dn_config_float_get(cfg, "neo_me_lat");
+   neo_me_lon = dn_config_float_get(cfg, "neo_me_lon");
+   nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
+				     neo_me_lon, neo_me_lat);
+
+   /* if already fixed, change the skin.   */
+   accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;   
+   diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+   if(accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)   
+     {
+       dn_config_int_set(cfg, "ever_fixed", 1);
+       cosplay(nwi, 1);
+     }
+
+   e_nav_world_item_neo_me_name_set(nwi, "Me");
+   show_welcome_message(nwi);
+
    neo_me = nwi;
 }
 
@@ -399,6 +453,7 @@ _e_mod_nav_shutdown(void)
 
    if (!nav) return;
 
+   /* save lon, lat, scale to config file */
    lat = e_nav_coord_lat_get(nav);
    lon = e_nav_coord_lon_get(nav);
    scale = e_nav_zoom_get(nav);
@@ -406,7 +461,6 @@ _e_mod_nav_shutdown(void)
    dn_config_float_set(cfg, "lat", lat);
    dn_config_float_set(cfg, "lon", lon);
    dn_config_float_set(cfg, "scale", scale);
-
 
    dn_config_save(cfg);
    dn_config_destroy(cfg);
