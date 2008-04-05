@@ -256,6 +256,7 @@ on_geometry_changed(void *data, DBusMessage *msg)
       return;
    }
 
+   lat = -lat;
    dn_config_float_set(cfg, "neo_me_lon", lon);
    dn_config_float_set(cfg, "neo_me_lat", lat);
 
@@ -264,7 +265,6 @@ on_geometry_changed(void *data, DBusMessage *msg)
 
    nwi = neo_me;
 
-   lat = -lat;
    e_nav_world_item_geometry_set(nwi, lon, lat, 0.0, 0.0);
    e_nav_world_item_update(nwi);
 
@@ -292,6 +292,7 @@ on_property_changed(void *data, DBusMessage *msg)
      {
         diversity_object_geometry_get((Diversity_Object *) self,
                                       &lon, &lat, &dummy1, &dummy2);
+        lat = -lat;
         dn_config_float_set(cfg, "neo_me_lon", lon);
         dn_config_float_set(cfg, "neo_me_lat", lat);
         _e_mod_neo_me_init();

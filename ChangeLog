@@ -1,6 +1,12 @@
 2008-04-05  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_mod_nav.c (on_geometry_changed),
+	                  (on_property_changed): Fix the neo_me latitude
+			  value, changing the sign, before saving to config. 
+
+2008-04-05  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_mod_nav.c (on_geometry_changed),
 	                  (on_property_changed): Decide if neo_me has
 			  existed. If not, create it first. Or it will not
 			  show neo_me on map when got fixed and launching
