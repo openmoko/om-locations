@@ -30,6 +30,7 @@ static const char *diversity_ifaces[N_DIVERSITY_DBUS_IFACES] =
    "org.openmoko.Diversity.World",
    "org.openmoko.Diversity.Object",
    "org.openmoko.Diversity.Viewport",
+   "org.openmoko.Diversity.Ap",
    "org.openmoko.Diversity.Bard",
    "org.openmoko.Diversity.Tag",
    "org.openmoko.Diversity.Equipment",
@@ -63,6 +64,11 @@ struct _Diversity_Equipment
 };
 
 struct _Diversity_Viewport
+{
+   Diversity_Object obj;
+};
+
+struct _Diversity_Ap
 {
    Diversity_Object obj;
 };
@@ -453,6 +459,9 @@ diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
       case DIVERSITY_OBJECT_TYPE_BARD:
 	 size = sizeof(Diversity_Bard);
 	 break;
+      case DIVERSITY_OBJECT_TYPE_AP:
+	 size = sizeof(Diversity_Ap);
+	 break;
       default:
 	 printf("unknown type %d\n", type);
 	 return NULL;
@@ -835,6 +844,23 @@ diversity_viewport_stop(Diversity_Viewport *view)
 	printf("failed to start viewport: %s\n", error.message);
 	dbus_error_free(&error);
      }
+}
+
+Diversity_Ap *
+diversity_ap_new(const char *path)
+{
+   Diversity_Ap *ap;
+
+   ap = (Diversity_Ap *)
+      diversity_object_new_with_type(path, DIVERSITY_OBJECT_TYPE_AP);
+
+   return ap;
+}
+
+void
+diversity_ap_destroy(Diversity_Ap *ap)
+{
+   diversity_object_destroy((Diversity_Object *) ap);
 }
 
 Diversity_Bard *

@@ -31,6 +31,7 @@ typedef struct _Diversity_World Diversity_World;
 typedef struct _Diversity_Equipment Diversity_Equipment;
 
 typedef struct _Diversity_Viewport Diversity_Viewport;
+typedef struct _Diversity_Ap Diversity_Ap;
 typedef struct _Diversity_Bard Diversity_Bard;
 typedef struct _Diversity_Tag Diversity_Tag;
 typedef struct _Diversity_Sms Diversity_Sms;
@@ -41,6 +42,7 @@ typedef enum {
      DIVERSITY_DBUS_IFACE_WORLD,
      DIVERSITY_DBUS_IFACE_OBJECT,
      DIVERSITY_DBUS_IFACE_VIEWPORT,
+     DIVERSITY_DBUS_IFACE_AP,
      DIVERSITY_DBUS_IFACE_BARD,
      DIVERSITY_DBUS_IFACE_TAG,
      DIVERSITY_DBUS_IFACE_EQUIPMENT,
@@ -100,6 +102,9 @@ Diversity_Viewport *diversity_viewport_new(const char *path);
 void                diversity_viewport_destroy(Diversity_Viewport *view);
 void                diversity_viewport_start(Diversity_Viewport *view);
 void                diversity_viewport_stop(Diversity_Viewport *view);
+
+Diversity_Ap       *diversity_ap_new(const char *path);
+void                diversity_ap_destroy(Diversity_Ap *ap);
 
 Diversity_Bard     *diversity_bard_new(const char *path);
 void                diversity_bard_destroy(Diversity_Bard *bard);

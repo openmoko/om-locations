@@ -179,6 +179,33 @@ viewport_object_added(void *data, DBusMessage *msg)
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
                   DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_neo_other_geometry_changed, nwi);
           }
+        else if(type==DIVERSITY_OBJECT_TYPE_AP) 
+	  {
+	     char *ssid;
+	     int flags, accuracy;
+
+             diversity_dbus_property_get(((Diversity_DBus *) obj),
+		   DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+	     /* XXX */
+             if (accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;  
+
+	     lon -= width / 2;
+	     lat -= height / 2;
+             nwi = e_nav_world_item_ap_add(nav, THEME_PATH, lon, lat);
+	     e_nav_world_item_ap_range_set(nwi, width / 2);
+
+	     diversity_dbus_property_get((Diversity_DBus *) obj,
+		   DIVERSITY_DBUS_IFACE_AP, "Ssid", &ssid);
+	     diversity_dbus_property_get((Diversity_DBus *) obj,
+		   DIVERSITY_DBUS_IFACE_AP, "Flags", &flags);
+
+	     e_nav_world_item_ap_essid_set(nwi, ssid);
+	     if (flags)
+	       e_nav_world_item_ap_key_type_set(nwi,
+		     E_NAV_ITEM_AP_KEY_TYPE_WEP);
+
+	     free(ssid);
+	  }
         else
           printf("other kind of object added\n");
      }
