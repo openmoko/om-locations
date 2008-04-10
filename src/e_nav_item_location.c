@@ -309,10 +309,41 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
 }
 
 static void
-_e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char *source)
 {
    Evas_Object *om;
+   om = e_flyingmenu_add(evas_object_evas_get(obj));
+   e_flyingmenu_theme_source_set(om, data);  // data is THEME_PATH
+   e_flyingmenu_autodelete_set(om, 1);
+   e_flyingmenu_source_object_set(om, obj);   // obj is location evas object
+   /* FIXME: real menu items */
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Edit",
+			       _e_nav_world_item_cb_menu_1, obj);
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Send",
+			       _e_nav_world_item_cb_menu_2, obj);
+   evas_object_show(om);
+   e_flyingmenu_activate(om);
+}
+
+static void
+_e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   const char *text_part_state;
+   double val_ret;
    
+   text_part_state = edje_object_part_state_get(obj, "e.text.name", &val_ret);
+
+   if(!strcmp(text_part_state, "default")) 
+     {
+        edje_object_signal_emit(obj, "e,state,active", "e");
+     //edje_object_signal_callback_add(obj, "MENU_ACTIVATE", "e.text.name", cb_menu_activate, NULL);
+     }
+   else 
+     {
+        edje_object_signal_emit(obj, "e,state,passive", "e");
+     //edje_object_signal_callback_del(obj, "MENU_ACTIVATE", "e.text.name", cb_menu_activate);
+     
+#if 0
    om = e_flyingmenu_add(evas);
    e_flyingmenu_theme_source_set(om, data);  // data is THEME_PATH
    e_flyingmenu_autodelete_set(om, 1);
@@ -324,6 +355,8 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
 			       _e_nav_world_item_cb_menu_2, obj);
    evas_object_show(om);
    e_flyingmenu_activate(om);
+#endif
+     }
 }
 
 static void
@@ -357,6 +390,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/location");
    edje_object_part_text_set(o, "e.text.name", "???");
+   edje_object_signal_callback_add(o, "MENU_ACTIVATE", "e.text.name", cb_menu_activate, (void *)theme_dir);
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
 				  theme_dir);
@@ -384,7 +418,10 @@ e_nav_world_item_location_name_set(Evas_Object *item, const char *name)
    if (locd->name) evas_stringshare_del(locd->name);
    if (name) locd->name = evas_stringshare_add(name);
    else locd->name = NULL;
-   edje_object_part_text_set(item, "e.text.name", locd->name);
+   if(!locd->name || !strcmp(locd->name, ""))
+     edje_object_part_text_set(item, "e.text.name", "???");
+   else 
+     edje_object_part_text_set(item, "e.text.name", locd->name);
 }
 
 const char *

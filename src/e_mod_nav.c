@@ -208,6 +208,9 @@ viewport_object_added(void *data, DBusMessage *msg)
 	  }
         else
           printf("other kind of object added\n");
+
+        if(neo_me)
+          evas_object_raise(neo_me);
      }
 }
 
@@ -334,12 +337,12 @@ on_property_changed(void *data, DBusMessage *msg)
      
    if( fixed && accuracy == DIVERSITY_OBJECT_ACCURACY_NONE )
      {
-        cosplay(nwi, 0);   
+        e_nav_world_item_neo_me_fixed_set(nwi, 0);   
         fixed = 0;
      }
    else if ( !fixed && accuracy != DIVERSITY_OBJECT_ACCURACY_NONE )
      {
-        cosplay(nwi, 1);
+        e_nav_world_item_neo_me_fixed_set(nwi, 1);
         fixed = 1;
      }
 }
@@ -454,7 +457,7 @@ _e_mod_neo_me_init()
    diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
    if(accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)   
      {
-       cosplay(nwi, 1);
+       e_nav_world_item_neo_me_fixed_set(nwi, 1);
      }
 
    e_nav_world_item_neo_me_name_set(nwi, "Me");

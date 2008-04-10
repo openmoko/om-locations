@@ -1,3 +1,12 @@
+2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_mod_nav.c: Always show neo_me on the top of its layer. 
+	* src/e_nav_item_neo_me.c: Add 'fixed' member in the structure. 
+	* src/e_nav_item_neo_me.h: Add fixed set/get API. 
+	* src/e_nav_item_location.c, 
+	  data/themes/diversity_nav.edc: Change location object's behavior. Show
+	text first, then activate the menu.  
+
 2008-04-10  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_mod_nav.c: set free key cb for the hash. 

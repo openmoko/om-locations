@@ -33,6 +33,7 @@ struct _Neo_Me_Data
    const char             *alias;
    const char             *twitter;
    unsigned char           visible : 1;
+   unsigned char           fixed : 1;
 };
 
 static Evas_Object *
@@ -107,6 +108,7 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
    const char *note = e_dialog_textblock_text_get(obj, "Edit message");
    printf("title = %s\n", name);
    printf("note = %s\n", note);
+
    char *description; 
    description = malloc(strlen(name) + 1 + strlen(note) + 1);
    if (!description) return ;
@@ -287,4 +289,29 @@ e_nav_world_item_neo_me_visible_get(Evas_Object *item)
    neod = evas_object_data_get(item, "nav_world_item_neo_me_data");
    if (!neod) return 0;
    return neod->visible;
+}
+
+void
+e_nav_world_item_neo_me_fixed_set(Evas_Object *item, Evas_Bool fixed)
+{
+   Neo_Me_Data *neod;
+
+   neod = evas_object_data_get(item, "nav_world_item_neo_me_data");
+   if (!neod) return;
+   if ((fixed && neod->fixed) || ((!fixed) && (!neod->fixed))) return;
+   neod->fixed = fixed;
+   if (neod->fixed)
+     edje_object_signal_emit(item, "FIXED", "phone");
+   else
+     edje_object_signal_emit(item, "NONFIXED", "phone");
+}
+
+Evas_Bool
+e_nav_world_item_neo_me_fixed_get(Evas_Object *item)
+{
+   Neo_Me_Data *neod;
+
+   neod = evas_object_data_get(item, "nav_world_item_neo_me_data");
+   if (!neod) return 0;
+   return neod->fixed;
 }
