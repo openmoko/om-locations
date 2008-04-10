@@ -189,8 +189,8 @@ viewport_object_added(void *data, DBusMessage *msg)
 	     /* XXX */
              if (accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;  
 
-	     lon -= width / 2;
-	     lat -= height / 2;
+	     lon += width / 2;
+	     lat += height / 2;
              nwi = e_nav_world_item_ap_add(nav, THEME_PATH, lon, -lat);
 	     e_nav_world_item_ap_range_set(nwi, width / 2);
 
