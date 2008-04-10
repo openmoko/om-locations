@@ -366,6 +366,7 @@ _e_mod_nav_init(Evas *evas)
    objectStore = ecore_hash_new(ecore_str_hash, ecore_str_compare);
    if(!objectStore)
      return; 
+   ecore_hash_free_key_cb_set(objectStore, free);
 
    ctrl = e_ctrl_add(evas);
    e_ctrl_theme_source_set(ctrl, THEME_PATH);

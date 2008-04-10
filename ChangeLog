@@ -1,5 +1,9 @@
 2008-04-10  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/e_mod_nav.c: set free key cb for the hash. 
+
+2008-04-10  Jeremy Chang  <jeremy@openmoko.com>
+
 	* src/e_nav_item_location.c (_e_nav_world_item_cb_del): When location item deleted,
 	delete the tag in taglist. 
 	* src/e_mod_nav.c: Location Delete issue fixed. strdup
