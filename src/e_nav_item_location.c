@@ -270,7 +270,7 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);  
    e_dialog_source_object_set(od, src_obj);  
-   e_dialog_title_set(od, "Edit your location", "Send your favorite location to friends by SMS");
+   e_dialog_title_set(od, "Edit your location", "Edit or delete your location");
    const char *title = e_nav_world_item_location_name_get(location_object);
    e_dialog_textblock_add(od, "Edit title", title, 40, obj);
    const char *message = e_nav_world_item_location_note_get(location_object);
@@ -330,6 +330,11 @@ static void
 _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    Location_Data *locd;
+
+   if(!obj) return;
+
+   e_ctrl_taglist_tag_delete(obj);   
+
    locd = evas_object_data_get(obj, "nav_world_item_location_data");
    if (!locd) return;
    if (locd->name) evas_stringshare_del(locd->name);

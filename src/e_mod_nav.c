@@ -139,7 +139,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_location_name_set(nwi, name);
              e_nav_world_item_location_note_set(nwi, description);
              e_ctrl_taglist_tag_add(name, description, nwi); 
-             ecore_hash_set(objectStore, (void *)obj_path, (void *)nwi);
+             ecore_hash_set(objectStore, (void *)strdup(obj_path), (void *)nwi);
           }
         else if(type==DIVERSITY_OBJECT_TYPE_BARD) 
           {
@@ -215,6 +215,7 @@ static void
 viewport_object_removed(void *data, DBusMessage *msg)
 {
    const char *obj_path;
+   Evas_Object *world_item;
    DBusError error;
    dbus_error_init(&error);
    if (!dbus_message_get_args(msg, &error,
@@ -227,14 +228,16 @@ viewport_object_removed(void *data, DBusMessage *msg)
      }
    else 
      {
-        Evas_Object *world_item = ecore_hash_get(objectStore, obj_path);
+        printf("object deleted: %s \n", obj_path);
+        world_item = (Evas_Object *)ecore_hash_get(objectStore, obj_path);
         if(world_item) 
           {
-             e_ctrl_taglist_tag_delete(world_item);
              ecore_hash_remove(objectStore, obj_path);
              e_nav_world_item_delete(nav, world_item);
              evas_object_del(world_item);
           }
+        else 
+          printf("Can not find object %s in hash\n", obj_path);
      }
 }
 

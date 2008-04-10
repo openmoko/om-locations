@@ -1,5 +1,12 @@
 2008-04-10  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/e_nav_item_location.c (_e_nav_world_item_cb_del): When location item deleted,
+	delete the tag in taglist. 
+	* src/e_mod_nav.c: Location Delete issue fixed. strdup
+	the key before hash set. 
+
+2008-04-10  Jeremy Chang  <jeremy@openmoko.com>
+
 	* src/e_ctrl.c: Raise buttons panel right after activating the tag list
 	* src/e_nav_taglist.c: Selected clear before showing tag list. 
 
