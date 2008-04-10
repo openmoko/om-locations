@@ -606,9 +606,10 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
    if (sd->proxy)
      e_dbus_proxy_disconnect_signal(sd->proxy, "TileCompleted",
 	   (E_DBus_Signal_Cb) _e_nav_tileset_tile_completed_cb, obj);
-   ecore_hash_destroy(sd->jobs);
 
    _e_nav_tileset_free(obj);
+
+   ecore_hash_destroy(sd->jobs);
 
    free(sd);
 }
