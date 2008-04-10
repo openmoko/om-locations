@@ -336,7 +336,6 @@ on_property_changed(void *data, DBusMessage *msg)
      }
    else if ( !fixed && accuracy != DIVERSITY_OBJECT_ACCURACY_NONE )
      {
-        dn_config_int_set(cfg, "ever_fixed", 1);
         cosplay(nwi, 1);
         fixed = 1;
      }
@@ -347,6 +346,7 @@ _e_mod_nav_init(Evas *evas)
 {
    Evas_Object *nt;
    double lat, lon, scale;
+   double neo_me_lat, neo_me_lon;
 
    if (nav) return;
    cfg = dn_config_new();
@@ -386,8 +386,7 @@ _e_mod_nav_init(Evas *evas)
 	diversity_viewport_start(worldview);
      }
 
-   if(dn_config_int_get(cfg, "ever_fixed"))
-     _e_mod_neo_me_init();
+   _e_mod_neo_me_init();
 
      {
 	Diversity_Equipment *eqp = NULL;
@@ -418,9 +417,11 @@ _e_mod_nav_init(Evas *evas)
    lat = dn_config_float_get(cfg, "lat");
    lon = dn_config_float_get(cfg, "lon");
    scale = dn_config_float_get(cfg, "scale");
+   neo_me_lat = dn_config_float_get(cfg, "neo_me_lat");
+   neo_me_lon = dn_config_float_get(cfg, "neo_me_lon");
 
    e_nav_zoom_set(nav, scale, 0.0);
-   e_nav_coord_set(nav, lon, lat, 0.0);
+   e_nav_coord_set(nav, neo_me_lon, neo_me_lat, 0.0);
             
    _e_mod_nav_update(evas);
    evas_object_show(nav);
@@ -449,7 +450,6 @@ _e_mod_neo_me_init()
    diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
    if(accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)   
      {
-       dn_config_int_set(cfg, "ever_fixed", 1);
        cosplay(nwi, 1);
      }
 

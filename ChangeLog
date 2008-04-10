@@ -1,3 +1,9 @@
+2008-04-10  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_mod_nav.c: Always show neo_me in the center of the screen. 
+	* data/config/diversity-nav.cfg: Change the default zoom level, config
+	values. 
+
 2008-04-05  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_mod_nav.c (on_geometry_changed),
