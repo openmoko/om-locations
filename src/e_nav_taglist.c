@@ -31,8 +31,9 @@ static Ewl_Widget *
 test_data_header_fetch(void *data , unsigned int column)
 {
    Ewl_Widget *l;
+
    l = ewl_label_new();
-   ewl_object_custom_h_set(EWL_OBJECT(l), 60);
+   ewl_object_custom_h_set(EWL_OBJECT(l), 30);
    ewl_label_text_set(EWL_LABEL(l), "View Tags");
    ewl_widget_show(l);
    return l;
@@ -42,17 +43,33 @@ static Ewl_Widget *
 tree_test_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
 {
    Tag_List_Item *d;
-   Ewl_Widget *w = NULL;
+   Ewl_Widget *vbox = NULL;
+   Ewl_Widget *label1 = NULL;
+   Ewl_Widget *label2 = NULL;
+
    switch (column) {
       case 0:
          d = data;
-         w = ewl_label_new();
-         ewl_object_custom_h_set(EWL_OBJECT(w), 60);
-         ewl_label_text_set(EWL_LABEL(w), d->name);
+         label1 = ewl_label_new();
+         ewl_object_custom_h_set(EWL_OBJECT(label1), 60);
+         ewl_label_text_set(EWL_LABEL(label1), d->name);
+
+         label2 = ewl_label_new();
+         ewl_object_custom_h_set(EWL_OBJECT(label2), 20);
+         ewl_label_text_set(EWL_LABEL(label2), "");
          break;
    }
-   ewl_widget_show(w);
-   return w;
+
+   vbox = ewl_box_new();
+   ewl_box_orientation_set(EWL_BOX(vbox), EWL_ORIENTATION_VERTICAL);
+   ewl_container_child_append(EWL_CONTAINER(vbox), label1);
+   ewl_container_child_append(EWL_CONTAINER(vbox), label2);
+
+   ewl_widget_show(vbox);
+   ewl_widget_show(label1);
+   ewl_widget_show(label2);
+
+   return vbox;
 }
 
 static void
@@ -244,6 +261,7 @@ e_nav_taglist_clear(Tag_List *obj)
 void
 e_nav_taglist_activate(Tag_List *tl)
 {
+   ewl_mvc_selected_clear(EWL_MVC(tl->tree));
    _e_taglist_update(tl);
 }
 

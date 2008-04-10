@@ -176,6 +176,7 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
    evas_object_hide(sd->nav);
    evas_object_hide(sd->map_overlay);
    e_nav_taglist_activate(sd->listview);
+   evas_object_raise(sd->panel_buttons);
 }
 
 static void   

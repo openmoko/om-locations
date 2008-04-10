@@ -1,5 +1,10 @@
 2008-04-10  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/e_ctrl.c: Raise buttons panel right after activating the tag list
+	* src/e_nav_taglist.c: Selected clear before showing tag list. 
+
+2008-04-10  Jeremy Chang  <jeremy@openmoko.com>
+
 	* src/e_mod_nav.c: Always show neo_me in the center of the screen. 
 	* data/config/diversity-nav.cfg: Change the default zoom level, config
 	values. 
