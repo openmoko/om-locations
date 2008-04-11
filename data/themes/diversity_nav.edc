@@ -567,12 +567,14 @@ group {
 group {
    name: "modules/diversity_nav/access_point";
    parts {
+      /*
       part { name: "range";
          mouse_events: 0;
          description { state: "default" 0.0;
             image.normal: "ap_range.png";
          }
       }
+      */
       part { name: "tower";
          description { state: "default" 0.0;
             min: 48 48;
@@ -580,6 +582,7 @@ group {
             image.normal: "ap_tower.png";
          }
       }
+      /*
       part { name: "s0";
          description { state: "default" 0.0;
             rel1 { 
@@ -664,6 +667,7 @@ group {
             color: 255 255 255 0;
          }
       }
+      */
       part { name: "top";
          description { state: "default" 0.0;
             min: 10 10;
@@ -708,6 +712,7 @@ group {
       }
    }
    programs { /* programs - where we react to events/signals */
+      /*
       program {
          name: "show1";
          signal: "show";
@@ -729,6 +734,7 @@ group {
          target: "s3";
          after: "show1";
       }
+      */
    }
 }
 
