@@ -175,19 +175,15 @@ e_dbus_proxy_new(E_DBus_Connection *connection, const char *name, const char *pa
   if (name)
   {
     proxy->name = strdup(name);
-
-    if (proxy->name)
-      proxy->for_owner = (proxy->name[0] == ':');
+    if (!proxy->name)
+      goto fail;
   }
-  else
-  {
-    proxy->for_owner = 1;
-  }
+  proxy->for_owner = (!proxy->name || (proxy->name[0] == ':'));
 
   proxy->path = strdup(path_name);
   proxy->interface = strdup(interface_name);
 
-  if (!proxy->name || !proxy->path || !proxy->interface)
+  if (!proxy->path || !proxy->interface)
     goto fail;
 
   proxy->manager = e_dbus_proxy_manager_get(connection);
