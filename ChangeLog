@@ -1,5 +1,10 @@
 2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/e_nav_item_location.c: Delete edje object signal callback when location item
+	deleted. 
+
+2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
+
 	* src/e_mod_nav.c: Always show neo_me on the top of its layer. 
 	* src/e_nav_item_neo_me.c: Add 'fixed' member in the structure. 
 	* src/e_nav_item_neo_me.h: Add fixed set/get API. 

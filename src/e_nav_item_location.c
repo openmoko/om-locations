@@ -336,26 +336,10 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    if(!strcmp(text_part_state, "default")) 
      {
         edje_object_signal_emit(obj, "e,state,active", "e");
-     //edje_object_signal_callback_add(obj, "MENU_ACTIVATE", "e.text.name", cb_menu_activate, NULL);
      }
    else 
      {
         edje_object_signal_emit(obj, "e,state,passive", "e");
-     //edje_object_signal_callback_del(obj, "MENU_ACTIVATE", "e.text.name", cb_menu_activate);
-     
-#if 0
-   om = e_flyingmenu_add(evas);
-   e_flyingmenu_theme_source_set(om, data);  // data is THEME_PATH
-   e_flyingmenu_autodelete_set(om, 1);
-   e_flyingmenu_source_object_set(om, obj);   // obj is location evas object
-   /* FIXME: real menu items */
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Edit",
-			       _e_nav_world_item_cb_menu_1, obj);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Send",
-			       _e_nav_world_item_cb_menu_2, obj);
-   evas_object_show(om);
-   e_flyingmenu_activate(om);
-#endif
      }
 }
 
@@ -372,6 +356,8 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
    if (!locd) return;
    if (locd->name) evas_stringshare_del(locd->name);
    if (locd->note) evas_stringshare_del(locd->note);
+
+   edje_object_signal_callback_del(obj, "MENU_ACTIVATE", "e.text.name", cb_menu_activate);
    free(locd);
 }
 
