@@ -139,7 +139,6 @@ dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   Diversity_Bard *self;
    Diversity_Equipment *eqp = NULL;
    Textedit_List_Item *item;
    Neo_Other_Data *neod;
@@ -158,9 +157,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
    if (!locd) return;
 
-   self = (Diversity_Bard *)e_ctrl_self_get();
-   if (self)
-     eqp = diversity_bard_equipment_get(self, "phonekit");
+   eqp = e_ctrl_self_equipment_get("phonekit");
    if (!eqp) return;
 
    void *selected_item = e_textedit_list_selected_get(obj);

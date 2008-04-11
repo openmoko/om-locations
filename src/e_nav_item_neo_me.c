@@ -34,6 +34,7 @@ struct _Neo_Me_Data
    const char             *twitter;
    unsigned char           visible : 1;
    unsigned char           fixed : 1;
+   Diversity_Bard         *self;
 };
 
 static Evas_Object *
@@ -216,7 +217,7 @@ cosplay(Evas_Object *item, int fixed)
 
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
-e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon, double lat)
+e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Bard *bard)
 {
    Evas_Object *o;
    Neo_Me_Data *neod;
@@ -225,6 +226,7 @@ e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon,
     * evas object */
    neod = calloc(1, sizeof(Neo_Me_Data));
    if (!neod) return NULL;
+   neod->self = bard;
    o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/neo/me");
    edje_object_part_text_set(o, "e.text.name", "???");
@@ -315,3 +317,14 @@ e_nav_world_item_neo_me_fixed_get(Evas_Object *item)
    if (!neod) return 0;
    return neod->fixed;
 }
+
+Diversity_Bard *
+e_nav_world_item_neo_me_bard_get(Evas_Object *item)
+{
+   Neo_Me_Data *neod;
+
+   neod = evas_object_data_get(item, "nav_world_item_neo_me_data");
+   if (!neod) return 0;
+   return neod->self;
+}
+

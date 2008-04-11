@@ -1,5 +1,18 @@
 2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/e_ctrl.c,
+	  src/e_ctrl.h: Change API from self_get/set to neo_me_get/set.
+
+	* src/e_nav_item_location.c: When sending SMS, get equipment directly from ctrl.
+	
+	* src/e_mod_nav.c: Self bard as one of neo_me_add arguments
+
+	* src/e_nav_item_neo_me.c,
+	  src/e_nav_item_neo_me.h: Add Diversity_Bard as a
+	  member in neo_me internal structure.
+
+2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
+
 	* src/widgets/e_nav_alert.c,
 	  src/widgets/e_nav_alert.h,
 	  src/widgets/Makefile.am,

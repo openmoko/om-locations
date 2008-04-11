@@ -22,11 +22,12 @@
 #include "e_ctrl.h"
 #include "e_nav_tileset.h"
 #include "e_nav_item_location.h"
+#include "e_nav_item_neo_me.h"
 #include "e_nav_taglist.h"
 #include "e_spreadmenu.h"
 
 static Evas_Object *ctrl = NULL;
-static Diversity_Bard *self = NULL;
+static Evas_Object *neo_me = NULL;
 static Ecore_Hash *bardRoster = NULL;
 
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -183,21 +184,18 @@ static void
 _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    double lon, lat, w, h;
-   int accuracy;
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
    if(!sd) {
        return;
    }
 
-   if (!self) return;
-   diversity_dbus_property_get(((Diversity_DBus *)self), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-   /* if not fixed yet, no action */
-   if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;   
-   diversity_object_geometry_get((Diversity_Object *)self, &lon, &lat, &w, &h);
-   lat = -lat;
+   if (!neo_me) return;
+
+   e_nav_world_item_geometry_get(neo_me, &lon, &lat, &w, &h);
    // ToDo:  set Follow me flag
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
+
    e_nav_taglist_deactivate(sd->listview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
@@ -378,15 +376,28 @@ e_ctrl_nav_set(Evas_Object* obj)
 }
 
 void
-e_ctrl_self_set(Evas_Object *obj, void *bard)
+e_ctrl_neo_me_set(Evas_Object *obj)
 {
-   self = (Diversity_Bard *)bard;
+  neo_me = obj;
 }
 
 void *
-e_ctrl_self_get(void)
+e_ctrl_neo_me_get(void)
 {
-   return self;
+   return neo_me;
+}
+
+Diversity_Equipment *
+e_ctrl_self_equipment_get(const char *eqp_name)
+{
+   Diversity_Bard *self;
+   Diversity_Equipment *eqp = NULL;
+
+   self = e_nav_world_item_neo_me_bard_get(neo_me); 
+   if (self)
+     eqp = diversity_bard_equipment_get(self, eqp_name);
+
+   return eqp;
 }
 
 /* internal calls */

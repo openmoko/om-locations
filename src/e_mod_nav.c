@@ -374,7 +374,10 @@ _e_mod_nav_init(Evas *evas)
    ctrl = e_ctrl_add(evas);
    e_ctrl_theme_source_set(ctrl, THEME_PATH);
    e_ctrl_nav_set(nav);
-   e_ctrl_self_set(ctrl, self);
+
+   _e_mod_neo_me_init();
+
+   e_ctrl_neo_me_set(neo_me);
    evas_object_show(ctrl);
 
    if(world) 
@@ -392,8 +395,6 @@ _e_mod_nav_init(Evas *evas)
                                       NULL); 
 	diversity_viewport_start(worldview);
      }
-
-   _e_mod_neo_me_init();
 
      {
 	Diversity_Equipment *eqp = NULL;
@@ -450,7 +451,7 @@ _e_mod_neo_me_init()
    neo_me_lat = dn_config_float_get(cfg, "neo_me_lat");
    neo_me_lon = dn_config_float_get(cfg, "neo_me_lon");
    nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
-				     neo_me_lon, neo_me_lat);
+				     neo_me_lon, neo_me_lat, self);
 
    /* if already fixed, change the skin.   */
    accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;   
