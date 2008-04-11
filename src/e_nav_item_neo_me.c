@@ -153,7 +153,7 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    e_flyingmenu_theme_source_set(om, THEME_PATH);
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 200, "Touch Me!",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, "Touch Me!",
 			       save_current_location, obj);  
    evas_object_show(om);
    e_flyingmenu_activate(om);
@@ -200,7 +200,7 @@ show_welcome_message(Evas_Object *item)
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, item);
    /* FIXME: real menu items */
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 200, "Touch Me!",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, "Touch Me!",
 			       save_current_location, item);  
    evas_object_show(om);
    e_flyingmenu_activate(om);
@@ -221,6 +221,7 @@ e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon,
 {
    Evas_Object *o;
    Neo_Me_Data *neod;
+   int x, y, w, h;
 
    /* FIXME: allocate extra data struct for AP properites and attach to the
     * evas object */
@@ -233,9 +234,10 @@ e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon,
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
 				  theme_dir);
+   evas_object_geometry_get(edje_object_part_object_get(o, "phone"), &x, &y, &w, &h);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
-   e_nav_world_item_geometry_set(o, lon, lat, 0, 0);
+   e_nav_world_item_geometry_set(o, lon, lat, w, h);
    e_nav_world_item_scale_set(o, 0);
    e_nav_world_item_update(o);
    evas_object_event_callback_add(o, EVAS_CALLBACK_DEL,

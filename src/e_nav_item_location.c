@@ -308,8 +308,8 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    const char *message = e_nav_world_item_location_note_get(location_object);
    e_dialog_textblock_add(od, "Edit message", message, 120, obj);
    e_dialog_button_add(od, "Save", dialog_location_save, od);
-   e_dialog_button_add(od, "Delete", dialog_location_delete, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
+   e_dialog_button_add(od, "Delete", dialog_location_delete, od);
    
    e_flyingmenu_deactivate(obj);
    evas_object_show(od);
@@ -349,9 +349,9 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);   // obj is location evas object
    /* FIXME: real menu items */
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Edit",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, "Edit",
 			       _e_nav_world_item_cb_menu_1, obj);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 100, "Send",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, "Send",
 			       _e_nav_world_item_cb_menu_2, obj);
    evas_object_show(om);
    e_flyingmenu_activate(om);
@@ -399,6 +399,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
 {
    Evas_Object *o;
    Location_Data *locd;
+   int x, y, w, h;
 
    /* FIXME: allocate extra data struct for AP properites and attach to the
     * evas object */
@@ -412,9 +413,10 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
 				  theme_dir);
+   evas_object_geometry_get(edje_object_part_object_get(o, "location"), &x, &y, &w, &h);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
-   e_nav_world_item_geometry_set(o, lon, lat, 0, 0);
+   e_nav_world_item_geometry_set(o, lon, lat, w, h);
    e_nav_world_item_scale_set(o, 0);
    e_nav_world_item_update(o);
    evas_object_event_callback_add(o, EVAS_CALLBACK_DEL,

@@ -51,6 +51,7 @@ struct _Embed_Canvas
 
    Ewl_Widget      *vbox;
    Ewl_Widget      *entry;
+   Ewl_Widget      *spacer;
    unsigned int     candidate_mode;
    Candidate_List  *candidate_list;
 };
@@ -243,7 +244,7 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    if(!positive_func) bi->func = textedit_save;
    else bi->func = positive_func;
    bi->data = data1;
-   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button");
+   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_28");
    evas_object_smart_member_add(bi->item_obj, obj);
    evas_object_clip_set(bi->item_obj, sd->clip);
    evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,
@@ -256,7 +257,7 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    if(!negative_func) bi2->func = textedit_exit;
    else bi2->func = negative_func;
    bi2->data = data2;
-   bi2->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button");
+   bi2->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_28");
    evas_object_smart_member_add(bi2->item_obj, obj);
    evas_object_clip_set(bi2->item_obj, sd->clip);
    evas_object_event_callback_add(bi2->item_obj, EVAS_CALLBACK_MOUSE_UP,
@@ -294,6 +295,9 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    ec->entry = ewl_entry_new();
    ewl_entry_editable_set(EWL_ENTRY(ec->entry), TRUE);  
    ewl_container_child_append(EWL_CONTAINER(ec->vbox), ec->entry);
+
+   ec->spacer = ewl_spacer_new();
+   ewl_container_child_append(EWL_CONTAINER(ec->vbox), ec->spacer);
 
    /*
     * fill it with content
@@ -661,25 +665,26 @@ _e_textedit_update(Evas_Object *obj)
    evas_object_show(sd->bg_object);
    if(sd->left_button)
      {
-        evas_object_resize(sd->left_button, screen_w*(1.0/6), (screen_h*(1.0/8)) );
+        evas_object_resize(sd->left_button, screen_w*(1.0/3), (screen_h*(1.0/8)) );
         evas_object_move(sd->left_button, screen_x+indent, screen_y+indent);
         evas_object_show(sd->left_button);
      }
    if(sd->right_button)
      {
-        evas_object_resize(sd->right_button, screen_w*(1.0/6), (screen_h*(1.0/8)) );
-        evas_object_move(sd->right_button, screen_w-indent-(screen_w*(1.0/6)), screen_y+indent);
+        evas_object_resize(sd->right_button, screen_w*(1.0/3), (screen_h*(1.0/8)) );
+        evas_object_move(sd->right_button, screen_w-indent-(screen_w*(1.0/3)), screen_y+indent);
         evas_object_show(sd->right_button);
      }
 
-   evas_object_move(sd->embed->frame, indent, (screen_h*(1.0/6)) + indent*2);
+   evas_object_move(sd->embed->frame, indent, (screen_h*(1.0/8)) + indent*2);
    evas_object_show(sd->embed->frame);
-   evas_object_move(sd->embed->embed_eo, indent, (screen_h*(1.0/6)) + indent*2 + 30 + indent*2);
+   evas_object_move(sd->embed->embed_eo, indent, (screen_h*(1.0/8)) + indent*2 + 70 + indent*2);
    evas_object_resize(sd->embed->embed_eo, screen_w-(indent*2), screen_h*(1.0/3));
    evas_object_show(sd->embed->embed_eo);
    ewl_widget_show(sd->embed->embed);
    ewl_widget_show(sd->embed->vbox);
    ewl_widget_show(sd->embed->entry);
+   ewl_widget_show(sd->embed->spacer);
    if(sd->embed->candidate_mode == TEXTEDIT_CANDIDATE_MODE_TRUE)
      {
         ewl_widget_show(sd->embed->candidate_list->scrollpane);

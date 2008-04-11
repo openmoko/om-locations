@@ -1,5 +1,21 @@
 2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/e_nav_item_location.c: Update the width and height when item
+	added. 
+
+	* data/themes/images/edit_send.png: Add image as flying menu's bg.
+
+	* src/e_flyingmenu.c: Add a bg_obj.
+
+	* src/widgets/e_nav_textedit.c: Change the theme of button.
+
+	* src/e_nav_item_neo_me.c: Update the width and height when item
+	added.
+
+	* data/themes/diversity_nav.edc: Change the theme for button panel.
+
+2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
+
 	* src/e_ctrl.c,
 	  src/e_ctrl.h: Change API from self_get/set to neo_me_get/set.
 
