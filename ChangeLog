@@ -1,5 +1,20 @@
 2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/widgets/e_nav_alert.c,
+	  src/widgets/e_nav_alert.h,
+	  src/widgets/Makefile.am,
+	  data/themes/default.edc,
+	  data/themes/Makefile.am,
+	  data/themes/default_nav_alert.edc: Add alert widget
+	that distinguish from dialog. 
+	    
+	* data/themes/default_nav_button.edc: Add different size button. 
+
+	* src/e_nav_item_location.c: Change some dialog to alert. Add delete
+	confirmed alert before delete confirmed. 
+
+2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
+
 	* src/e_nav_item_location.c: Delete edje object signal callback when location item
 	deleted. 
 

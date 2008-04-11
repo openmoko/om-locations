@@ -15,6 +15,7 @@ default.edj
 EXTRA_DIST = \
 diversity_nav.edc \
 default_nav_dialog.edc \
+default_nav_alert.edc \
 default_nav_button.edc \
 default_titlepane.edc \
 default_textblock.edc \

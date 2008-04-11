@@ -22,6 +22,7 @@
 #include "e_nav_item_location.h"
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
+#include "widgets/e_nav_alert.h"
 #include "widgets/e_nav_textedit.h"
 #include "e_ctrl.h"
 
@@ -54,6 +55,12 @@ _e_nav_world_item_theme_obj_new(Evas *e, const char *custom_dir, const char *gro
 	  }
      }
    return o;
+}
+
+static void
+alert_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   e_alert_deactivate(obj);
 }
 
 static void
@@ -92,19 +99,41 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 }
 
 static void
-dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
+alert_location_delete_cancelled(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   e_alert_deactivate(obj);
+}
+
+static void
+alert_location_delete_confirmed(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Location_Data *locd;
    int ok;
+
    locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
    if (!locd) return;
    Diversity_World *world = e_nav_world_get();
    ok = diversity_world_tag_remove(world, locd->tag);
-   if(ok) 
+   if(ok)
      {
         locd->tag = NULL;
      }
+   e_alert_deactivate(obj);
+}
+
+static void
+dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   Evas_Object *oa = e_alert_add(evas_object_evas_get(obj));
+   e_alert_theme_source_set(oa, THEME_PATH);
+   e_alert_source_object_set(oa, src_obj);
+   e_alert_title_set(oa, "DELETE", "Are you sure?");
+   e_alert_title_color_set(oa, 255, 0, 0, 255);
+   e_alert_button_add(oa, "Yes", alert_location_delete_confirmed, oa);
+   e_alert_button_add(oa, "No", alert_location_delete_cancelled, oa);
    e_dialog_deactivate(obj);
+   evas_object_show(oa);
+   e_alert_activate(oa);
 }
 
 static void
@@ -145,22 +174,24 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
              printf("PhoneKit equipment Got , tag share ..... \n");
              ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
 
-             Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
-             e_dialog_theme_source_set(od, THEME_PATH);
-             e_dialog_source_object_set(od, src_obj);     // dialog's src_obj is location item
+             Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
+             e_alert_theme_source_set(od, THEME_PATH);
+             e_alert_source_object_set(od, src_obj);     // alert's src_obj is location item
              if (ok)
                {
-                  e_dialog_title_set(od, "Success", "Tag sent");
-                  e_dialog_button_add(od, "OK", dialog_exit, od);
+                  e_alert_title_set(od, "SUCCESS", "Tag sent");
+                  e_alert_title_color_set(od, 0, 255, 0, 255);
+                  e_alert_button_add(od, "OK", alert_exit, od);
                }
              else 
                {
-                  e_dialog_title_set(od, "Fail", "Tag sent");
-                  e_dialog_button_add(od, "OK", dialog_exit, od);
+                  e_alert_title_set(od, "FAIL", "Tag sent fail");
+                  e_alert_title_color_set(od, 255, 0, 0, 255);
+                  e_alert_button_add(od, "OK", alert_exit, od);
                }
              e_textedit_deactivate(obj);   
              evas_object_show(od);
-             e_dialog_activate(od); 
+             e_alert_activate(od); 
              return;
           }
      }
@@ -173,22 +204,24 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         neod = (Neo_Other_Data *)item->data;
         if(!neod) return;
         ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
-        Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
-        e_dialog_theme_source_set(od, THEME_PATH);
-        e_dialog_source_object_set(od, src_obj);     
+        Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
+        e_alert_theme_source_set(od, THEME_PATH);
+        e_alert_source_object_set(od, src_obj);     
         if (ok)
           {
-             e_dialog_title_set(od, "Success", "Tag sent");
-             e_dialog_button_add(od, "OK", dialog_exit, od);
+             e_alert_title_set(od, "SUCCESS", "Tag sent");
+             e_alert_title_color_set(od, 0, 255, 0, 255);
+             e_alert_button_add(od, "OK", alert_exit, od);
           }
         else 
           {
-             e_dialog_title_set(od, "Fail", "Tag sent");
-             e_dialog_button_add(od, "OK", dialog_exit, od);
+             e_alert_title_set(od, "FAIL", "Tag sent fail");
+             e_alert_title_color_set(od, 255, 0, 0, 255);
+             e_alert_button_add(od, "OK", alert_exit, od);
           }
         e_textedit_deactivate(obj);   
         evas_object_show(od);
-        e_dialog_activate(od); 
+        e_alert_activate(od); 
         return;
      }
    
@@ -206,22 +239,24 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    free(phone_number);
    free(message);
 
-   Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
-   e_dialog_theme_source_set(od, THEME_PATH);
-   e_dialog_source_object_set(od, src_obj);     
+   Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
+   e_alert_theme_source_set(od, THEME_PATH);
+   e_alert_source_object_set(od, src_obj);     
    if(ok)
      {
-        e_dialog_title_set(od, "Success", "Tag sent");
-        e_dialog_button_add(od, "OK", dialog_exit, od);
+        e_alert_title_set(od, "SUCCESS", "Tag sent");
+        e_alert_title_color_set(od, 0, 255, 0, 255);
+        e_alert_button_add(od, "OK", alert_exit, od);
      }
    else
      {
-        e_dialog_title_set(od, "Fail", "Tag sent");
-        e_dialog_button_add(od, "OK", dialog_exit, od);
+        e_alert_title_set(od, "FAIL", "Tag sent fail");
+        e_alert_title_color_set(od, 255, 0, 0, 255);
+        e_alert_button_add(od, "OK", alert_exit, od);
      }
    e_textedit_deactivate(obj);   
    evas_object_show(od);
-   e_dialog_activate(od); 
+   e_alert_activate(od); 
 }
 
 static void

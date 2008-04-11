@@ -1,0 +1,71 @@
+
+group {
+   name: "modules/diversity_nav/alert/text";
+   parts {
+      part { name: "base";
+         type: RECT;
+         mouse_events: 0;
+         description { state: "default" 0.0;
+         color: 0 0 0 0;
+            rel1 {
+               relative: 0.0 0.0;
+               offset: 0 0;
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: 0 0;
+            }
+         } 
+      }
+      part {
+         name:          "title";
+         type:          TEXT;
+         mouse_events:  0;
+         description {
+            state:    "default" 0.0;
+            color: 255 255 255 255;
+            rel1 {
+               relative: 0.0 0.0;
+	       offset: 20 5;
+               to:   "base";
+            }
+            rel2 {
+               relative: 0.33 1.0;
+               offset: 0 0;
+               to:   "base";
+            }
+            text {
+               font: "Edje-Sans-Bold";
+               size: 24;
+               min:  1 1;
+                align: 0.0 0.0;
+            }
+         }
+      }
+      part {
+         name:          "message";
+         type:          TEXT;
+         mouse_events:  0;
+         description {
+            state:    "default" 0.0;
+            color: 255 255 255 255;
+            rel1 {
+               relative: 1.0 0.0;
+               offset: 10 0;
+               to:   "title";
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: 0 0;
+               to:   "base";
+            }
+            text {
+               font: "Edje-Sans-Bold";
+               size: 24;
+               min:  1 1;
+               align: 0.0 0.0;
+            }
+         }
+      }
+   }
+}
