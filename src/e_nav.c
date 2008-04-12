@@ -794,7 +794,7 @@ _e_nav_cb_event_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    E_Smart_Data *sd;
    
    sd = evas_object_smart_data_get(data);
-   if (ev->button == 1)
+   if (ev->button == 1 && sd->cur.mouse_down)
      {
 	_e_nav_movengine(data, E_NAV_MOVEENGINE_STOP, ev->canvas.x, ev->canvas.y);
 	sd->cur.mouse_down = 0;
@@ -830,6 +830,7 @@ static void
 _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
+   double lon, lat, when = 0.0;
 
    sd = evas_object_smart_data_get(obj);
    if (action == E_NAV_MOVEENGINE_START)
@@ -845,24 +846,17 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 	return;
      }
    
-   if (action == E_NAV_MOVEENGINE_STOP)
-     {
-	e_nav_coord_set(obj, sd->lon, sd->lat, 0.0);
-     }
-   else
-     {
-	double lon_off, lat_off;
-
-	_e_nav_from_offsets(obj,
-			    sd->moveng.start.x - x,
+   _e_nav_from_offsets(obj, sd->moveng.start.x - x,
 			    sd->moveng.start.y - y,
-			    &lon_off, &lat_off);
-	/* set `when' to frametime to minimize screen update */
-	e_nav_coord_set(obj, 
-			sd->moveng.start.lon + lon_off,
-			sd->moveng.start.lat + lat_off,
-			ecore_animator_frametime_get());
-     }
+			    &lon, &lat);
+   lon += sd->moveng.start.lon;
+   lat += sd->moveng.start.lat;
+
+   /* set `when' to frametime to minimize screen update */
+   if (action == E_NAV_MOVEENGINE_GO)
+     when = ecore_animator_frametime_get();
+
+   e_nav_coord_set(obj, lon, lat, when);
 }
 
 static void
