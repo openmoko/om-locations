@@ -589,7 +589,7 @@ _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const
 		/ (1 << E_NAV_ZOOM_SENSITIVITY);
 
 	z = E_NAV_ZOOM_MIN + ((E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN) * y);
-	e_nav_zoom_set(sd->nav, z, 0.2);
+	e_nav_zoom_set(sd->nav, z, 0.0);
      }
 }
 

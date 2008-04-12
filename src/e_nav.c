@@ -841,7 +841,6 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 	sd->moveng.start.zoom = sd->conf.zoom;
 
 	e_nav_coord_set(obj, sd->lon, sd->lat, 0.0);
-	e_nav_zoom_set(obj, sd->conf.zoom, 0.5);
 
 	return;
      }
@@ -858,10 +857,11 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 			    sd->moveng.start.x - x,
 			    sd->moveng.start.y - y,
 			    &lon_off, &lat_off);
+	/* set `when' to frametime to minimize screen update */
 	e_nav_coord_set(obj, 
 			sd->moveng.start.lon + lon_off,
 			sd->moveng.start.lat + lat_off,
-			0.0);
+			ecore_animator_frametime_get());
      }
 }
 
@@ -988,10 +988,9 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
 static void
 _e_nav_update(Evas_Object *obj)
 {
-
    E_Smart_Data *sd;
    Evas_List *l;
-   
+
    sd = evas_object_smart_data_get(obj);
    _e_nav_wallpaper_update(obj);
    
@@ -1004,7 +1003,6 @@ _e_nav_update(Evas_Object *obj)
      }
    
    _e_nav_overlay_update(obj);
-
 }
 
 static void
