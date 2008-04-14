@@ -425,6 +425,10 @@ _e_mod_nav_init(Evas *evas)
    lat = dn_config_float_get(cfg, "lat");
    lon = dn_config_float_get(cfg, "lon");
    scale = dn_config_float_get(cfg, "scale");
+
+   /* Default is lowest zoom level if cfg file open error */
+   if(scale < E_NAV_ZOOM_MIN) scale = E_NAV_ZOOM_MAX;
+
    neo_me_lat = dn_config_float_get(cfg, "neo_me_lat");
    neo_me_lon = dn_config_float_get(cfg, "neo_me_lon");
 

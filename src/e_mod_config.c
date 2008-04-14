@@ -118,14 +118,16 @@ dn_config_file_load(Diversity_Nav_Config *cfg, const char *file)
    fd = open(file, O_RDONLY, S_IRUSR);
    if (fd == -1)
      {
-        printf("Unable to open cfg file %s.", file);
+        printf("Unable to open cfg file %s.\n", file);
+        /*  still create the hash for cfg  */
+        cfg->cfg_data = dn_config_create_hash();
         return FALSE;
      }
 
    size = ecore_file_size(file);
    if (!dn_config_file_read_lock(fd))
      {
-        printf("Unable to lock %s for read.", file);
+        printf("Unable to lock %s for read.\n", file);
         close(fd);
         return FALSE;
      }
@@ -167,8 +169,7 @@ dn_config_save(Diversity_Nav_Config *cfg)
    key = dirname(path);
    if (!ecore_file_exists(key) && !ecore_file_mkpath(key))
      {
-        printf("Unable to create %s directory path.", key);
-        //DRETURN_INT(FALSE, DLEVEL_STABLE);
+        printf("Unable to create %s directory path.\n", key);
         return FALSE;
      }
    FREE(path);
@@ -182,7 +183,7 @@ dn_config_save(Diversity_Nav_Config *cfg)
 
    if (fd == -1)
      {
-        printf("Unable to open cfg file %s.", file);
+        printf("Unable to open cfg file %s.\n", file);
         return FALSE;
      }
 
@@ -190,7 +191,7 @@ dn_config_save(Diversity_Nav_Config *cfg)
 
    if (!dn_config_file_write_lock(fd))
      {
-        printf("Unable to lock %s for write.", file);
+        printf("Unable to lock %s for write.\n", file);
         close(fd);
         return FALSE;
      }

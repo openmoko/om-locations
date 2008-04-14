@@ -1,3 +1,11 @@
+2008-04-14  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_mod_nav.c: When init, default is lowest zoom level if cfg file open
+	error. 
+	
+	* src/e_mod_config.c: Setup the config hash even if the file load
+	error. Because that could work and be used when saving to a file.  
+
 2008-04-11  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_nav_item_location.c: Update the width and height when item
