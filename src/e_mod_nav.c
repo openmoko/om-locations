@@ -119,6 +119,8 @@ viewport_object_added(void *data, DBusMessage *msg)
         Evas_Object *nwi = NULL;
         double lon, lat, width, height;
 	int type;
+        int secs = 0;
+	time_t timep;
 
         printf("object added in the viewport, path:%s\n", obj_path);  
 	obj = diversity_object_new(obj_path);
@@ -127,6 +129,10 @@ viewport_object_added(void *data, DBusMessage *msg)
 
         diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
         printf("location geo get lon:%f lat:%f\n", lon, lat);
+        diversity_object_lastseen_get(obj, &secs);
+
+        timep = (time_t)secs;
+
        	type = diversity_object_type_get(obj);  
         if(type==DIVERSITY_OBJECT_TYPE_TAG) 
           {
@@ -138,7 +144,8 @@ viewport_object_added(void *data, DBusMessage *msg)
              name = strsep(&description, "\n");
              e_nav_world_item_location_name_set(nwi, name);
              e_nav_world_item_location_note_set(nwi, description);
-             e_ctrl_taglist_tag_add(name, description, nwi); 
+             e_nav_world_item_location_timestamp_set(nwi, timep);
+             e_ctrl_taglist_tag_add(name, description, timep, nwi); 
              ecore_hash_set(objectStore, (void *)strdup(obj_path), (void *)nwi);
           }
         else if(type==DIVERSITY_OBJECT_TYPE_BARD) 

@@ -26,6 +26,8 @@
 #include "e_nav_taglist.h"
 #include "e_spreadmenu.h"
 
+#define E_NEW(s, n) (s *)calloc(n, sizeof(s))
+
 static Evas_Object *ctrl = NULL;
 static Evas_Object *neo_me = NULL;
 static Ecore_Hash *bardRoster = NULL;
@@ -105,11 +107,27 @@ e_ctrl_taglist_tag_set(const char *name, const char *note, void *object)
 }
 
 void
-e_ctrl_taglist_tag_add(const char *name, const char *note, void *loc_object)
+e_ctrl_taglist_tag_add(const char *name, const char *note, time_t timestamp, void *loc_object)
 {
    E_Smart_Data *sd;
+   Tag_List_Item *item;
+
    sd = evas_object_smart_data_get(ctrl);
-   e_nav_taglist_tag_add(sd->listview, name, note, _e_nav_tag_sel, ctrl, loc_object);
+
+   item = E_NEW(Tag_List_Item, 1);
+
+   if (name)
+     item->name = strdup(name); 
+
+   if (note)
+     item->description = strdup(note);
+
+   item->timestamp = timestamp;
+   item->func = _e_nav_tag_sel;
+   item->data = ctrl;
+   item->data2 = loc_object;
+
+   e_nav_taglist_tag_add(sd->listview, item);
 }
 
 void

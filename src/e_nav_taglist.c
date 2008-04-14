@@ -24,7 +24,8 @@
 #include "e_nav_taglist.h"
 #include "widgets/e_nav_theme.h"
 #include <stdlib.h>
-#define E_NEW(s, n) (s *)calloc(n, sizeof(s))
+#include <time.h>
+
 static void _e_taglist_update(Tag_List *sd);
 
 static Ewl_Widget *
@@ -39,6 +40,88 @@ test_data_header_fetch(void *data , unsigned int column)
    return l;
 }
 
+static char *
+get_time_diff_string(time_t time_then)
+{
+   char time_diff_string[PATH_MAX];
+   time_t time_now, time_diff;
+   int days_diff;
+   int today_secs;
+   struct tm now, then;
+   struct tm *now_p, *then_p;
+
+   time(&time_now);  
+   now_p = localtime(&time_now);
+   memcpy(&now, now_p, sizeof(now));
+
+   then_p = localtime(&time_then);
+   memcpy(&then, then_p, sizeof(then));
+
+   if(time_then > time_now) 
+     {
+        snprintf(time_diff_string, sizeof(time_diff_string),
+                 "%s", ctime(&time_then));
+     }
+
+   if(now.tm_year != then.tm_year)
+     {
+        if(now.tm_year - then.tm_year == 1)
+          snprintf(time_diff_string, sizeof(time_diff_string),
+                   "Last year");
+        else
+          snprintf(time_diff_string, sizeof(time_diff_string),
+                   "%d years ago", now.tm_year - then.tm_year);
+        return strdup(time_diff_string);
+     }
+   else if(now.tm_mon != then.tm_mon)
+     {
+        if(now.tm_mon - then.tm_mon == 1)
+          snprintf(time_diff_string, sizeof(time_diff_string),
+                   "Last month");
+        else
+          snprintf(time_diff_string, sizeof(time_diff_string),
+                   "%d months ago", now.tm_mon - then.tm_mon);
+        return strdup(time_diff_string);
+     }
+   else 
+     {
+            today_secs = (now.tm_hour * 60 * 60) + (now.tm_min * 60) + now.tm_sec; 
+            printf("today_secs = %d\n", today_secs);
+            printf("time_now: %d, time_past: %d\n", (int)time_now, (int)time_then);
+            time_diff = time_now - time_then;
+            printf("time_diff = %d\n", (int)time_diff);
+            if(time_diff >= today_secs) 
+              {
+                 days_diff = (time_diff - today_secs) / 86400;
+                 if(days_diff == 0)
+                   {
+                      snprintf(time_diff_string, sizeof(time_diff_string),
+                               "Yesterday");
+                   }
+                 else if((days_diff + 1) < 7)
+                   {
+                      snprintf(time_diff_string, sizeof(time_diff_string),
+                               "%d days ago", days_diff + 1 );
+                   }
+                 else 
+                   {
+                      if(( (days_diff + 1) / 7 ) == 1)
+                        snprintf(time_diff_string, sizeof(time_diff_string),
+                                 "Last week");
+                      else
+                        snprintf(time_diff_string, sizeof(time_diff_string),
+                                 "%d weeks ago", (days_diff + 1) / 7);
+                   }
+
+                 return strdup(time_diff_string);
+              }
+            else 
+              {
+                 return strdup("Today");
+              } 
+     }
+}
+
 static Ewl_Widget *
 tree_test_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
 {
@@ -46,6 +129,7 @@ tree_test_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
    Ewl_Widget *vbox = NULL;
    Ewl_Widget *label1 = NULL;
    Ewl_Widget *label2 = NULL;
+   char *time_diff_string;
 
    switch (column) {
       case 0:
@@ -56,7 +140,11 @@ tree_test_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
 
          label2 = ewl_label_new();
          ewl_object_custom_h_set(EWL_OBJECT(label2), 20);
-         ewl_label_text_set(EWL_LABEL(label2), "");
+
+         time_diff_string = get_time_diff_string(d->timestamp);
+         ewl_label_text_set(EWL_LABEL(label2), time_diff_string);
+         free(time_diff_string);
+         time_diff_string = NULL;
          break;
    }
 
@@ -172,21 +260,12 @@ e_nav_taglist_destroy(Tag_List *obj)
 }
 
 void
-e_nav_taglist_tag_add(Tag_List *obj, const char *name, const char *description, void (*func) (void *data, void *data2), void *data1, void *data2)
+e_nav_taglist_tag_add(Tag_List *obj, Tag_List_Item *item)
 {
-   Tag_List_Item *item;
    Ecore_List *list;    
-   item = E_NEW(Tag_List_Item, 1);
-   if (name)
-     item->name = strdup(name); 
-   if (description)
-     item->description = strdup(description);
-   item->func = func;
-   item->data = data1;
-   item->data2 = data2;
 
    list = ewl_mvc_data_get(EWL_MVC(obj->tree));
-   ecore_list_append(list, item);
+   ecore_list_prepend(list, item);
    ewl_mvc_data_set(EWL_MVC(obj->tree), list);
 }
 
@@ -275,11 +354,24 @@ e_nav_taglist_deactivate(Tag_List *tl)
    ewl_widget_hide(tl->tree);
 }
 
+static int 
+_list_sort_compare_cb(Tag_List_Item *item1, Tag_List_Item *item2) 
+{
+   if (item1->timestamp == 0) return 1;
+   if (item2->timestamp == 0) return -1;
+   return item1->timestamp <= item2->timestamp ? 1: -1;
+}
+
 static void
 _e_taglist_update(Tag_List *tl)
 {
    Evas_Coord screen_x, screen_y, screen_w, screen_h;
+   Ecore_List *list;   
+
    if(tl==NULL) return;
+   list = ewl_mvc_data_get(EWL_MVC(tl->tree));
+   ecore_list_sort(list, ECORE_COMPARE_CB(_list_sort_compare_cb), ECORE_SORT_MIN);
+
    evas_output_viewport_get(evas_object_evas_get(tl->frame), &screen_x, &screen_y, &screen_w, &screen_h);
    evas_object_show(tl->frame);
    evas_object_move(tl->embed_eo, screen_x, screen_y);

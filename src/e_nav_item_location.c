@@ -35,6 +35,7 @@ struct _Location_Data
    unsigned char           visible : 1;
    double                  lat;
    double                  lon;
+   time_t            timestamp;
    Diversity_Tag          *tag;
 };
 
@@ -545,4 +546,23 @@ e_nav_world_item_location_lon_get(Evas_Object *item)
    return locd->lon;
 }
 
+void
+e_nav_world_item_location_timestamp_set(Evas_Object *item, time_t secs)
+{
+   Location_Data *locd;
+   
+   locd = evas_object_data_get(item, "nav_world_item_location_data");
+   if (!locd) return;
+   locd->timestamp = secs;
+}
+
+int
+e_nav_world_item_location_timestamp_get(Evas_Object *item)
+{
+   Location_Data *locd;
+   
+   locd = evas_object_data_get(item, "nav_world_item_location_data");
+   if (!locd) return 0;
+   return locd->timestamp;
+}
 

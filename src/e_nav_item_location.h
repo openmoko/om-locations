@@ -33,5 +33,7 @@ void                    e_nav_world_item_location_lat_set(Evas_Object *item, dou
 double                  e_nav_world_item_location_lat_get(Evas_Object *item);
 void                    e_nav_world_item_location_lon_set(Evas_Object *item, double lon);
 double                  e_nav_world_item_location_lon_get(Evas_Object *item);
+void                    e_nav_world_item_location_timestamp_set(Evas_Object *item, time_t secs);
+int                     e_nav_world_item_location_timestamp_get(Evas_Object *item);
     
 #endif

@@ -1,3 +1,22 @@
+2008-04-15  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_ctrl.c,
+	  src/e_ctrl.h: Change the tag add api. 
+
+	* src/e_nav_taglist.c,
+	src/e_nav_taglist.h: Sort the list each time before activating the
+	list, and show the time interval string on label of the list. 
+
+	* src/e_nav_item_location.c,
+	  src/e_nav_item_location.h: Add a member, timestamp, in location
+	  data. 
+
+	* src/e_nav_dbus.c,
+	  src/e_nav_dbus.h: Add diversity_object_lastseen_get api. 
+
+	* src/e_mod_nav.c: When adding a location tag, set the lastseen value 
+	(timestamp) in location's structure. 
+
 2008-04-14  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_mod_nav.c: When init, default is lowest zoom level if cfg file open

@@ -591,6 +591,32 @@ diversity_object_type_get(Diversity_Object *obj)
    return obj->type;
 }
 
+int
+diversity_object_lastseen_get(Diversity_Object *obj, int *secs)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+   int ok = FALSE;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) obj,
+	 	DIVERSITY_DBUS_IFACE_OBJECT);
+
+   dbus_error_init(&error);
+   ok = e_dbus_proxy_simple_call(proxy,
+				 "LastSeen", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INT32, secs,
+				 DBUS_TYPE_INVALID);
+
+   if(!ok) 
+     {
+        printf("failed to get LastSeen: %s\n", error.message);
+        dbus_error_free(&error);
+     }
+
+   return ok;
+}
+
 Diversity_World *
 diversity_world_new(void)
 {
