@@ -19,6 +19,7 @@
  */
 
 #include "e_nav.h"
+#include "e_nav_theme.h"
 #include "e_nav_item_ap.h"
 #include "e_spiralmenu.h"
 
@@ -32,26 +33,6 @@ struct _AP_Data
    unsigned char           freed : 1;
    unsigned char           active : 1;
 };
-
-static Evas_Object *
-_e_nav_world_item_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
-
 
 /* FIXME: real menu callbacks */
 static void
@@ -129,7 +110,7 @@ e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, double lon, dou
     * evas object */
    apd = calloc(1, sizeof(AP_Data));
    if (!apd) return NULL;
-   o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
+   o = e_nav_theme_object_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/access_point");
    edje_object_part_text_set(o, "e.text.name", "???");
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,

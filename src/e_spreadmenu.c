@@ -19,6 +19,7 @@
  */
 
 #include "e_nav.h"
+#include "e_nav_theme.h"
 #include "e_spreadmenu.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -65,7 +66,6 @@ static void _e_spreadmenu_smart_color_set(Evas_Object *obj, int r, int g, int b,
 static void _e_spreadmenu_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_spreadmenu_smart_clip_unset(Evas_Object *obj);
 
-static Evas_Object *_e_spreadmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
 static void _e_spreadmenu_update(Evas_Object *obj);
 static void _e_spreadmenu_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event);
 static void _e_spreadmenu_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event);
@@ -198,13 +198,12 @@ e_spreadmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size,
    si->sz = size;
    si->func = func;
    si->data = data;
-   si->item_obj = _e_spreadmenu_theme_obj_new(evas_object_evas_get(obj), sd->dir, icon);
+   si->item_obj = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir, icon);
    evas_object_smart_member_add(si->item_obj, obj);
    evas_object_clip_set(si->item_obj, sd->clip);
    evas_object_event_callback_add(si->item_obj, EVAS_CALLBACK_MOUSE_UP,
 				  _e_spreadmenu_cb_item_up, si);
    
-   //edje_object_part_text_set(si->item_obj, "e.text.name", label);
    edje_object_part_text_set(si->item_obj, "text", label);
    sd->items = evas_list_append(sd->items, si);
 }
@@ -371,25 +370,6 @@ _e_spreadmenu_smart_clip_unset(Evas_Object *obj)
    if (!sd) return;
    evas_object_clip_unset(sd->clip);
 } 
-
-static Evas_Object *
-_e_spreadmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
 
 static void
 _e_spreadmenu_update(Evas_Object *obj)

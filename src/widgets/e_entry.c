@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include "e_entry.h"
 #include "e_editable.h"
-#include "e_nav_theme.h"
+#include "../e_nav_theme.h"
 
 typedef struct _E_Entry_Smart_Data E_Entry_Smart_Data;
 

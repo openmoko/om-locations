@@ -20,10 +20,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef E_NAV_THEME
-#define E_NAV_THEME
+#ifndef E_NAV_THEME_H
+#define E_NAV_THEME_H
 
-int e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group);
+void e_nav_theme_init(const char *theme_name);
 Evas_Object * e_nav_theme_object_new(Evas *e, const char *custom_dir, const char *group);
+int e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group);
 
 #endif

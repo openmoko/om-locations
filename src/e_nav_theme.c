@@ -20,40 +20,33 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+
 #include <Edje.h>
 #include <limits.h>
-#include <math.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include "e_nav_theme.h"
 
-static int
-e_nav_theme_edje_object_set(Evas_Object *o, const char *category, const char *group)
-{  
-   char buf[PATH_MAX];
-   int ok; 
+#define DEFAULT_THEME "default"
+const char *diversity_theme_name = NULL;
 
+void
+e_nav_theme_init(const char *theme_name)
+{
+   diversity_theme_name = theme_name;
+}
+
+static int
+_e_nav_theme_edje_object_set(Evas_Object *o, const char *category, const char *group)
+{
+   char buf[PATH_MAX];
+   int ok=0;
+
+   if(category==NULL) return ok;
+   
    snprintf(buf, sizeof(buf), "%s/%s.edj", THEME_PATH, category);
    ok = edje_object_file_set(o, buf, group);
 
-   return ok;
-}
-
-int
-e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group)
-{
-   int ok=0;  
-   if (!e_nav_theme_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     ok = edje_object_file_set(o, buf, group);
-	  }
-     }
    return ok;
 }
 
@@ -61,17 +54,35 @@ Evas_Object *
 e_nav_theme_object_new(Evas *e, const char *custom_dir, const char *group)
 {
    Evas_Object *o;
-   
+
    o = edje_object_add(e);
-   if (!e_nav_theme_edje_object_set(o, "default", group))
+   if (!_e_nav_theme_edje_object_set(o, diversity_theme_name, group))
      {
         if (custom_dir)
           {
              char buf[PATH_MAX];
-             
-             snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
+
+             snprintf(buf, sizeof(buf), "%s/%s.edj", custom_dir, DEFAULT_THEME);
              edje_object_file_set(o, buf, group);
           }
      }
    return o;
 }
+
+int
+e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group)
+{
+   int ok=0;  
+   if (!_e_nav_theme_edje_object_set(o, diversity_theme_name, group))
+     {
+	if (custom_dir)
+	  {
+	     char buf[PATH_MAX];
+	     
+	     snprintf(buf, sizeof(buf), "%s/%s.edj", custom_dir, DEFAULT_THEME);
+	     ok = edje_object_file_set(o, buf, group);
+	  }
+     }
+   return ok;
+}
+

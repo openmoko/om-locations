@@ -19,6 +19,7 @@
  */
 
 #include "e_nav.h"
+#include "e_nav_theme.h"
 #include "e_nav_item_link.h"
 
 typedef struct _Link_Data Link_Data;
@@ -27,25 +28,6 @@ struct _Link_Data
 {
    Evas_Object            *neo, *ap;
 };
-
-static Evas_Object *
-_e_nav_world_item_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
 
 static void
 _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
@@ -72,7 +54,7 @@ e_nav_world_item_link_add(Evas_Object *nav, const char *theme_dir, Evas_Object *
    linkd->neo = neo;
    linkd->ap = ap;
    /* FIXME: this needs to be a smart obj */
-   o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
+   o = e_nav_theme_object_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/link");
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_LINKED);

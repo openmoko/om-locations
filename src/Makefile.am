@@ -14,6 +14,7 @@ noinst_HEADERS =		\
 	e_mod_main.h		\
         e_mod_config.h          \
 	e_mod_nav.h		\
+	e_nav_theme.h		\
 	e_nav.h			\
 	e_spiralmenu.h		\
 	e_flyingmenu.h		\
@@ -33,6 +34,7 @@ diversity_nav_SOURCES =		\
 	e_mod_main.c		\
         e_mod_config.c          \
 	e_mod_nav.c		\
+	e_nav_theme.c		\
 	e_nav.c			\
 	e_spiralmenu.c		\
 	e_flyingmenu.c		\

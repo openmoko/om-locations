@@ -19,8 +19,8 @@
  */
 
 #include "e_nav.h"
+#include "e_nav_theme.h"
 #include "e_nav_item_neo_me.h"
-#include "e_spiralmenu.h"
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
 #include "e_nav_dbus.h"
@@ -36,62 +36,6 @@ struct _Neo_Me_Data
    unsigned char           fixed : 1;
    Diversity_Bard         *self;
 };
-
-static Evas_Object *
-_e_nav_world_item_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
-
-#if 0
-/* FIXME: real menu callbacks */
-static void
-_e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   Evas_Object *nav;
-   double lon, lat;
-   
-   nav = e_nav_world_item_nav_get(src_obj);
-   e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
-   e_nav_coord_set(nav, lon, lat, 0.5);
-   e_nav_zoom_set(nav, 400, 0.5);
-   e_spiralmenu_deactivate(obj);
-}
-
-static void
-_e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   printf("cb2\n");
-   e_spiralmenu_deactivate(obj);
-}
-
-static void
-_e_nav_world_item_cb_menu_3(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   printf("cb3\n");
-   e_spiralmenu_deactivate(obj);
-}
-
-static void
-_e_nav_world_item_cb_menu_4(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   printf("cb4\n");
-   e_spiralmenu_deactivate(obj);
-}
-#endif
 
 static void
 dialog_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
@@ -228,7 +172,7 @@ e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon,
    neod = calloc(1, sizeof(Neo_Me_Data));
    if (!neod) return NULL;
    neod->self = bard;
-   o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
+   o = e_nav_theme_object_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/neo/me");
    edje_object_part_text_set(o, "e.text.name", "???");
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,

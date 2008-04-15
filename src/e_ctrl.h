@@ -35,7 +35,6 @@ void                e_ctrl_zoom_drag_value_set(double y);
 void                e_ctrl_zoom_text_value_set(const char* buf);
 void                e_ctrl_longitude_set(const char* buf);
 void                e_ctrl_latitude_set(const char* buf);
-int                 e_ctrl_edje_object_set(Evas_Object *o, const char *category, const char *group);
 void                e_ctrl_taglist_tag_add(const char *name, const char *note, time_t timestamp, void *loc_object);
 void                e_ctrl_taglist_tag_set(const char *name, const char *note, void *object);
 void                e_ctrl_taglist_tag_delete(void *loc_object);

@@ -19,6 +19,7 @@
  */
 
 #include "e_nav.h"    
+#include "e_nav_theme.h"
 #include "e_ctrl.h"
 #include "e_nav_tileset.h"
 #include "e_nav_item_location.h"
@@ -33,7 +34,6 @@ static Evas_Object *neo_me = NULL;
 static Ecore_Hash *bardRoster = NULL;
 
 typedef struct _E_Smart_Data E_Smart_Data;
-static Evas_Object * _e_ctrl_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
 static void _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source);
 static void _e_ctrl_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, const char *source);
 static void _e_ctrl_cb_signal_drag_stop(void *data, Evas_Object *obj, const char *emission, const char *source);
@@ -82,6 +82,7 @@ e_ctrl_add(Evas *e)
 static void
 _e_nav_tag_sel(void *data, void *data2)
 {
+   Evas_Object *object;
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
    if(!sd) {
@@ -89,12 +90,15 @@ _e_nav_tag_sel(void *data, void *data2)
        return;
    }
     
+   object = (Evas_Object *)data2;
+
    double lon = e_nav_world_item_location_lon_get(data2);
    double lat = e_nav_world_item_location_lat_get(data2);
    e_nav_taglist_deactivate(sd->listview);
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
+   evas_object_raise(object);
    evas_object_show(sd->panel_buttons);
 }
 
@@ -218,6 +222,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
    evas_object_show(sd->panel_buttons);
+   evas_object_raise(neo_me);
 }
 
 static void
@@ -294,7 +299,7 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-   sd->map_overlay = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
+   sd->map_overlay = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/main");
    evas_object_smart_member_add(sd->map_overlay, obj);
    evas_object_move(sd->map_overlay, sd->x, sd->y);
@@ -335,7 +340,7 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 
    sd->listview = e_nav_taglist_new(obj, THEME_PATH);
 
-   sd->panel_buttons = _e_ctrl_theme_obj_new(evas_object_evas_get(obj), sd->dir,
+   sd->panel_buttons = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/panel");
    evas_object_move(sd->panel_buttons, sd->x, sd->y);
    evas_object_resize(sd->panel_buttons, sd->w, sd->h);
@@ -352,36 +357,6 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_event_callback_add(list, EVAS_CALLBACK_MOUSE_UP,
 				  _e_nav_list_button_cb_mouse_down, ctrl);
    evas_object_show(sd->panel_buttons);
-}
-
-static Evas_Object *
-_e_ctrl_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_ctrl_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
-
-int
-e_ctrl_edje_object_set(Evas_Object *o, const char *category, const char *group)
-{
-   char buf[PATH_MAX];
-   int ok;
-   
-   snprintf(buf, sizeof(buf), "%s/%s.edj", THEME_PATH, category);
-   ok = edje_object_file_set(o, buf, group);
-   return ok;
 }
 
 void

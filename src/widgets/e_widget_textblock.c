@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include "e_widget.h"
 //#include "e_scrollframe.h"
-#include "e_nav_theme.h"
+#include "../e_nav_theme.h"
 
 typedef struct _E_Widget_Data E_Widget_Data;
 struct _E_Widget_Data

@@ -21,6 +21,7 @@
 #include "e_nav.h"
 #include "e_mod_config.h"
 #include "e_mod_nav.h"
+#include "e_nav_theme.h"
 #include "e_spiralmenu.h"
 #include "e_nav_item_ap.h"
 #include "e_nav_item_neo_me.h"
@@ -355,7 +356,7 @@ on_property_changed(void *data, DBusMessage *msg)
 }
 
 void
-_e_mod_nav_init(Evas *evas)
+_e_mod_nav_init(Evas *evas, const char *theme_name)
 {
    Evas_Object *nt;
    double lat, lon, scale;
@@ -363,6 +364,7 @@ _e_mod_nav_init(Evas *evas)
 
    if (nav) return;
    cfg = dn_config_new();
+   e_nav_theme_init(theme_name);
 
    e_nav_dbus_init();
    world = diversity_world_new();

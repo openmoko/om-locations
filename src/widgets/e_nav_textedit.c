@@ -23,7 +23,7 @@
 #include "../e_nav.h"
 #include "e_nav_textedit.h"
 #include "e_nav_dialog.h"
-#include "e_nav_theme.h"
+#include "../e_nav_theme.h"
 #include <ewl/Ewl.h>
 
 typedef struct _E_Button_Item E_Button_Item;

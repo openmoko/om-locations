@@ -19,6 +19,7 @@
  */
 
 #include "e_nav.h"
+#include "e_nav_theme.h"
 #include "e_nav_item_location.h"
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
@@ -38,25 +39,6 @@ struct _Location_Data
    time_t            timestamp;
    Diversity_Tag          *tag;
 };
-
-static Evas_Object *
-_e_nav_world_item_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
 
 static void
 alert_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
@@ -407,7 +389,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    locd = calloc(1, sizeof(Location_Data));
    if (!locd) return NULL;
    locd->tag = (Diversity_Tag *) tag;
-   o = _e_nav_world_item_theme_obj_new(evas_object_evas_get(nav), theme_dir,
+   o = e_nav_theme_object_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/location");
    edje_object_part_text_set(o, "e.text.name", "???");
    edje_object_signal_callback_add(o, "MENU_ACTIVATE", "e.text.name", cb_menu_activate, (void *)theme_dir);

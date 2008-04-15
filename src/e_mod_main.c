@@ -23,6 +23,9 @@
 #include <libintl.h>
 #include <ewl/Ewl.h>
 
+static const char *theme_name = NULL;
+
+
 #ifdef AS_MODULE
 #include "e_mod_main.h"
 
@@ -45,7 +48,7 @@ e_modapi_init(E_Module *m)
    bindtextdomain(PACKAGE, buf);
    bind_textdomain_codeset(PACKAGE, "UTF-8");
    
-   _e_mod_nav_init(m);
+   _e_mod_nav_init(m, theme_name);
    
    return m; /* return NULL on failure, anything else on success. the pointer
 	      * returned will be set as m->data for convenience tracking */
@@ -82,7 +85,7 @@ on_show(Ecore_Evas *ee)
    Evas *evas;
 
    evas = ecore_evas_get(ee);
-   _e_mod_nav_init(evas);
+   _e_mod_nav_init(evas, theme_name);
 }
 
 static void
@@ -105,9 +108,27 @@ main(int argc, char **argv)
    if (!ecore_init()) { printf("failed to init ecore\n"); return -1; }
    if (!ecore_evas_init()) { printf("failed to init ecore_evas\n"); return -1; }
    if (!edje_init()) { printf("failed to init edje\n"); return -1; }
+
    if (!ewl_init(&argc, argv)) {printf("failed to init ewl\n"); return -1; }
 
    ecore_app_args_set(argc, (const char **) argv);
+
+     {
+        int i=1;
+        for (i = 1; i < argc; i++)
+          {
+             if (((!strcmp(argv[i], "-t")) ||
+                  (!strcmp(argv[i], "-theme")) ||
+                  (!strcmp(argv[i], "--theme"))) && (i < (argc - 1)))
+               {
+                  char buf[32];
+                  
+                  sscanf(argv[i +1], "%s", buf);
+                  theme_name = strdup(buf);
+                  i++;
+               }
+          }
+     }
 
    ee = ecore_evas_software_x11_new(NULL, 0, 0, 0, 480, 640);
    if (!ee) { printf("failed to get ecore_evas\n"); return -1; }

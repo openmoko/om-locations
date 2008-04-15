@@ -24,7 +24,7 @@
 #include "e_nav_dialog.h"
 #include "e_widget_textblock.h"
 #include "e_nav_textedit.h"
-#include "e_nav_theme.h"
+#include "../e_nav_theme.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;

@@ -22,7 +22,7 @@
 
 #include "e_nav.h"
 #include "e_nav_taglist.h"
-#include "widgets/e_nav_theme.h"
+#include "e_nav_theme.h"
 #include <stdlib.h>
 #include <time.h>
 
@@ -129,12 +129,19 @@ tree_test_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
    Ewl_Widget *vbox = NULL;
    Ewl_Widget *label1 = NULL;
    Ewl_Widget *label2 = NULL;
+   char tmp[PATH_MAX];
    char *time_diff_string;
 
+   snprintf(tmp, PATH_MAX, "%s/%s.edj", PACKAGE_DATA_DIR, "splinter");
    switch (column) {
       case 0:
          d = data;
          label1 = ewl_label_new();
+
+         ewl_theme_data_reset(label1);
+         ewl_theme_data_str_set(label1, "/label/file", tmp);
+         ewl_theme_data_str_set(label1, "/label/group", "diversity/label");
+
          ewl_object_custom_h_set(EWL_OBJECT(label1), 60);
          ewl_label_text_set(EWL_LABEL(label1), d->name);
 

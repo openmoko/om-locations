@@ -25,7 +25,7 @@
 #include <string.h>
 #include <limits.h>
 #include "e_nav_titlepane.h"
-#include "e_nav_theme.h"
+#include "../e_nav_theme.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
 

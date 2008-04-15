@@ -19,6 +19,7 @@
  */
 
 #include "e_nav.h"
+#include "e_nav_theme.h"
 #include "e_flyingmenu.h"
 
 /* navigator object */
@@ -67,7 +68,6 @@ static void _e_flyingmenu_smart_color_set(Evas_Object *obj, int r, int g, int b,
 static void _e_flyingmenu_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_flyingmenu_smart_clip_unset(Evas_Object *obj);
 
-static Evas_Object *_e_flyingmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group);
 static void _e_flyingmenu_update(Evas_Object *obj);
 static void _e_flyingmenu_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event);
 static void _e_flyingmenu_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event);
@@ -98,7 +98,7 @@ e_flyingmenu_theme_source_set(Evas_Object *obj, const char *custom_dir)
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-   sd->bg_obj = _e_flyingmenu_theme_obj_new(evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/flying_menu");
+   sd->bg_obj = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/flying_menu");
    evas_object_smart_member_add(sd->bg_obj, obj);
    evas_object_clip_set(sd->bg_obj, sd->clip);
 }
@@ -211,8 +211,8 @@ e_flyingmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size,
    ti->sz = size;
    ti->func = func;
    ti->data = data;
-   //ti->item_obj = _e_flyingmenu_theme_obj_new(evas_object_evas_get(obj), sd->dir, icon);
-   ti->item_obj = _e_flyingmenu_theme_obj_new(evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/tag_menu_item");
+   ti->item_obj = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/tag_menu_item");
+
    evas_object_smart_member_add(ti->item_obj, obj);
    evas_object_clip_set(ti->item_obj, sd->clip);
    evas_object_event_callback_add(ti->item_obj, EVAS_CALLBACK_MOUSE_UP,
@@ -386,25 +386,6 @@ _e_flyingmenu_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 } 
 
-static Evas_Object *
-_e_flyingmenu_theme_obj_new(Evas *e, const char *custom_dir, const char *group)
-{
-   Evas_Object *o;
-   
-   o = edje_object_add(e);
-   if (!e_nav_edje_object_set(o, "default", group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/default.edj", custom_dir);
-	     edje_object_file_set(o, buf, group);
-	  }
-     }
-   return o;
-}
-
 static void
 _e_flyingmenu_update(Evas_Object *obj)
 {
@@ -422,7 +403,6 @@ _e_flyingmenu_update(Evas_Object *obj)
    evas_object_geometry_get(sd->src_obj, &x, &y, &w, &h);
    int menu_h = screen_h/13;
    if(menu_h<60) menu_h = 60;
-   //int interspace = menu_h/2;
    int interspace = 15;
    int tsize = 0;
    if (sd->activate_deactivate == 0)

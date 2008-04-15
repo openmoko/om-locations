@@ -22,7 +22,7 @@
 
 #include "../e_nav.h"
 #include "e_nav_alert.h"
-#include "e_nav_theme.h"
+#include "../e_nav_theme.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;

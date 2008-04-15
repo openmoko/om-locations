@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "e_editable.h"
-#include "e_nav_theme.h"
+#include "../e_nav_theme.h"
 #define E_CLAMP(x, min, max) (x < min ? min : (x > max ? max : x))
 
 #define E_EDITABLE_CURSOR_MARGIN 5
