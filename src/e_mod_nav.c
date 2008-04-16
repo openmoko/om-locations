@@ -96,6 +96,9 @@ osm_tileset_add(Evas_Object *nav)
 	  e_dbus_proxy_destroy(proxy);
      }
 
+   if (!nt)
+     nt = e_nav_tileset_add(nav, E_NAV_TILESET_FORMAT_OSM, NULL);
+
    return nt;
 }
 
@@ -373,6 +376,13 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    e_nav_theme_source_set(nav, THEME_PATH);
 
    nt = osm_tileset_add(nav);
+   if (nt)
+     {
+	e_nav_tileset_monitor_add(nt, MAP_PATH);
+	/* XXX */
+	e_nav_tileset_monitor_add(nt, "/media/card/diversity-maps");
+     }
+
    evas_object_show(nt);
 
    objectStore = ecore_hash_new(ecore_str_hash, ecore_str_compare);

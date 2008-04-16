@@ -3,12 +3,15 @@ MAINTAINERCLEANFILES = Makefile.in
 
 SUBDIRS = widgets
 
-AM_CPPFLAGS =			\
-	$(EFL_CFLAGS)		\
-	$(EDBUS_CFLAGS)		\
-	-I$(top_srcdir)/dbus	\
-	-DTHEME_PATH=\"$(pkgdatadir)\" \
-        -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+mapdir = $(pkgdatadir)/maps
+
+AM_CPPFLAGS =					\
+	$(EFL_CFLAGS)				\
+	$(EDBUS_CFLAGS)				\
+	-I$(top_srcdir)/dbus			\
+	-DTHEME_PATH=\"$(pkgdatadir)\"		\
+        -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"	\
+	-DMAP_PATH=\"$(mapdir)\"
 
 noinst_HEADERS =		\
 	e_mod_main.h		\
