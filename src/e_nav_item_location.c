@@ -26,6 +26,9 @@
 #include "widgets/e_nav_alert.h"
 #include "widgets/e_nav_textedit.h"
 #include "e_ctrl.h"
+#include <time.h>
+
+static char *get_time_diff_string(time_t time_then);
 
 typedef struct _Location_Data Location_Data;
 
@@ -343,13 +346,19 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
 static void
 _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
+   Location_Data *locd;
    const char *text_part_state;
    double val_ret;
+   char *time_diff_string;
    
    text_part_state = edje_object_part_state_get(obj, "e.text.name", &val_ret);
+   locd = evas_object_data_get(obj, "nav_world_item_location_data");
 
    if(!strcmp(text_part_state, "default")) 
      {
+        time_diff_string = get_time_diff_string(locd->timestamp);
+        edje_object_part_text_set(obj, "e.text.name2", time_diff_string);
+        free(time_diff_string);
         edje_object_signal_emit(obj, "e,state,active", "e");
      }
    else 
@@ -396,7 +405,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
 				  theme_dir);
-   evas_object_geometry_get(edje_object_part_object_get(o, "location"), &x, &y, &w, &h);
+   evas_object_geometry_get(edje_object_part_object_get(o, "e.image.location"), &x, &y, &w, &h);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
    e_nav_world_item_geometry_set(o, lon, lat, w, h);
@@ -548,3 +557,84 @@ e_nav_world_item_location_timestamp_get(Evas_Object *item)
    return locd->timestamp;
 }
 
+static char *
+get_time_diff_string(time_t time_then)
+{
+   char time_diff_string[PATH_MAX];
+   time_t time_now, time_diff;
+   int days_diff;
+   int today_secs;
+   struct tm now, then;
+   struct tm *now_p, *then_p;
+
+   time(&time_now);  
+   now_p = localtime(&time_now);
+   memcpy(&now, now_p, sizeof(now));
+
+   then_p = localtime(&time_then);
+   memcpy(&then, then_p, sizeof(then));
+
+   if(time_then > time_now) 
+     {
+        snprintf(time_diff_string, sizeof(time_diff_string),
+                 "%s", ctime(&time_then));
+     }
+
+   if(now.tm_year != then.tm_year)
+     {
+        if(now.tm_year - then.tm_year == 1)
+          snprintf(time_diff_string, sizeof(time_diff_string),
+                   "Last year");
+        else
+          snprintf(time_diff_string, sizeof(time_diff_string),
+                   "%d years ago", now.tm_year - then.tm_year);
+        return strdup(time_diff_string);
+     }
+   else if(now.tm_mon != then.tm_mon)
+     {
+        if(now.tm_mon - then.tm_mon == 1)
+          snprintf(time_diff_string, sizeof(time_diff_string),
+                   "Last month");
+        else
+          snprintf(time_diff_string, sizeof(time_diff_string),
+                   "%d months ago", now.tm_mon - then.tm_mon);
+        return strdup(time_diff_string);
+     }
+   else 
+     {
+            today_secs = (now.tm_hour * 60 * 60) + (now.tm_min * 60) + now.tm_sec; 
+            printf("today_secs = %d\n", today_secs);
+            printf("time_now: %d, time_past: %d\n", (int)time_now, (int)time_then);
+            time_diff = time_now - time_then;
+            printf("time_diff = %d\n", (int)time_diff);
+            if(time_diff >= today_secs) 
+              {
+                 days_diff = (time_diff - today_secs) / 86400;
+                 if(days_diff == 0)
+                   {
+                      snprintf(time_diff_string, sizeof(time_diff_string),
+                               "Yesterday");
+                   }
+                 else if((days_diff + 1) < 7)
+                   {
+                      snprintf(time_diff_string, sizeof(time_diff_string),
+                               "%d days ago", days_diff + 1 );
+                   }
+                 else 
+                   {
+                      if(( (days_diff + 1) / 7 ) == 1)
+                        snprintf(time_diff_string, sizeof(time_diff_string),
+                                 "Last week");
+                      else
+                        snprintf(time_diff_string, sizeof(time_diff_string),
+                                 "%d weeks ago", (days_diff + 1) / 7);
+                   }
+
+                 return strdup(time_diff_string);
+              }
+            else 
+              {
+                 return strdup("Today");
+              } 
+     }
+}

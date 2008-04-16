@@ -1,3 +1,9 @@
+2008-04-16  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_nav_item_location.c: Add text2 (time_diff_string) for location icon. 
+
+	* data/themes/diversity_nav.edc: Change the location icon theme. 
+
 2008-04-15  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_ctrl.c,
