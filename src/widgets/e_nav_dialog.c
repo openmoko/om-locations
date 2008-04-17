@@ -478,6 +478,7 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
    text_object = evas_object_text_add( evas_object_evas_get(obj) ); 
    evas_object_text_text_set(text_object, label);
    evas_object_text_font_set(text_object, "Sans:style=Bold,Edje-Vera-Bold", 20);
+
    evas_object_text_glow_color_set(text_object, 255, 255, 255, 255);
    tbi->label_obj = text_object;
    evas_object_smart_member_add(tbi->label_obj, obj);
@@ -531,13 +532,13 @@ _e_dialog_update(Evas_Object *obj)
      {
         if(tbc==0) 
           {
-             dialog_y = screen_h* (1.0/3);
+             dialog_y = screen_h* (1.0/8);
              dialog_h = screen_h * (1.0/3);
           }
         else 
           {
-             dialog_y = screen_h* (1.0/6);
-             dialog_h = screen_h * (2.0/3);
+             dialog_y = screen_h* (1.0/8);
+             dialog_h = screen_h * (5.0/8);
           }
      }
    else if (sd->activate_deactivate == 1)
@@ -549,13 +550,13 @@ _e_dialog_update(Evas_Object *obj)
 	if (t >= 1.0) sd->activate_deactivate = 0;
         if(tbc==0) 
           {
-             dialog_y = ((-screen_h) * (1.0/3)) + (t * screen_h * (1.0/3) * 2);
+             dialog_y = ((-screen_h) * (5.0/8)) + (t * screen_h * (1.0/8) * 6);
              dialog_h = screen_h * (1.0/3);
           }
         else 
           {
-             dialog_y = ((-screen_h) * (1.0/6)) + (t * screen_h* (1.0/6) * 2);
-             dialog_h = screen_h * (2.0/3);
+             dialog_y = ((-screen_h) * (5.0/8)) + (t * screen_h* (1.0/8) * 6);
+             dialog_h = screen_h * (5.0/8);
           }
      }
    evas_object_move(sd->bg_object, dialog_x, dialog_y );
@@ -602,7 +603,7 @@ _e_dialog_update(Evas_Object *obj)
      {
         button_h = dialog_h*(1.0/8);
      }
-   //button_h = dialog_y + dialog_h - tmp_y;
+
    for (l = sd->buttons; l; l = l->next)
      {
         bi = l->data;
@@ -614,10 +615,10 @@ _e_dialog_update(Evas_Object *obj)
           {
              evas_object_move(bi->item_obj, tmp_x, (dialog_y+dialog_h*(7.0/8)) );
           }
-        // evas_object_move(bi->item_obj, tmp_x, tmp_y );
+
         evas_object_resize(bi->item_obj, button_w, button_h);
         evas_object_show(bi->item_obj);
-        tmp_x = tmp_x + button_w;
+        tmp_x = tmp_x + button_w + 1;
      }
 }
 

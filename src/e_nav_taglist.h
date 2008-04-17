@@ -31,9 +31,11 @@ struct _Tag_List
    Evas_Object     *obj;
    Evas_Object     *frame;
    Evas_Object     *embed_eo;
-   Ewl_Widget      *scrollpane;
    Ewl_Widget      *embed;
-   Ewl_Widget      *tree;
+   Ewl_Widget      *vbox;
+   Ewl_Widget      *label;
+   Ewl_Widget      *scrollpane;
+   Ewl_Widget      *list;
 };
 
 typedef struct _Tag_List_Item Tag_List_Item;

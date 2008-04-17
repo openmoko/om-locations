@@ -34,6 +34,14 @@ void
 e_nav_theme_init(const char *theme_name)
 {
    diversity_theme_name = theme_name;
+   if(!diversity_theme_name)
+     diversity_theme_name = strdup(DEFAULT_THEME);
+}
+
+const char *
+e_nav_theme_name_get(void)
+{
+   return diversity_theme_name;
 }
 
 static int

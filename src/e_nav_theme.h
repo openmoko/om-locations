@@ -24,6 +24,7 @@
 #define E_NAV_THEME_H
 
 void e_nav_theme_init(const char *theme_name);
+const char *e_nav_theme_name_get(void);
 Evas_Object * e_nav_theme_object_new(Evas *e, const char *custom_dir, const char *group);
 int e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group);
 

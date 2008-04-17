@@ -1,3 +1,16 @@
+2008-04-17  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_nav_theme.c,
+	  src/e_nav_theme.h: Add theme name get API.
+
+	* src/e_nav_taglist.c,
+	  src/e_nav_taglist.h: Replace the tree with list for list view.
+
+	* src/widgets/e_nav_textedit.c: Add something to be enable to change
+	the theme of text edit view. 
+
+	* src/widgets/e_nav_dialog.c: Modify the dialog stop position. 
+	
 2008-04-16  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_nav_item_location.c: Add text2 (time_diff_string) for location icon. 
