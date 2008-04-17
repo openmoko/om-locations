@@ -110,15 +110,61 @@ void traverse(const char *base)
 	closedir(dir);
 }
 
+void _eet_merge(Eet_File *ef, Eet_File *base)
+{
+	char **keys;
+	int num_keys, i;
+
+	keys = eet_list(base, "*", &num_keys);
+
+	for (i = 0; i < num_keys; i++) {
+		char *k = keys[i];
+		const void *data;
+		int size;
+
+		data = eet_read_direct(base, k, &size);
+		if (!data) {
+			printf("failed to merge %s\n", k);
+
+			continue;
+		}
+		eet_write(ef, k, data, size, 0);
+	}
+
+	free(keys);
+}
+
+void usage(const char *prog)
+{
+	printf("%s [-b base] <cache-dir> <output>\n", prog);
+}
+
 int main(int argc, char **argv)
 {
 	Ecore_Evas *ee;
+	char *map, *basemap = NULL;
+	int opt;
 
-	if (argc != 3) {
-		printf("%s <cache-dir> <output>\n", argv[0]);
+	while ((opt = getopt(argc, argv, "b:")) != -1) {
+		switch (opt) {
+		case 'b':
+			basemap = optarg;
+			break;
+		default:
+			usage(argv[0]);
+			return 1;
+			break;
+		}
+	}
+
+	if (optind + 2 != argc) {
+		usage(argv[0]);
 
 		return 1;
 	}
+
+	basedir = argv[optind];
+	map = argv[optind + 1];
 
 	if (!ecore_init() || !ecore_evas_init()) {
 		printf("failed to init\n");
@@ -134,14 +180,28 @@ int main(int argc, char **argv)
 	}
 	evas = ecore_evas_get(ee);
 
-	ef = eet_open(argv[2], EET_FILE_MODE_WRITE);
+	ef = eet_open(map, EET_FILE_MODE_WRITE);
 	if (!ef) {
 		printf("failed to open eet\n");
 
 		return 1;
 	}
 
-	basedir = argv[1];
+	if (basemap) {
+		Eet_File *bef;
+
+		bef = eet_open(basemap, EET_FILE_MODE_READ);
+		if (!bef) {
+			printf("failed to open base eet\n");
+
+			return 1;
+		}
+
+		_eet_merge(ef, bef);
+
+		eet_close(bef);
+	}
+
 	traverse(basedir);
 
 	eet_close(ef);
