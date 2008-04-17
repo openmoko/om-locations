@@ -133,7 +133,7 @@ viewport_object_added(void *data, DBusMessage *msg)
 
         diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
         printf("location geo get lon:%f lat:%f\n", lon, lat);
-        diversity_object_lastseen_get(obj, &secs);
+	diversity_dbus_property_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &secs);
 
         timep = (time_t)secs;
 

@@ -84,7 +84,6 @@ void                diversity_object_destroy(Diversity_Object *obj);
 void                diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, double width, double height);
 void                diversity_object_geometry_get(Diversity_Object *obj, double *lon, double *lat, double *width, double *height);
 Diversity_Object_Type diversity_object_type_get(Diversity_Object *obj);
-int                 diversity_object_lastseen_get(Diversity_Object *obj, int *secs);
 
 Diversity_World    *diversity_world_new(void);
 void                diversity_world_destroy(Diversity_World *world);
