@@ -1050,28 +1050,33 @@ diversity_tag_prop_get(Diversity_Tag *tag, const char *key, char **val)
 }
 
 int
-diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, int ask_ds)
+diversity_sms_tag_send(Diversity_Sms *sms, const char *number, Diversity_Tag *tag)
 {
    E_DBus_Proxy *proxy;
    DBusError error;
+   const char *tag_path;
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) sms,
-	 	DIVERSITY_DBUS_IFACE_SMS);
+					DIVERSITY_DBUS_IFACE_SMS);
    if (!proxy) return FALSE;
+
+   tag_path = diversity_dbus_path_get((Diversity_DBus *) tag);
+   if (!tag_path) return FALSE;
 
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
-				 "Send", &error,
-                                 DBUS_TYPE_STRING, &number,
-                                 DBUS_TYPE_STRING, &message,
-                                 DBUS_TYPE_BOOLEAN, &ask_ds,
+				 "SendTag", &error,
+				 DBUS_TYPE_STRING, &number,
+				 DBUS_TYPE_OBJECT_PATH, &tag_path,
 				 DBUS_TYPE_INVALID,
 				 DBUS_TYPE_INVALID))
      {
-	printf("failed to send SMS: %s | %s\n", error.name, error.message);
+	printf("failed to send tag: %s | %s\n", error.name, error.message);
 	dbus_error_free(&error);
-        return FALSE;
+
+	return FALSE;
      }
+
    return TRUE;
 }
 

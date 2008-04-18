@@ -117,7 +117,7 @@ void                diversity_tag_destroy(Diversity_Tag *tag);
 int                 diversity_tag_prop_set(Diversity_Tag *tag, const char *key, const char *val);
 int                 diversity_tag_prop_get(Diversity_Tag *tag, const char *key, char **val);
 
-int                 diversity_sms_send(Diversity_Sms *sms, const char *number, const char *message, int ask_ds);
+int                 diversity_sms_tag_send(Diversity_Sms *sms, const char *number, Diversity_Tag *tag);
 int                 diversity_sms_tag_share(Diversity_Sms *sms, Diversity_Bard *bard, Diversity_Tag *tag);
 
 #endif

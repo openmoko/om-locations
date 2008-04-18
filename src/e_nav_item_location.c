@@ -208,19 +208,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         return;
      }
    
-   /* Treat input as phone number; using phone number to send */
-   char *phone_number;
-   char *message;
-   int ask_ds = 0;
-   phone_number = strdup(input); 
-   message = malloc(strlen(locd->name) + 1 + strlen(locd->note) + 1);
-   if (!message) return ;
-   sprintf(message, "%s%c%s", locd->name, '\n', locd->note);
-   printf("phone number is %s, message is %s\n", phone_number, message);
-
-   ok = diversity_sms_send((Diversity_Sms *)eqp, phone_number, message, ask_ds);
-   free(phone_number);
-   free(message);
+   ok = diversity_sms_tag_send((Diversity_Sms *)eqp, input, locd->tag);
 
    Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
    e_alert_theme_source_set(od, THEME_PATH);
