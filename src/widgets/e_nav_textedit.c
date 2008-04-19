@@ -348,7 +348,7 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
 
    data = ecore_list_new();
 
-   model = ewl_model_ecore_list_get();
+   model = ewl_model_ecore_list_instance();
    view = ewl_label_view_get();
    ewl_view_widget_fetch_set(view, list_view_cb_widget_fetch);
 
