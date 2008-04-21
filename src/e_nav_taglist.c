@@ -126,24 +126,18 @@ list_view_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
          d = data;
          label1 = ewl_label_new();
 
-         if(strcmp(e_nav_theme_name_get(), "default"))
-         {
-            ewl_theme_data_reset(label1);
-            ewl_theme_data_str_set(label1, "/label/file", theme_file);
-            ewl_theme_data_str_set(label1, "/label/group", "diversity/label_big");
-         }
+         ewl_theme_data_reset(label1);
+         ewl_theme_data_str_set(label1, "/label/file", theme_file);
+         ewl_theme_data_str_set(label1, "/label/group", "diversity/label_big");
 
          ewl_object_custom_h_set(EWL_OBJECT(label1), 60);
          ewl_label_text_set(EWL_LABEL(label1), d->name);
 
          label2 = ewl_label_new();
          
-         if(strcmp(e_nav_theme_name_get(), "default"))
-         {
-            ewl_theme_data_reset(label2);
-            ewl_theme_data_str_set(label2, "/label/file", theme_file);
-            ewl_theme_data_str_set(label2, "/label/group", "diversity/label_small_gray");
-         }
+         ewl_theme_data_reset(label2);
+         ewl_theme_data_str_set(label2, "/label/file", theme_file);
+         ewl_theme_data_str_set(label2, "/label/group", "diversity/label_small_gray");
 
          ewl_object_custom_h_set(EWL_OBJECT(label2), 20);
 
@@ -233,12 +227,11 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
    ewl_container_child_append(EWL_CONTAINER(tl->embed), tl->vbox);
 
    tl->label = ewl_label_new();
-   if(strcmp(e_nav_theme_name_get(), "default"))
-     {
-        ewl_theme_data_reset(tl->label);
-        ewl_theme_data_str_set(tl->label, "/label/file", theme_file);
-        ewl_theme_data_str_set(tl->label, "/label/group", "diversity/label_small");
-     }
+
+   ewl_theme_data_reset(tl->label);
+   ewl_theme_data_str_set(tl->label, "/label/file", theme_file);
+   ewl_theme_data_str_set(tl->label, "/label/group", "diversity/label_small");
+
    ewl_object_custom_h_set(EWL_OBJECT(tl->label), 30);
    ewl_label_text_set(EWL_LABEL(tl->label), "View Tags");
    ewl_container_child_append(EWL_CONTAINER(tl->vbox), tl->label);
@@ -248,12 +241,10 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
     */
    /* set the scrollpane */
    tl->scrollpane = ewl_scrollpane_new();
-   if(strcmp(e_nav_theme_name_get(), "default"))
-     {
-        ewl_theme_data_reset(tl->scrollpane);
-        ewl_theme_data_str_set(tl->scrollpane, "/scrollpane/file", theme_file);
-        ewl_theme_data_str_set(tl->scrollpane, "/scrollpane/group", "diversity/scrollpane/background");
-     }
+
+   ewl_theme_data_reset(tl->scrollpane);
+   ewl_theme_data_str_set(tl->scrollpane, "/scrollpane/file", theme_file);
+   ewl_theme_data_str_set(tl->scrollpane, "/scrollpane/group", "diversity/scrollpane/background");
 
    ewl_scrollpane_hscrollbar_flag_set(EWL_SCROLLPANE(tl->scrollpane), EWL_SCROLLPANE_FLAG_ALWAYS_HIDDEN);
    ewl_scrollpane_vscrollbar_flag_set(EWL_SCROLLPANE(tl->scrollpane), EWL_SCROLLPANE_FLAG_ALWAYS_HIDDEN);

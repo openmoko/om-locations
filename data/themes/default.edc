@@ -2,6 +2,8 @@
 fonts {
    font: "Vera.ttf"   "Edje-Vera";
    font: "VeraBd.ttf" "Edje-Vera-Bold";
+   font: "LiberationSans-Regular.ttf"   "Liberation-Sans";
+   font: "LiberationSans-Bold.ttf" "Liberation-Sans-Bold";
 }
 
 spectra {
@@ -27,5 +29,8 @@ collections {
 #include "default_titlepane.edc"
 #include "default_textblock.edc"
 #include "default_entry.edc"
+#include "diversity_widget.edc"
+#include "diversity_text.edc"
+#include "diversity_label.edc"
 }
 

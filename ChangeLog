@@ -1,3 +1,35 @@
+2008-04-21  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_nav_taglist.c,
+	  src/widgets/e_nav_textedit.c: Remove theme name hard code.
+
+	* data/themes/diversity_widget.edc,
+	  data/themes/diversity_nav.edc,
+	  data/themes/diversity_text.edc,
+	  data/themes/default_nav_dialog.edc,
+	  data/themes/images/entry_black.png,
+	  data/themes/images/diversity_scrollpane_over.png,
+	  data/themes/images/red_dot1.png,
+	  data/themes/images/red_dot2.png,
+	  data/themes/images/red_dot3.png,
+	  data/themes/images/red_dot4.png,
+	  data/themes/images/diversity_scrollpane_bg.png,
+	  data/themes/images/tag_icon.png,
+	  data/themes/images/diversity_ibar_over.png,
+	  data/themes/images/diversity_ibar_bg.png,
+	  data/themes/images/entry_disabled.png,
+	  data/themes/fonts/License.txt,
+	  data/themes/fonts/LiberationSans-Bold.ttf,
+	  data/themes/fonts/LiberationSans-Regular.ttf,
+	  data/themes/fonts/LiberationSans-Italic.ttf,
+	  data/themes/fonts/LiberationSans-BoldItalic.ttf,
+	  data/themes/Makefile.am,
+	  data/themes/default_nav_alert.edc,
+	  data/themes/diversity_label.edc,
+	  data/themes/default_nav_button.edc,
+	  data/themes/default_textblock.edc,
+	  data/themes/default.edc: Change theme. 
+
 2008-04-19  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_nav_taglist.c,

@@ -174,12 +174,9 @@ list_view_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
    w = ewl_label_new();
    snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEME_PATH, e_nav_theme_name_get());
 
-   if(strcmp(e_nav_theme_name_get(), "default"))
-     {
-        ewl_theme_data_reset(w);
-        ewl_theme_data_str_set(w, "/label/file", theme_file);
-        ewl_theme_data_str_set(w, "/label/group", "diversity/label");
-     }
+   ewl_theme_data_reset(w);
+   ewl_theme_data_str_set(w, "/label/file", theme_file);
+   ewl_theme_data_str_set(w, "/label/group", "diversity/label");
 
    tli = (Textedit_List_Item *)data;
    ewl_label_text_set(EWL_LABEL(w), tli->name);
@@ -311,16 +308,13 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    ewl_entry_editable_set(EWL_ENTRY(ec->entry), TRUE);  
    ewl_container_child_append(EWL_CONTAINER(ec->vbox), ec->entry);
 
-   if(strcmp(e_nav_theme_name_get(), "default"))
-     {
-        ewl_theme_data_reset(ec->entry);
-        ewl_theme_data_str_set(ec->entry, "/entry/file", theme_file);
-        ewl_theme_data_str_set(ec->entry, "/entry/group", "diversity/entry");
-        ewl_theme_data_str_set(ec->entry, "/entry/cursor/file", theme_file);
-        ewl_theme_data_str_set(ec->entry, "/entry/cursor/group", "diversity/entry/cursor");
-        ewl_text_color_set(EWL_TEXT(ec->entry), 98, 98, 98, 255);
-        ewl_text_font_size_set(EWL_TEXT(ec->entry), 48);
-     }
+   ewl_theme_data_reset(ec->entry);
+   ewl_theme_data_str_set(ec->entry, "/entry/file", theme_file);
+   ewl_theme_data_str_set(ec->entry, "/entry/group", "diversity/entry");
+   ewl_theme_data_str_set(ec->entry, "/entry/cursor/file", theme_file);
+   ewl_theme_data_str_set(ec->entry, "/entry/cursor/group", "diversity/entry/cursor");
+   ewl_text_color_set(EWL_TEXT(ec->entry), 98, 98, 98, 255);
+   ewl_text_font_size_set(EWL_TEXT(ec->entry), 48);
 
    ec->spacer = ewl_spacer_new();
    ewl_container_child_append(EWL_CONTAINER(ec->vbox), ec->spacer);
@@ -332,12 +326,9 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    memset(cl, 0, sizeof(Candidate_List)); 
    cl->scrollpane = ewl_scrollpane_new();
 
-   if(strcmp(e_nav_theme_name_get(), "default"))
-     {
-        ewl_theme_data_reset(cl->scrollpane);
-        ewl_theme_data_str_set(cl->scrollpane, "/scrollpane/file", theme_file);
-        ewl_theme_data_str_set(cl->scrollpane, "/scrollpane/group", "diversity/scrollpane/background");
-     }
+   ewl_theme_data_reset(cl->scrollpane);
+   ewl_theme_data_str_set(cl->scrollpane, "/scrollpane/file", theme_file);
+   ewl_theme_data_str_set(cl->scrollpane, "/scrollpane/group", "diversity/scrollpane/background");
 
    ewl_scrollpane_kinetic_scrolling_set(EWL_SCROLLPANE(cl->scrollpane), EWL_KINETIC_SCROLL_EMBEDDED);
    ewl_scrollpane_hscrollbar_flag_set(EWL_SCROLLPANE(cl->scrollpane),
@@ -589,11 +580,8 @@ e_textedit_input_set(Evas_Object *obj, const char *name, const char *input)
 
         ewl_text_text_set(EWL_TEXT(sd->embed->entry), input);
         
-        if(strcmp(e_nav_theme_name_get(), "default"))
-          {
-             ewl_text_color_set(EWL_TEXT(sd->embed->entry), 98, 98, 98, 255);
-             ewl_text_font_size_set(EWL_TEXT(sd->embed->entry), 48);
-          }
+        ewl_text_color_set(EWL_TEXT(sd->embed->entry), 98, 98, 98, 255);
+        ewl_text_font_size_set(EWL_TEXT(sd->embed->entry), 48);
      }
 }
 
@@ -726,11 +714,8 @@ _e_textedit_update(Evas_Object *obj)
    ewl_widget_show(sd->embed->embed);
    ewl_widget_show(sd->embed->vbox);
 
-   if(strcmp(e_nav_theme_name_get(), "default"))
-     {
-        ewl_text_color_set(EWL_TEXT(sd->embed->entry), 98, 98, 98, 255);
-        ewl_text_font_size_set(EWL_TEXT(sd->embed->entry), 48);
-     }
+   ewl_text_color_set(EWL_TEXT(sd->embed->entry), 98, 98, 98, 255);
+   ewl_text_font_size_set(EWL_TEXT(sd->embed->entry), 48);
 
    ewl_widget_show(sd->embed->entry);
    ewl_widget_show(sd->embed->spacer);

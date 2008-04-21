@@ -1,13 +1,13 @@
 images {
-   image: "e17_ibar_bg_v.png" COMP;
-   image: "e17_ibar_over_v.png" COMP;
+   image: "diversity_ibar_bg.png" COMP;
+   image: "diversity_ibar_over.png" COMP;
 }
 
 styles
 {
    style {
       name: "textblock_style";
-      base: "font=Edje-Vera font_size=16 align=left color=#000 style=shadow shadow_color=#ffffff80 wrap=word";
+      base: "font=Liberation-Sans font_size=16 align=left color=#fff style=shadow shadow_color=#ffffff00 wrap=word";
       
       tag:  "br" "\n";
       tag:  "hilight" "+ font=Edje-Vera-Bold style=glow color=#fff glow2_color=#fe87 glow_color=#fa14";
@@ -26,7 +26,7 @@ group {
 	 description {
 	    state:    "default" 0.0;
 	    image {
-	       normal: "e17_ibar_bg_v.png";
+	       normal: "diversity_ibar_bg.png";
 	       border: 7 7 7 7;
 	    }
 	    fill {
@@ -46,7 +46,7 @@ group {
 	       to:       "bg";
 	    }
 	    image {
-	       normal: "e17_ibar_over_v.png";
+	       normal: "diversity_ibar_over.png";
 	       border: 13 13 13 13;
                middle: 0;
 	    }
