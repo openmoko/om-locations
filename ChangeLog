@@ -1,5 +1,9 @@
 2008-04-22  Jeremy Chang  <jeremy@openmoko.com>
 
+	* data/config/diversity-nav.cfg: Default location is Taipei OM building. 
+
+2008-04-22  Jeremy Chang  <jeremy@openmoko.com>
+
 	* data/themes/diversity_nav.edc: Make neo me have fixed and nonfixed
 	state. 
 
