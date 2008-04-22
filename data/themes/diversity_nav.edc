@@ -891,15 +891,14 @@ group {
    name: "modules/diversity_nav/neo/me";
    parts {
       part { name: "phone";
-         /*
          description { state: "default" 0.0;
             min: 48 48;
             max: 48 48;
             image.normal: "red_dot1.png";
          }
-             */
+            
          description { state: "red0" 0.0;
-            //inherit: "default" 0.0;
+            inherit: "default" 0.0;
             min: 48 48;
             max: 48 48;
             image.normal: "red_dot1.png";
@@ -947,10 +946,8 @@ group {
    programs { /* programs - where we react to events/signals */
       program {
          name: "show1";
-         signal: "show";
-         source: "";
          action: STATE_SET "red0" 0.0;
-         transition: LINEAR 0.5;
+         transition: LINEAR 1.0;
          target: "phone";
          after: "show2";
       }
@@ -975,13 +972,14 @@ group {
          target: "phone";
          after: "show1";
       }
-      /*
+      
       program {
          name: "fixed";
          signal: "FIXED";
          source: "*";
-         action: STATE_SET "fixed" 0.0;
+         action: STATE_SET "red0" 0.0;
          target: "phone";
+         after: "show1";
       }
       program {
          name: "nonfixed";
@@ -990,7 +988,7 @@ group {
          action: STATE_SET "default" 0.0;
          target: "phone";
       }
-        */
+        
    }
 }
 

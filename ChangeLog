@@ -1,3 +1,8 @@
+2008-04-22  Jeremy Chang  <jeremy@openmoko.com>
+
+	* data/themes/diversity_nav.edc: Make neo me have fixed and nonfixed
+	state. 
+
 2008-04-21  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_nav_taglist.c,
