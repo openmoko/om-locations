@@ -1,5 +1,10 @@
 2008-04-22  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/widgets/e_nav_textedit.c: Keep the format of the text in entry
+	widget when set the input text of the entry.  
+
+2008-04-22  Jeremy Chang  <jeremy@openmoko.com>
+
 	* data/config/diversity-nav.cfg: Default location is Taipei OM building. 
 
 2008-04-22  Jeremy Chang  <jeremy@openmoko.com>

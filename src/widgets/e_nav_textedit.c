@@ -306,6 +306,11 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
 
    ec->entry = ewl_entry_new();
    ewl_entry_editable_set(EWL_ENTRY(ec->entry), TRUE);  
+   ewl_object_fill_policy_set(EWL_OBJECT(ec->entry), EWL_FLAG_FILL_FILL);
+
+   ewl_text_color_set(EWL_TEXT(ec->entry), 98, 98, 98, 255);
+   ewl_text_font_size_set(EWL_TEXT(ec->entry), 48);
+
    ewl_container_child_append(EWL_CONTAINER(ec->vbox), ec->entry);
 
    ewl_theme_data_reset(ec->entry);
@@ -313,8 +318,6 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    ewl_theme_data_str_set(ec->entry, "/entry/group", "diversity/entry");
    ewl_theme_data_str_set(ec->entry, "/entry/cursor/file", theme_file);
    ewl_theme_data_str_set(ec->entry, "/entry/cursor/group", "diversity/entry/cursor");
-   ewl_text_color_set(EWL_TEXT(ec->entry), 98, 98, 98, 255);
-   ewl_text_font_size_set(EWL_TEXT(ec->entry), 48);
 
    ec->spacer = ewl_spacer_new();
    ewl_container_child_append(EWL_CONTAINER(ec->vbox), ec->spacer);
@@ -578,10 +581,12 @@ e_textedit_input_set(Evas_Object *obj, const char *name, const char *input)
         edje_object_part_text_set(sd->embed->frame, "title", name);
         if(!input || !strcmp(input, "")) return;
 
-        ewl_text_text_set(EWL_TEXT(sd->embed->entry), input);
-        
-        ewl_text_color_set(EWL_TEXT(sd->embed->entry), 98, 98, 98, 255);
+        ewl_text_clear(EWL_TEXT(sd->embed->entry));
+
+        ewl_text_color_set(EWL_TEXT(sd->embed->entry), 98, 98, 98, 255);  // it works for the letters afterward. 
         ewl_text_font_size_set(EWL_TEXT(sd->embed->entry), 48);
+
+        ewl_text_text_append(EWL_TEXT(sd->embed->entry), input);   
      }
 }
 
