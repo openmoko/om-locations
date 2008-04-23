@@ -149,6 +149,7 @@ list_view_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
    }
 
    vbox = ewl_box_new();
+   ewl_object_custom_h_set(EWL_OBJECT(vbox), 80);
    ewl_box_orientation_set(EWL_BOX(vbox), EWL_ORIENTATION_VERTICAL);
    ewl_container_child_append(EWL_CONTAINER(vbox), label1);
    ewl_container_child_append(EWL_CONTAINER(vbox), label2);
