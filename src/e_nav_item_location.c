@@ -126,8 +126,8 @@ static void
 location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Diversity_Equipment *eqp = NULL;
-   //Textedit_List_Item *item;
    Neo_Other_Data *neod;
+   Evas_Object *alert_dialog;
 
    int ok = FALSE;
    const char *input = e_textedit_input_get(obj); 
@@ -141,40 +141,57 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *location_object = (Evas_Object*)data;
    Location_Data *locd;
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
-   if (!locd) return;
+   if (!locd) 
+     {
+        e_textedit_deactivate(obj);   
+        return;
+     }
 
    eqp = e_ctrl_self_equipment_get("phonekit");
-   if (!eqp) return;
+   if (!eqp) 
+     {
+        e_textedit_deactivate(obj);   
+        return;
+     }
 
    neod = e_ctrl_contact_get_by_name(input);
    if(!neod )
      neod = e_ctrl_contact_get_by_number(input);
+
    if(!neod)
      {
-        printf("contact not found\n");
+        alert_dialog = e_alert_add(evas_object_evas_get(obj));
+        e_alert_theme_source_set(alert_dialog, THEME_PATH);
+        e_alert_source_object_set(alert_dialog, src_obj);     
+        e_alert_title_set(alert_dialog, "FAIL", "Contact not found");
+        e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
+        e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
+        e_textedit_deactivate(obj);   
+        evas_object_show(alert_dialog);
+        e_alert_activate(alert_dialog); 
         return;
      }
 
      {
         ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
-        Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
-        e_alert_theme_source_set(od, THEME_PATH);
-        e_alert_source_object_set(od, src_obj);     
+        alert_dialog = e_alert_add(evas_object_evas_get(obj));
+        e_alert_theme_source_set(alert_dialog, THEME_PATH);
+        e_alert_source_object_set(alert_dialog, src_obj);     
         if (ok)
           {
-             e_alert_title_set(od, "SUCCESS", "Tag sent");
-             e_alert_title_color_set(od, 0, 255, 0, 255);
-             e_alert_button_add(od, "OK", alert_exit, od);
+             e_alert_title_set(alert_dialog, "SUCCESS", "Tag sent");
+             e_alert_title_color_set(alert_dialog, 0, 255, 0, 255);
+             e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
           }
         else 
           {
-             e_alert_title_set(od, "FAIL", "Tag sent fail");
-             e_alert_title_color_set(od, 255, 0, 0, 255);
-             e_alert_button_add(od, "OK", alert_exit, od);
+             e_alert_title_set(alert_dialog, "FAIL", "Tag sent fail");
+             e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
+             e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
           }
         e_textedit_deactivate(obj);   
-        evas_object_show(od);
-        e_alert_activate(od); 
+        evas_object_show(alert_dialog);
+        e_alert_activate(alert_dialog); 
         return;
      }
    
