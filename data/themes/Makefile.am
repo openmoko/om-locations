@@ -14,6 +14,8 @@ default.edj
 
 EXTRA_DIST = \
 diversity_nav.edc \
+label.edc \
+entry.edc \
 diversity_widget.edc \
 diversity_text.edc \
 diversity_label.edc \

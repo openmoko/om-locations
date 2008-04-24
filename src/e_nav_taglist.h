@@ -22,20 +22,16 @@
 
 #ifndef E_NAV_TAGLIST_H
 #define E_NAV_TAGLIST_H
-#include <ewl/Ewl.h>
+#include <etk/Etk.h>
 
 typedef struct _Tag_List Tag_List;
 struct _Tag_List
 {
    Evas_Coord       x, y, w, h;
-   Evas_Object     *obj;
    Evas_Object     *frame;
-   Evas_Object     *embed_eo;
-   Ewl_Widget      *embed;
-   Ewl_Widget      *vbox;
-   Ewl_Widget      *label;
-   Ewl_Widget      *scrollpane;
-   Ewl_Widget      *list;
+   Etk_Widget      *embed;
+   Etk_Widget      *tree;
+   Etk_Tree_Col    *col;
 };
 
 typedef struct _Tag_List_Item Tag_List_Item;

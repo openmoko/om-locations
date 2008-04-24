@@ -35,7 +35,7 @@ group {
                to:   "base";
             }
             text {
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 48;
                min:  1 1;
                align: 0.0 0.5;
@@ -60,7 +60,7 @@ group {
                to:   "title";
             }
             text {
-               font: "Liberation-Sans";
+               font: "Edje-Sans-Bold";
                size: 16;
                min:  1 1;
                align: 0.0 0.0;
@@ -69,3 +69,26 @@ group {
       }
    }
 }
+
+group {
+   name: "modules/diversity_nav/dialog/label";
+   parts {
+      part {
+         name: "dialog.label.text";
+         type: TEXT;
+         mouse_events: 0;
+         description {
+            state: "default" 0.0;
+            align: 0.0 0.0;
+            color: 255 255 255 255;
+            text {
+               font: "Edje-Sans";
+               size: 16;
+               min: 1 1;
+               align: 0.0 0.0;
+            }
+         }
+      }
+   }
+}
+

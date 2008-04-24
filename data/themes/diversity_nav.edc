@@ -25,18 +25,18 @@ group {
          type: RECT;
          description {
             state: "default" 0.0;
-            rel1.offset: 10 10;
-            rel2.offset: -10 -10;
-            color: 0 0 0 255;
+            rel1.offset: 0 0;
+            rel2.offset: 0 0;
+            color: 255 0 0 255;
          }     
       }
       part { name: "swallow";
          type: SWALLOW;
          description {
             state: "default" 0.0;
-            rel1.offset: 10 10;
+            rel1.offset: 0 0;
             rel1.to:     "background";
-            rel2.offset: -10 -10;
+            rel2.offset: 0 0;
             rel2.to:     "background";
          } 
       }
@@ -67,14 +67,14 @@ group {
                to: "background";
             }
             rel2 {
-               relative: 1.0 0.3;
+               relative: 1.0 0.15;
                offset: 0 0;
                to: "background";
             }
             align: 0.0 0.0;
             color: 255 255 255 255;
             text {
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 48;
                min: 1 1;
                align: 0.0 0.0;
@@ -87,13 +87,13 @@ group {
          description {
             state: "default" 0.0;
             rel1 {
-               relative: 0.0 0.3;
-               offset: 10 10;
+               relative: 0.0 0.15;
+               offset: 0 0;
                to: "background";
             }
             rel2 {
                relative: 1.0 1.0;
-               offset: -10 -10;
+               offset: 0 0;
                to: "background";
             }
          } 
@@ -137,7 +137,7 @@ group {
             color: 255 255 255 255;
             text {
                text: "*";
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
                align: 0.0 1.0;
@@ -177,7 +177,7 @@ group {
             color: 255 255 255 255;
             text {
                text: "REFRESH";
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
                align: 0.0 1.0;
@@ -222,7 +222,7 @@ group {
             color: 255 255 255 255;
             text {
                text: "MAP";
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
                align: 0.0 1.0;
@@ -267,7 +267,7 @@ group {
             color: 255 255 255 255;
             text {
                text: "LIST";
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
                align: 0.0 1.0;
@@ -288,7 +288,7 @@ group {
             color: 255 255 255 255;
             text {
                text: "+";
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 16;
                align: 0.0 0.0;
             }
@@ -313,7 +313,7 @@ group {
             color: 255 255 255 255;
             text {
                text: "+";
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 16;
                align: 0.0 0.0;
             }
@@ -338,7 +338,7 @@ group {
             color: 255 255 255 255;
             text {
                text: "+";
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 16;
                align: 0.0 0.0;
             }
@@ -493,7 +493,7 @@ group {
             color: 255 255 255 255;
             color3: 0 0 0 32;
             text {
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 10;
                min: 1 1;
                align: 0.0 0.0;
@@ -519,7 +519,7 @@ group {
             color: 255 255 255 255;
             color3: 0 0 0 32;
             text {
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 10;
                min: 1 1;
                align: 0.0 0.0;
@@ -543,7 +543,7 @@ group {
             color: 255 255 255 255;
             color3: 0 0 0 32;
             text {
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 10;
                min: 1 1;
                align: 0.0 0.0;
@@ -589,7 +589,7 @@ group {
             color: 255 255 255 255;
             color3: 0 0 0 32;
             text {
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 10;
                min: 1 1;
                align: 0.5 0.0;
@@ -740,7 +740,7 @@ group {
             color: 255 255 255 255;
             color3: 0 0 0 32;
             text {
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 10;
                min: 1 1;
                align: 0.5 0.0;
@@ -805,7 +805,7 @@ group {
             color: 0 0 0 255;
             color3: 0 0 0 0;
             text {
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 28;
                min: 1 1;
                align: 0.0 0.0;
@@ -839,7 +839,7 @@ group {
             color3: 0 0 0 0;
             text {
                text: "Test";
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
                align: 0.0 0.0;
@@ -1021,7 +1021,7 @@ group {
             color: 255 255 255 255;
             color3: 0 0 0 32;
             text {
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 10;
                min: 1 1;
                align: 0.5 0.0;
@@ -1062,7 +1062,7 @@ group {
             color: 255 255 255 0;
             color3: 0 0 0 0;
             text {
-               font: "Sans:style=Bold,Edje-Vera-Bold";
+               font: "Edje-Sans-Bold";
                size: 10;
                min: 1 1;
                align: 0.5 0.0;
@@ -1142,7 +1142,7 @@ group {
             }
             color: 255 255 255 255;
             text {
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 48;
                min: 1 1;
                align: 0.5 0.5;

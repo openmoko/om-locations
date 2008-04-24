@@ -31,7 +31,7 @@ AC_DEFINE_UNQUOTED(LOCALEDIR, "${localedir}", "Module Locale Directory")
 #
 # Check EFL Libs
 #
-PKG_CHECK_MODULES(EFL, [ecore, ecore-file, evas, edje >= 0.5.0, ewl])
+PKG_CHECK_MODULES(EFL, [ecore, ecore-file, evas, edje >= 0.5.0, etk])
 AC_ARG_WITH(edje-cc,
 [  --with-edje-cc=PATH              specify a specific path to edje_cc],
 [

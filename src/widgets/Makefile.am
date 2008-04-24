@@ -9,26 +9,16 @@ AM_CPPFLAGS =			\
 noinst_LTLIBRARIES = libwidget.la
 
 noinst_HEADERS =		\
-        e_nav_titlepane.h       \
-        e_widget_textblock.h    \
-        e_widget.h              \
         e_nav_dialog.h          \
         e_nav_alert.h           \
         e_nav_textedit.h        \
-        e_entry.h               \
-        e_editable.h            \
         debug.h                 
 
 
 libwidget_la_SOURCES =		\
-        e_nav_titlepane.c       \
-        e_widget_textblock.c    \
         e_nav_dialog.c          \
         e_nav_alert.c           \
-        e_nav_textedit.c        \
-        e_entry.c               \
-        e_editable.c            \
-        e_widget.c              
+        e_nav_textedit.c        
 
 libwidget_la_LIBADD = $(EFL_LIBS) 
 

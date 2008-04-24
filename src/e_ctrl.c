@@ -155,6 +155,44 @@ e_ctrl_contact_get(const char *id)
    return (Neo_Other_Data *)ecore_hash_get(bardRoster, (void *)id);
 }
 
+Neo_Other_Data *
+e_ctrl_contact_get_by_name(const char *name)
+{
+   Ecore_List *cl;
+   int lstcount;
+   int n;
+   Neo_Other_Data *neod;
+
+   cl = e_ctrl_contacts_get();
+   lstcount = ecore_list_count(cl);
+   for(n=0; n<lstcount; n++)
+     {
+        neod =  ecore_list_index_goto(cl, n);
+        if(neod && !strcmp(neod->name, name))
+          return neod;
+     }
+   return NULL;
+}
+
+Neo_Other_Data *
+e_ctrl_contact_get_by_number(const char *number)
+{
+   Ecore_List *cl;
+   int lstcount;
+   int n;
+   Neo_Other_Data *neod;
+
+   cl = e_ctrl_contacts_get();
+   lstcount = ecore_list_count(cl);
+   for(n=0; n<lstcount; n++)
+     {
+        neod =  ecore_list_index_goto(cl, n);
+        if(neod && !strcmp(neod->phone, number))
+          return neod;
+     }
+   return NULL;
+}
+
 Ecore_List *
 e_ctrl_contacts_get(void)
 {
@@ -165,7 +203,6 @@ e_ctrl_contacts_get(void)
 
    values = ecore_list_new();
    Neo_Other_Data *neod;
-    printf("contact count is %d\n", count);
    for(n=0; n<count; n++)
      {
         char *key = ecore_list_index_goto(keys, n);

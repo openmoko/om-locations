@@ -21,7 +21,7 @@
 #include "e_nav.h"
 #include "e_mod_nav.h"
 #include <libintl.h>
-#include <ewl/Ewl.h>
+#include <etk/Etk.h>
 
 static const char *theme_name = NULL;
 
@@ -109,7 +109,7 @@ main(int argc, char **argv)
    if (!ecore_evas_init()) { printf("failed to init ecore_evas\n"); return -1; }
    if (!edje_init()) { printf("failed to init edje\n"); return -1; }
 
-   if (!ewl_init(&argc, argv)) {printf("failed to init ewl\n"); return -1; }
+   if (!etk_init(argc, argv)) {printf("failed to init etk\n"); return -1; }
 
    ecore_app_args_set(argc, (const char **) argv);
 

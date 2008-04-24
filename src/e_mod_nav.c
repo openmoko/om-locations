@@ -31,6 +31,7 @@
 #include "e_nav_dbus.h"
 #include "e_nav_tileset.h"
 #include "e_ctrl.h"
+#include <etk/Etk.h>
 
 /* FIXME: need objects:
  * 
@@ -364,10 +365,16 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    Evas_Object *nt;
    double lat, lon, scale;
    double neo_me_lat, neo_me_lon;
+   char theme_file[PATH_MAX];
+
+
 
    if (nav) return;
    cfg = dn_config_new();
    e_nav_theme_init(theme_name);
+
+   snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEME_PATH, e_nav_theme_name_get());
+   etk_theme_widget_set_from_path(theme_file);
 
    e_nav_dbus_init();
    world = diversity_world_new();
@@ -398,6 +405,8 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 
    e_ctrl_neo_me_set(neo_me);
    evas_object_show(ctrl);
+
+
 
    if(world) 
      {

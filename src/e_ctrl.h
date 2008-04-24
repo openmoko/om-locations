@@ -40,8 +40,9 @@ void                e_ctrl_taglist_tag_set(const char *name, const char *note, v
 void                e_ctrl_taglist_tag_delete(void *loc_object);
 int                 e_ctrl_contact_add(const char *id, Neo_Other_Data *data);
 Neo_Other_Data     *e_ctrl_contact_get(const char *id);
+Neo_Other_Data     *e_ctrl_contact_get_by_name(const char *name);
+Neo_Other_Data     *e_ctrl_contact_get_by_number(const char *number);
 Ecore_List         *e_ctrl_contacts_get(void);
 void                e_ctrl_contact_remove(const char *id);
-
 
 #endif

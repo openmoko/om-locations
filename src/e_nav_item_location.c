@@ -126,7 +126,7 @@ static void
 location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Diversity_Equipment *eqp = NULL;
-   Textedit_List_Item *item;
+   //Textedit_List_Item *item;
    Neo_Other_Data *neod;
 
    int ok = FALSE;
@@ -146,46 +146,16 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    eqp = e_ctrl_self_equipment_get("phonekit");
    if (!eqp) return;
 
-   void *selected_item = e_textedit_list_selected_get(obj);
-   if(selected_item)
+   neod = e_ctrl_contact_get_by_name(input);
+   if(!neod )
+     neod = e_ctrl_contact_get_by_number(input);
+   if(!neod)
      {
-        item = (Textedit_List_Item *)selected_item;
-        neod = (Neo_Other_Data *)item->data;
-        if(!neod) return;
-        if(!strcmp(neod->name, input))
-          {
-             printf("PhoneKit equipment Got , tag share ..... \n");
-             ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
-
-             Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
-             e_alert_theme_source_set(od, THEME_PATH);
-             e_alert_source_object_set(od, src_obj);     // alert's src_obj is location item
-             if (ok)
-               {
-                  e_alert_title_set(od, "SUCCESS", "Tag sent");
-                  e_alert_title_color_set(od, 0, 255, 0, 255);
-                  e_alert_button_add(od, "OK", alert_exit, od);
-               }
-             else 
-               {
-                  e_alert_title_set(od, "FAIL", "Tag sent fail");
-                  e_alert_title_color_set(od, 255, 0, 0, 255);
-                  e_alert_button_add(od, "OK", alert_exit, od);
-               }
-             e_textedit_deactivate(obj);   
-             evas_object_show(od);
-             e_alert_activate(od); 
-             return;
-          }
+        printf("contact not found\n");
+        return;
      }
 
-   /* lookup contact by name  */
-   /* FIXME: add support of looking up by phone number*/
-   item = e_textedit_list_item_get_by_name(obj, input);
-   if(item)
      {
-        neod = (Neo_Other_Data *)item->data;
-        if(!neod) return;
         ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
         Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
         e_alert_theme_source_set(od, THEME_PATH);
@@ -237,6 +207,7 @@ dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_textedit_theme_source_set(teo, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
    e_textedit_source_object_set(teo, data);  //  src_object is location item evas object 
    e_textedit_input_set(teo, "To:", "");
+
    Ecore_List *contacts = e_ctrl_contacts_get(); 
    int count = ecore_list_count(contacts);
    int n;
@@ -258,8 +229,7 @@ dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
               ecore_list_append(list, tli);
           }
      }
-   e_textedit_candidate_list_set(teo, list);
-   e_textedit_candidate_mode_set(teo, TEXTEDIT_CANDIDATE_MODE_TRUE);
+
    e_dialog_deactivate(obj);
    evas_object_show(teo);
    e_textedit_activate(teo);

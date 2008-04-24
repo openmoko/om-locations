@@ -110,93 +110,28 @@ get_time_diff_string(time_t time_then)
      }
 }
 
-static Ewl_Widget *
-list_view_cb_widget_fetch(void *data, unsigned int row, unsigned int column)
+static Etk_Bool
+_etk_test_tree_row_clicked_cb(Etk_Object *object, Etk_Tree_Row *row, Etk_Event_Mouse_Up *event, void *data)
 {
-   Tag_List_Item *d;
-   Ewl_Widget *vbox = NULL;
-   Ewl_Widget *label1 = NULL;
-   Ewl_Widget *label2 = NULL;
-   char theme_file[PATH_MAX];
-   char *time_diff_string;
+   Etk_Tree *tree;
+   char *row_name;
+   Tag_List_Item *ti;
+ 
+   if (!(tree = ETK_TREE(object)) || !row || !event)
+      return ETK_TRUE;
 
-   snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEME_PATH, e_nav_theme_name_get());
-   switch (column) {
-      case 0:
-         d = data;
-         label1 = ewl_label_new();
+   etk_tree_row_fields_get(row, etk_tree_nth_col_get(tree, 0), NULL, NULL, &row_name, NULL);
 
-         ewl_theme_data_reset(label1);
-         ewl_theme_data_str_set(label1, "/label/file", theme_file);
-         ewl_theme_data_str_set(label1, "/label/group", "diversity/label_big");
+   ti = (Tag_List_Item *)etk_tree_row_data_get(row); 
 
-         ewl_object_custom_h_set(EWL_OBJECT(label1), 60);
-         ewl_label_text_set(EWL_LABEL(label1), d->name);
+   if (ti->func) ti->func(ti->data, ti->data2);
 
-         label2 = ewl_label_new();
-         
-         ewl_theme_data_reset(label2);
-         ewl_theme_data_str_set(label2, "/label/file", theme_file);
-         ewl_theme_data_str_set(label2, "/label/group", "diversity/label_small_gray");
-
-         ewl_object_custom_h_set(EWL_OBJECT(label2), 20);
-
-         time_diff_string = get_time_diff_string(d->timestamp);
-         ewl_label_text_set(EWL_LABEL(label2), time_diff_string);
-         free(time_diff_string);
-         time_diff_string = NULL;
-         break;
-   }
-
-   vbox = ewl_box_new();
-   ewl_object_custom_h_set(EWL_OBJECT(vbox), 80);
-   ewl_box_orientation_set(EWL_BOX(vbox), EWL_ORIENTATION_VERTICAL);
-   ewl_container_child_append(EWL_CONTAINER(vbox), label1);
-   ewl_container_child_append(EWL_CONTAINER(vbox), label2);
-
-   ewl_widget_show(vbox);
-   ewl_widget_show(label1);
-   ewl_widget_show(label2);
-
-   return vbox;
-}
-
-static void
-list_cb_value_changed(Ewl_Widget *w, void *ev, void *data)
-{
-   Ecore_List *selected;
-   Ewl_Selection *sel;
-   selected = ewl_mvc_selected_list_get(EWL_MVC(w));
-   ecore_list_first_goto(selected);
-
-   while ((sel = ecore_list_next(selected)))
-     {
-        if (sel->type == EWL_SELECTION_TYPE_INDEX)
-          {
-             unsigned int col;
-             Ewl_Selection_Idx *idx;
-             idx = EWL_SELECTION_IDX(sel);
-             col = idx->column;
-             Tag_List_Item *ti;
-             ti = sel->model->fetch(sel->data, idx->row, col);
-             if (ti->func) ti->func(ti->data, ti->data2);
-          }
-     }
+   return ETK_TRUE;
 }
 
 Tag_List *
 e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
 {
-   Ecore_Evas *ee;
-   Evas *evas;
-   Ewl_Model *model;
-   Ewl_View  *view;
-   Ecore_List *data;
-   Evas_Coord x, y, w, h;
-   char theme_file[PATH_MAX]; 
-
-   snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEME_PATH, e_nav_theme_name_get());
-  
    Tag_List * tl = (Tag_List *)malloc (sizeof(Tag_List));
    memset(tl, 0, sizeof(Tag_List)); 
 
@@ -204,112 +139,84 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
    evas_object_smart_member_add(tl->frame, obj);
 
    /*
-    * Setup the ewl embed
+    * Setup the etk embed
     */
-   tl->embed = ewl_embed_new();
-   ewl_object_fill_policy_set(EWL_OBJECT(tl->embed), EWL_FLAG_FILL_ALL);
-   evas = evas_object_evas_get(obj);
-   ee = ecore_evas_ecore_evas_get(evas);
+   tl->embed  = etk_embed_new(evas_object_evas_get(obj));
+   tl->tree  = etk_tree_new();
+   etk_scrolled_view_policy_set(etk_tree_scrolled_view_get(ETK_TREE(tl->tree)), ETK_POLICY_HIDE, ETK_POLICY_HIDE);
+   etk_scrolled_view_dragable_set(ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(tl->tree))),ETK_TRUE);
 
-   tl->embed_eo = ewl_embed_canvas_set(EWL_EMBED(tl->embed), evas,
-                     (void *) ecore_evas_software_x11_window_get(ee));   
-   ewl_embed_focus_set(EWL_EMBED(tl->embed), TRUE);
+   etk_tree_mode_set(ETK_TREE(tl->tree), ETK_TREE_MODE_LIST);
+   etk_tree_multiple_select_set(ETK_TREE(tl->tree), ETK_FALSE);
+   etk_tree_rows_height_set (ETK_TREE(tl->tree), 90);
+
+   tl->col = etk_tree_col_new(ETK_TREE(tl->tree), NULL, 480, 0.0);
+
+   etk_tree_col_model_add(tl->col, etk_tree_model_text_new());
+   etk_tree_headers_visible_set(ETK_TREE(tl->tree), 1);
+   etk_tree_col_title_set(tl->col, "View Tags");
+
+   etk_signal_connect_by_code(ETK_TREE_ROW_CLICKED_SIGNAL, ETK_OBJECT(tl->tree),
+      ETK_CALLBACK(_etk_test_tree_row_clicked_cb), NULL);
+
+   etk_tree_build(ETK_TREE(tl->tree));
+
+   etk_container_add(ETK_CONTAINER(tl->embed), tl->tree);
+   etk_widget_show_all(ETK_WIDGET(tl->embed));
+   etk_widget_show_all(ETK_WIDGET(tl->tree));
 
    /*
     * swallow it into the edje
     */
-   evas_output_viewport_get(evas_object_evas_get(obj), &x, &y, &w, &h);
-   evas_object_move(tl->embed_eo, x, y);
-   evas_object_resize(tl->embed_eo, w, h);
-   edje_object_part_swallow(tl->frame, "swallow", tl->embed_eo);
+   edje_object_part_swallow(tl->frame, "swallow", etk_embed_object_get(ETK_EMBED(tl->embed)));
+   evas_object_show(tl->frame);
 
-   /*  Set vbox          */
-   tl->vbox = ewl_vbox_new();
-   ewl_container_child_append(EWL_CONTAINER(tl->embed), tl->vbox);
-
-   tl->label = ewl_label_new();
-
-   ewl_theme_data_reset(tl->label);
-   ewl_theme_data_str_set(tl->label, "/label/file", theme_file);
-   ewl_theme_data_str_set(tl->label, "/label/group", "diversity/label_small");
-
-   ewl_object_custom_h_set(EWL_OBJECT(tl->label), 30);
-   ewl_label_text_set(EWL_LABEL(tl->label), "View Tags");
-   ewl_container_child_append(EWL_CONTAINER(tl->vbox), tl->label);
-
-   /*
-    * fill it with content
-    */
-   /* set the scrollpane */
-   tl->scrollpane = ewl_scrollpane_new();
-
-   ewl_theme_data_reset(tl->scrollpane);
-   ewl_theme_data_str_set(tl->scrollpane, "/scrollpane/file", theme_file);
-   ewl_theme_data_str_set(tl->scrollpane, "/scrollpane/group", "diversity/scrollpane/background");
-
-   ewl_scrollpane_hscrollbar_flag_set(EWL_SCROLLPANE(tl->scrollpane), EWL_SCROLLPANE_FLAG_ALWAYS_HIDDEN);
-   ewl_scrollpane_vscrollbar_flag_set(EWL_SCROLLPANE(tl->scrollpane), EWL_SCROLLPANE_FLAG_ALWAYS_HIDDEN);
-
-   ewl_scrollpane_kinetic_scrolling_set(EWL_SCROLLPANE(tl->scrollpane), EWL_KINETIC_SCROLL_EMBEDDED);
-   ewl_scrollpane_kinetic_fps_set(EWL_SCROLLPANE(tl->scrollpane), 30);
-   ewl_scrollpane_kinetic_dampen_set(EWL_SCROLLPANE(tl->scrollpane), 0.99);
-
-   ewl_container_child_append(EWL_CONTAINER(tl->vbox), tl->scrollpane);
-
-   /*  set the list */
-   data = ecore_list_new();
-   model = ewl_model_ecore_list_instance();
-   view = ewl_label_view_get();
-   ewl_view_widget_fetch_set(view, list_view_cb_widget_fetch);
-
-   tl->list = ewl_list_new();
-
-   ewl_mvc_model_set(EWL_MVC(tl->list), model);
-   ewl_mvc_view_set(EWL_MVC(tl->list), view);
-   ewl_mvc_data_set(EWL_MVC(tl->list), data);
-
-   ewl_container_child_append(EWL_CONTAINER(tl->scrollpane), tl->list);
-
-   ewl_callback_append(tl->list, EWL_CALLBACK_VALUE_CHANGED,
-                       list_cb_value_changed, NULL);
    return tl;
 }
 
 void
 e_nav_taglist_destroy(Tag_List *obj)
 {
-   ewl_widget_destroy(obj->label);
-   ewl_widget_destroy(obj->list);
-   ewl_widget_destroy(obj->scrollpane);
-   ewl_widget_destroy(obj->vbox);
-   ewl_widget_destroy(obj->embed);
-   evas_object_del(obj->embed_eo);
+   if(!obj) return;
    evas_object_del(obj->frame);
+   obj->frame = NULL;
+   etk_object_destroy(ETK_OBJECT(obj->embed));
+   etk_object_destroy(ETK_OBJECT(obj->tree));
+   etk_object_destroy(ETK_OBJECT(obj->col));
+   free(obj);
 }
 
 void
 e_nav_taglist_tag_add(Tag_List *obj, Tag_List_Item *item)
 {
-   Ecore_List *list;    
+   Etk_Tree_Row *tree_row;
+   char *time_diff_string;
 
-   list = ewl_mvc_data_get(EWL_MVC(obj->list));
-   ecore_list_prepend(list, item);
-   
-   ewl_mvc_data_set(EWL_MVC(obj->list), list);
+   char *buf = (char *)malloc(strlen(item->name) + 128);
+
+   time_diff_string = get_time_diff_string(item->timestamp);
+   sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
+
+   free(time_diff_string);
+   time_diff_string = NULL;
+
+   tree_row = etk_tree_row_prepend(ETK_TREE(obj->tree), NULL, obj->col, buf, NULL );
+   if(tree_row)
+     etk_tree_row_data_set(tree_row, item);
 }
 
 void
 e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *description, void *object)
 {
-   Evas_Object *location_obj = NULL;
-   int n;
-   Ecore_List *list = ewl_mvc_data_get(EWL_MVC(obj->list));   
-   int count = ecore_list_count(list);
+   Evas_Object *location_obj;
+   Etk_Tree_Row *row;
    Tag_List_Item *item;
 
-   for(n=0; n<count; n++)
+   if(!obj || !object) return; 
+
+   for (row = etk_tree_first_row_get(ETK_TREE(obj->tree)); row; row = etk_tree_row_next_get(row))
      {
-        item = ecore_list_index_goto(list, n);
+        item = (Tag_List_Item *)etk_tree_row_data_get(row);
         location_obj = item->data2;
         if(location_obj == object)
           {
@@ -323,53 +230,48 @@ e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *descriptio
                   free(item->description);
                   item->description = strdup(description);
                }
+             etk_tree_row_fields_set(row, FALSE, obj->col, item->name, NULL);
+
           }
         location_obj = NULL;
+         
      }
-   ewl_mvc_data_set(EWL_MVC(obj->list), list);
 }
 
 void
 e_nav_taglist_tag_remove(Tag_List *obj, Evas_Object *tag)
 {
-   Evas_Object *location_obj = NULL;
-   int n;
-   Ecore_List *list = ewl_mvc_data_get(EWL_MVC(obj->list));   
-   int count = ecore_list_count(list);
+   Evas_Object *location_obj;
+   Etk_Tree_Row *row;
    Tag_List_Item *item;
-   for(n=0; n<count; n++)
+
+   if(!obj || !tag) return; 
+
+   for (row = etk_tree_first_row_get(ETK_TREE(obj->tree)); row; row = etk_tree_row_next_get(row))
      {
-        item = ecore_list_index_goto(list, n);
+        item = (Tag_List_Item *)etk_tree_row_data_get(row);
         location_obj = item->data2;
         if(location_obj == tag)
           {
-             ecore_list_remove_destroy(list); 
+             etk_tree_row_delete(row);
              break;
           }
         location_obj = NULL;
+         
      }
-
-   ewl_mvc_data_set(EWL_MVC(obj->list), list);
 }
 
 void 
 e_nav_taglist_clear(Tag_List *obj)
 {
-   Ecore_List *list = ewl_mvc_data_get(EWL_MVC(obj->list));   
-   int n;
-   int count = ecore_list_count(list);
-   ecore_list_first_goto(list);
-   for(n=0; n<count; n++)
-     {
-        ecore_list_remove_destroy(list);
-     }
-   ewl_mvc_data_set(EWL_MVC(obj->list), list);
+   etk_tree_clear(ETK_TREE(obj->tree));
+   etk_tree_thaw(ETK_TREE(obj->tree));
 }
 
 void
 e_nav_taglist_activate(Tag_List *tl)
 {
-   ewl_mvc_selected_clear(EWL_MVC(tl->list));
+   etk_tree_unselect_all(ETK_TREE(tl->tree));
    _e_taglist_update(tl);
 }
 
@@ -377,41 +279,26 @@ void
 e_nav_taglist_deactivate(Tag_List *tl)
 {
    evas_object_hide(tl->frame);
-   evas_object_hide(tl->embed_eo);
-   ewl_widget_hide(tl->embed);
-   ewl_widget_hide(tl->vbox);
-   ewl_widget_hide(tl->scrollpane);
-   ewl_widget_hide(tl->list);
-   ewl_widget_hide(tl->label);
-}
-
-static int 
-_list_sort_compare_cb(Tag_List_Item *item1, Tag_List_Item *item2) 
-{
-   if (item1->timestamp == 0) return 1;
-   if (item2->timestamp == 0) return -1;
-   return item1->timestamp <= item2->timestamp ? 1: -1;
+   etk_widget_hide(tl->embed);
+   etk_widget_hide(tl->tree);
 }
 
 static void
 _e_taglist_update(Tag_List *tl)
 {
    Evas_Coord screen_x, screen_y, screen_w, screen_h;
-   Ecore_List *list;   
 
    if(tl==NULL) return;
-   list = ewl_mvc_data_get(EWL_MVC(tl->list));
-   ecore_list_sort(list, ECORE_COMPARE_CB(_list_sort_compare_cb), ECORE_SORT_MIN);
 
    evas_output_viewport_get(evas_object_evas_get(tl->frame), &screen_x, &screen_y, &screen_w, &screen_h);
+   evas_object_move(tl->frame, screen_x, screen_y);
+   evas_object_resize(tl->frame, screen_w, screen_h);
+
+/* FIXME: should update the time diff string for each row item*/
+
    evas_object_show(tl->frame);
-   evas_object_move(tl->embed_eo, screen_x, screen_y);
-   evas_object_resize(tl->embed_eo, screen_w, screen_h);
-   evas_object_show(tl->embed_eo);
-   ewl_widget_show(tl->embed);
-   ewl_widget_show(tl->vbox);
-   ewl_widget_show(tl->scrollpane);
-   ewl_widget_show(tl->list);
-   ewl_widget_show(tl->label);
+   evas_object_raise(tl->frame);
+   etk_widget_show_all(tl->embed);
+   etk_widget_show(tl->tree);
 }
 

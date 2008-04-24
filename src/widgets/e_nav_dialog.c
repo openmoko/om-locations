@@ -22,7 +22,6 @@
 
 #include "../e_nav.h"
 #include "e_nav_dialog.h"
-#include "e_widget_textblock.h"
 #include "e_nav_textedit.h"
 #include "../e_nav_theme.h"
 
@@ -424,7 +423,7 @@ e_dialog_textblock_text_set(void *obj, const char *input)
      tbi->input = strdup(input);
    else
      tbi->input = strdup("");
-   e_widget_textblock_plain_set(tbi->item_obj, tbi->input);
+   edje_object_part_text_set(tbi->item_obj, "e.textblock.text", input);
    _e_dialog_update(tbi->obj);
 }
 
@@ -455,7 +454,7 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    Evas_Object *teo = e_textedit_add(evas);
    e_textedit_theme_source_set(teo, THEME_PATH, NULL, NULL, NULL, NULL);  
    e_textedit_source_object_set(teo, data); // data is tbi ( TextBlock_Item)
-   e_textedit_input_set(teo, evas_object_text_text_get(tbi->label_obj), tbi->input);
+   e_textedit_input_set(teo, edje_object_part_text_get(tbi->label_obj, "dialog.label.text"), tbi->input);
    
    evas_object_show(teo);
    e_textedit_activate(teo);
@@ -474,12 +473,16 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
      tbi->label = strdup(label);
    else 
      tbi->label = strdup("");
-   Evas_Object *text_object;
-   text_object = evas_object_text_add( evas_object_evas_get(obj) ); 
-   evas_object_text_text_set(text_object, label);
-   evas_object_text_font_set(text_object, "Sans:style=Bold,Edje-Vera-Bold", 20);
 
-   evas_object_text_glow_color_set(text_object, 255, 255, 255, 255);
+   Evas_Object *text_object;
+   text_object = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/label");
+   edje_object_part_text_set(text_object, "dialog.label.text", label);
+                                                                             
+   //text_object = evas_object_text_add( evas_object_evas_get(obj) ); 
+   //evas_object_text_text_set(text_object, label);
+   //evas_object_text_font_set(text_object, "fonts/Edje-Sans-Bold", 16);
+   //evas_object_text_glow_color_set(text_object, 255, 255, 255, 255);
+
    tbi->label_obj = text_object;
    evas_object_smart_member_add(tbi->label_obj, obj);
    evas_object_clip_set(tbi->label_obj, sd->clip);
@@ -492,15 +495,16 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
    if(size > 150) size=150;
    tbi->sz = size;
    tbi->data = data;
-   tbi->item_obj = e_widget_textblock_add(evas_object_evas_get(obj));
+
+   tbi->item_obj = e_nav_theme_object_new(evas_object_evas_get(obj), THEME_PATH,
+                                          "e/widgets/textblock");
    evas_object_smart_member_add(tbi->item_obj, obj);
    evas_object_clip_set(tbi->item_obj, sd->clip);
-   e_widget_textblock_plain_set(tbi->item_obj, input);
-   e_widget_textblock_event_callback_add(tbi->item_obj, EVAS_CALLBACK_MOUSE_UP,
-     				  _e_textblock_cb_mouse_up, tbi);
+   edje_object_part_text_set(tbi->item_obj, "e.textblock.text", input);
+   evas_object_event_callback_add(tbi->item_obj, EVAS_CALLBACK_MOUSE_UP, 
+                                  _e_textblock_cb_mouse_up, tbi);
    
    sd->textblocks = evas_list_append(sd->textblocks, tbi);
-
 }
 
 static void
@@ -519,7 +523,7 @@ _e_dialog_update(Evas_Object *obj)
         return;
      }
 
-   int screen_x, screen_y, screen_w, screen_h;
+   Evas_Coord screen_x, screen_y, screen_w, screen_h;
    evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
    int dialog_x = 0;
    int dialog_y = 0;
@@ -582,9 +586,10 @@ _e_dialog_update(Evas_Object *obj)
         evas_object_move(tbi->label_obj, indent, tmp_y);
         evas_object_show(tbi->label_obj);
         tmp_y = tmp_y + (indent*2.5);
-        e_widget_textblock_move(tbi->item_obj, indent, tmp_y);
-        e_widget_textblock_resize(tbi->item_obj, (dialog_w-(indent*2)), tbi->sz);
-        e_widget_textblock_show(tbi->item_obj);
+        evas_object_move(tbi->item_obj, indent, tmp_y);
+        evas_object_resize(tbi->item_obj, (dialog_w-(indent*2)), tbi->sz);
+        evas_object_show(tbi->item_obj);
+
         tmp_y = tmp_y + tbi->sz + indent;
      }
    tmp_y = tmp_y + (indent*2.5);

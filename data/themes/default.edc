@@ -2,8 +2,8 @@
 fonts {
    font: "Vera.ttf"   "Edje-Vera";
    font: "VeraBd.ttf" "Edje-Vera-Bold";
-   font: "LiberationSans-Regular.ttf"   "Liberation-Sans";
-   font: "LiberationSans-Bold.ttf" "Liberation-Sans-Bold";
+   font: "LiberationSans-Regular.ttf"   "Edje-Sans";
+   font: "LiberationSans-Bold.ttf" "Edje-Sans-Bold";
 }
 
 spectra {
@@ -29,6 +29,16 @@ collections {
 #include "default_titlepane.edc"
 #include "default_textblock.edc"
 #include "default_entry.edc"
+#include "image.edc"
+#include "focus.edc"
+#include "dnd.edc"
+#include "style.edc"
+#include "label.edc"
+#include "scrollbar.edc"
+#include "tree_header.edc"
+#include "tree.edc"
+#include "entry.edc"
+#include "text_view.edc"
 #include "diversity_widget.edc"
 #include "diversity_text.edc"
 #include "diversity_label.edc"

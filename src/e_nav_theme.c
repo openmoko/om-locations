@@ -55,6 +55,7 @@ _e_nav_theme_edje_object_set(Evas_Object *o, const char *category, const char *g
    snprintf(buf, sizeof(buf), "%s/%s.edj", THEME_PATH, category);
    ok = edje_object_file_set(o, buf, group);
 
+   printf("OK= %d, category:%s, group:%s\n", ok, category, group);
    return ok;
 }
 

@@ -7,12 +7,25 @@ styles
 {
    style {
       name: "textblock_style";
-      base: "font=Liberation-Sans font_size=16 align=left color=#fff style=shadow shadow_color=#ffffff00 wrap=word";
+      base: "font=Edje-Sans font_size=16 align=left color=#fff style=shadow shadow_color=#ffffff00 wrap=word";
       
       tag:  "br" "\n";
-      tag:  "hilight" "+ font=Edje-Vera-Bold style=glow color=#fff glow2_color=#fe87 glow_color=#fa14";
+      tag:  "hilight" "+ font=Edje-Sans-Bold style=glow color=#fff glow2_color=#fe87 glow_color=#fa14";
       tag:  "b" "+ font=Edje-Vera-Bold";
-      tag:  "title" "+ font_size=12 font=Edje-Vera-Bold style=soft_shadow color=#fff shadow_color=#00000020";
+      tag:  "title" "+ font_size=12 font=Edje-Sans-Bold style=soft_shadow color=#fff shadow_color=#00000020";
+      tag:  "/title" "- \n \n";
+   }
+   style {
+      name: "textblock_style2";
+      base: "font=Edje-Sans font_size=16 text_class=tb_plain align=left color=#626262 style=shadow shadow_color=#00000080 wrap=word";
+   }
+   style {
+      name: "textblock_style3";
+      base: "font=Edje-Sans font_size=16 text_class=tb_plain align=left color=#fff style=shadow shadow_color=#ffffff00 wrap=word";
+
+      tag:  "br" "\n";
+      tag:  "hilight" "+ font=Edje-Sans-Bold text_class=tb_light style=glow color=#fff glow2_color=#fe87 glow_color=#fa14";
+      tag:  "title" "+ font_size=12 font=Edje-Sans-Bold text_class=tb_big style=soft_shadow color=#fff shadow_color=#00000020";
       tag:  "/title" "- \n \n";
    }
 }
@@ -55,25 +68,58 @@ group {
 	    }
 	 }
       }
+     /*
       part {
 	 name:          "e.textblock.text";
-	 type:          TEXTBLOCK;
+	 type:          TEXT;
 	 mouse_events:  0;
+
 	 description {
 	    state:    "default" 0.0;
 	    rel1 {
+	       relative: 0 0;
 	       offset: 8 8;
                to:    "bg";
 	    }
 	    rel2 {
+	       relative: 1 1;
 	       offset: -10 -10;
                to:    "bg";
 	    }
 	    text {
-	       style:    "textblock_style";
-	       min:      1 1;
+               font: "Edje-Sans";
+               size: 16;
+               align: 0.0 0.0;
 	    }
 	 }
       }
+       */
+     
+      part {
+	 name:          "e.textblock.text";
+	 type:          TEXTBLOCK;
+	 mouse_events:  0;
+
+	 description {
+	    state:    "default" 0.0;
+            //max: 400 1000;
+            //min: 400 0;
+	    rel1 {
+	       relative: 0.0 0.0;
+	       offset: 8 8;
+               to:    "bg";
+	    }
+	    rel2 {
+	       relative: 1.0 1.0;
+	       offset: -10 -10;
+               to:    "bg";
+	    }
+	    text {
+	       style:    "textblock_style3";
+	       min:      0 1;
+	    }
+	 }
+      }
+       
    }
 }
