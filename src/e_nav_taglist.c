@@ -103,6 +103,10 @@ get_time_diff_string(time_t time_then)
 
                  return strdup(time_diff_string);
               }
+            else if(time_diff < 43200)
+              {
+                 return strdup("NEW!");
+              }
             else 
               {
                  return strdup("Today");
@@ -195,12 +199,18 @@ e_nav_taglist_tag_add(Tag_List *obj, Tag_List_Item *item)
    char *buf = (char *)malloc(strlen(item->name) + 128);
 
    time_diff_string = get_time_diff_string(item->timestamp);
-   sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
+   
+   if(strcmp(time_diff_string, "NEW!"))
+     sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
+   else
+     sprintf(buf, "<title>%s</title><br><p><glow>%s</glow>", item->name, time_diff_string );
 
    free(time_diff_string);
    time_diff_string = NULL;
 
    tree_row = etk_tree_row_prepend(ETK_TREE(obj->tree), NULL, obj->col, buf, NULL );
+   free(buf);
+   buf = NULL;
    if(tree_row)
      etk_tree_row_data_set(tree_row, item);
 }
@@ -211,6 +221,8 @@ e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *descriptio
    Evas_Object *location_obj;
    Etk_Tree_Row *row;
    Tag_List_Item *item;
+   char *time_diff_string;
+   char *buf;
 
    if(!obj || !object) return; 
 
@@ -230,8 +242,20 @@ e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *descriptio
                   free(item->description);
                   item->description = strdup(description);
                }
-             etk_tree_row_fields_set(row, FALSE, obj->col, item->name, NULL);
-
+             buf = (char *)malloc(strlen(item->name) + 128);
+             time_diff_string = get_time_diff_string(item->timestamp);
+             if(strcmp(time_diff_string, "NEW!"))
+               sprintf(buf, "<title>%s</title><br><p><description>%s</description>",
+                       item->name, time_diff_string );
+             else
+               sprintf(buf, "<title>%s</title><br><p><glow>%s</glow>",
+                       item->name, time_diff_string );
+             
+             free(time_diff_string);
+             time_diff_string = NULL;
+             etk_tree_row_fields_set(row, FALSE, obj->col, buf, NULL);
+             free(buf);
+             buf = NULL;
           }
         location_obj = NULL;
          
@@ -287,6 +311,10 @@ static void
 _e_taglist_update(Tag_List *tl)
 {
    Evas_Coord screen_x, screen_y, screen_w, screen_h;
+   Etk_Tree_Row *row;
+   Tag_List_Item *item;
+   char *time_diff_string;
+   char *buf;
 
    if(tl==NULL) return;
 
@@ -294,7 +322,23 @@ _e_taglist_update(Tag_List *tl)
    evas_object_move(tl->frame, screen_x, screen_y);
    evas_object_resize(tl->frame, screen_w, screen_h);
 
-/* FIXME: should update the time diff string for each row item*/
+   for (row = etk_tree_first_row_get(ETK_TREE(tl->tree)); row; row = etk_tree_row_next_get(row))
+     {
+        item = (Tag_List_Item *)etk_tree_row_data_get(row);
+        buf = (char *)malloc(strlen(item->name) + 128);
+        time_diff_string = get_time_diff_string(item->timestamp);
+        if(strcmp(time_diff_string, "NEW!"))
+          sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
+        else
+          sprintf(buf, "<title>%s</title><br><p><glow>%s</glow>", item->name, time_diff_string );
+
+        free(time_diff_string);
+        time_diff_string = NULL;
+        
+        etk_tree_row_fields_set(row, FALSE, tl->col, buf, NULL);
+        free(buf);
+        buf = NULL;
+     }
 
    evas_object_show(tl->frame);
    evas_object_raise(tl->frame);
