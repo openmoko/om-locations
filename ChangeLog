@@ -1,3 +1,7 @@
+2008-04-28  Jeremy Chang  <jeremy@openmoko.com>
+
+	* src/e_nav_taglist.c: Add tag list sorting. 
+
 2008-04-23  Jeremy Chang  <jeremy@openmoko.com>
 
 	* src/e_nav_taglist.c: Fix the height of the label in list widget. 
