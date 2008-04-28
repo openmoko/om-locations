@@ -199,6 +199,9 @@ e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when)
    else if (lon > 180.0) lon = 180.0;
    if (lat < -90.0) lat = -90.0;
    else if (lat > 90.0) lat = 90.0;
+
+   e_ctrl_follow_set(FALSE);
+
    if (when == 0.0)
      {
 	sd->cur.target.lon_lat_time = 0.0;

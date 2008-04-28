@@ -291,7 +291,7 @@ on_geometry_changed(void *data, DBusMessage *msg)
    DBusError err;
    double lon, lat;
    double dummy1, dummy2;
-   static int follow = 1;
+   int follow;
 
    dbus_error_init(&err);
    dbus_message_get_args(msg, &err, DBUS_TYPE_DOUBLE, &lon, DBUS_TYPE_DOUBLE, &lat,
@@ -313,9 +313,9 @@ on_geometry_changed(void *data, DBusMessage *msg)
    e_nav_world_item_geometry_set(nwi, lon, lat, 0.0, 0.0);
    e_nav_world_item_update(nwi);
 
+   follow = e_ctrl_follow_get(ctrl);
    if (follow) {
      e_nav_coord_set(nav, lon, lat, 0.0);
-     follow = 0;
    }
 }
 

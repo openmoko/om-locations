@@ -47,6 +47,7 @@ struct _E_Smart_Data
    Tag_List *listview;   
    Evas_Object *panel_buttons;
 
+   int follow;
    Evas_Coord x, y, w, h;
    const char      *dir;
 };
@@ -233,6 +234,7 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
        printf("sd is NULL\n");
        return;
    }
+   sd->follow = 0;
    evas_object_hide(sd->nav);
    evas_object_hide(sd->map_overlay);
    e_nav_taglist_activate(sd->listview);
@@ -252,7 +254,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    if (!neo_me) return;
 
    e_nav_world_item_geometry_get(neo_me, &lon, &lat, &w, &h);
-   // ToDo:  set Follow me flag
+   sd->follow = 1;
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
 
    e_nav_taglist_deactivate(sd->listview);
@@ -267,6 +269,7 @@ _e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
 {
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(data);
+   sd->follow = 0;
    e_nav_taglist_deactivate(sd->listview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
@@ -336,6 +339,7 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
+   sd->follow = 0;
    sd->map_overlay = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/main");
    evas_object_smart_member_add(sd->map_overlay, obj);
@@ -648,3 +652,22 @@ _e_ctrl_cb_signal_drag_stop(void *data, Evas_Object *obj, const char *emission, 
 	edje_object_part_drag_value_get(sd->map_overlay, "e.dragable.zoom", &x, &y);
      }
 }
+
+int
+e_ctrl_follow_get(Evas_Object* obj)
+{
+   E_Smart_Data *sd;
+   SMART_CHECK(obj, 0;);
+   return sd->follow;
+}
+
+void
+e_ctrl_follow_set(int follow)
+{
+   E_Smart_Data *sd;
+   if(!ctrl) return;
+   sd = evas_object_smart_data_get(ctrl);
+   if(!sd) return;
+   sd->follow = follow;
+}
+

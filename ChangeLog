@@ -1,5 +1,13 @@
 2008-04-28  Jeremy Chang  <jeremy@openmoko.com>
 
+	* src/e_ctrl.c,
+	  src/e_ctrl.h,
+	  src/e_mod_nav.c,
+	  src/e_nav.c: Add follow function activated when "Refresh" button
+	  pressed.
+
+2008-04-28  Jeremy Chang  <jeremy@openmoko.com>
+
 	* src/e_nav_taglist.c: Add tag list sorting. 
 
 2008-04-23  Jeremy Chang  <jeremy@openmoko.com>

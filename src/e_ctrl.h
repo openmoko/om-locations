@@ -44,5 +44,7 @@ Neo_Other_Data     *e_ctrl_contact_get_by_name(const char *name);
 Neo_Other_Data     *e_ctrl_contact_get_by_number(const char *number);
 Ecore_List         *e_ctrl_contacts_get(void);
 void                e_ctrl_contact_remove(const char *id);
+int                 e_ctrl_follow_get(Evas_Object* obj);
+void                e_ctrl_follow_set(int follow);
 
 #endif
