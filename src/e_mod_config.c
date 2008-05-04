@@ -101,10 +101,21 @@ dn_config_file_name_get(Diversity_Nav_Config *cfg)
    if(!cfg) return NULL;
 
    snprintf(cfg_filename, sizeof(cfg_filename),
-                   "%s/%s.cfg", PACKAGE_DATA_DIR,
-                   "diversity-nav");
+                        "%s/.diversity-nav/config/%s.cfg",
+                        (getenv("HOME") ?  getenv("HOME") : "/tmp"),
+                        "diversity-nav");
 
    return strdup(cfg_filename);
+}
+
+static void
+_init_default_config_value(Diversity_Nav_Config *cfg)
+{
+   dn_config_float_set(cfg, "lat", 0.0);
+   dn_config_float_set(cfg, "lon", 0.0);
+   dn_config_float_set(cfg, "scale", 77777.0);
+   dn_config_float_set(cfg, "neo_me_lon", 121.577286);
+   dn_config_float_set(cfg, "neo_me_lat", -25.072447);
 }
 
 static int
@@ -119,8 +130,9 @@ dn_config_file_load(Diversity_Nav_Config *cfg, const char *file)
    if (fd == -1)
      {
         printf("Unable to open cfg file %s.\n", file);
-        /*  still create the hash for cfg  */
+        /*  still create the hash for cfg and init the default value*/
         cfg->cfg_data = dn_config_create_hash();
+        _init_default_config_value(cfg);
         return FALSE;
      }
 
