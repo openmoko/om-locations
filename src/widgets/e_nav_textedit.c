@@ -24,6 +24,7 @@
 #include "e_nav_textedit.h"
 #include "e_nav_dialog.h"
 #include "../e_nav_theme.h"
+#include "../e_nav_misc.h"
 #include <etk/Etk.h>
 
 typedef struct _E_Button_Item E_Button_Item;
@@ -238,6 +239,7 @@ e_textedit_deactivate(Evas_Object *obj)
    SMART_CHECK(obj, ;);
    evas_object_hide(sd->event);
 
+   kbd_protocol_send_event(MTPRemoteHide);
    _e_textedit_smart_hide(obj);
    _e_textedit_smart_del(obj);
 }
@@ -453,5 +455,7 @@ _e_textedit_update(Evas_Object *obj)
    etk_widget_show(sd->embed->vbox);
    etk_widget_show(sd->embed->entry);
    etk_widget_focus(sd->embed->entry);
+
+   kbd_protocol_send_event(MTPRemoteShow);
 }
 

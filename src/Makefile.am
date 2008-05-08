@@ -30,7 +30,8 @@ noinst_HEADERS =		\
 	e_nav_item_link.h	\
         e_nav_item_location.h   \
 	e_nav_dbus.h            \
-        e_ctrl.h                
+        e_ctrl.h                \
+        e_nav_misc.h
 
 bin_PROGRAMS = diversity-nav
 diversity_nav_SOURCES =		\
@@ -50,7 +51,8 @@ diversity_nav_SOURCES =		\
 	e_nav_item_link.c	\
         e_nav_item_location.c   \
 	e_nav_dbus.c            \
-        e_ctrl.c                
+        e_ctrl.c                \
+        e_nav_misc.c
 		    
 diversity_nav_LDADD =		  \
 	$(EFL_LIBS)		  \
