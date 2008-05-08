@@ -38,6 +38,7 @@ struct _E_TextBlock_Item
    const char *input;
    Evas_Object *label_obj;
    Evas_Object *item_obj;
+   size_t length_limit;
    void *data;
 };
 
@@ -455,13 +456,14 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    e_textedit_theme_source_set(teo, THEME_PATH, NULL, NULL, NULL, NULL);  
    e_textedit_source_object_set(teo, data); // data is tbi ( TextBlock_Item)
    e_textedit_input_set(teo, edje_object_part_text_get(tbi->label_obj, "dialog.label.text"), tbi->input);
+   e_textedit_input_length_limit_set(teo, tbi->length_limit);
    
    evas_object_show(teo);
    e_textedit_activate(teo);
 }
 
 void 
-e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Evas_Coord size, void *data)
+e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Evas_Coord size, size_t length_limit, void *data)
 {
    E_Smart_Data *sd;
    E_TextBlock_Item *tbi;
@@ -486,6 +488,9 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
    tbi->label_obj = text_object;
    evas_object_smart_member_add(tbi->label_obj, obj);
    evas_object_clip_set(tbi->label_obj, sd->clip);
+
+   if(length_limit > 0)
+     tbi->length_limit = length_limit;
 
    if (input)
      tbi->input = strdup(input);

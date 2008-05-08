@@ -265,9 +265,9 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_source_object_set(od, src_obj);  
    e_dialog_title_set(od, "Edit your location", "Edit or delete your location");
    const char *title = e_nav_world_item_location_name_get(location_object);
-   e_dialog_textblock_add(od, "Edit title", title, 40, obj);
+   e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
    const char *message = e_nav_world_item_location_note_get(location_object);
-   e_dialog_textblock_add(od, "Edit message", message, 120, obj);
+   e_dialog_textblock_add(od, "Edit message", message, 120, 80, obj);
    e_dialog_button_add(od, "Save", dialog_location_save, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    e_dialog_button_add(od, "Delete", dialog_location_delete, od);
@@ -290,9 +290,9 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_source_object_set(od, src_obj);  
    e_dialog_title_set(od, "Send your location", "Send your favorite location to friends by SMS");
    const char *title = e_nav_world_item_location_name_get(location_object);
-   e_dialog_textblock_add(od, "Edit title", title, 40, obj);
+   e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
    const char *message = e_nav_world_item_location_note_get(location_object);
-   e_dialog_textblock_add(od, "Edit message", message, 120, obj);
+   e_dialog_textblock_add(od, "Edit message", message, 120, 80, obj);
    e_dialog_button_add(od, "Send", dialog_location_send, data);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    

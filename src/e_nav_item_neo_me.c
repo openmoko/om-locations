@@ -78,9 +78,9 @@ save_current_location(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_source_object_set(od, src_obj);  
    e_dialog_title_set(od, "Save your location", "Save your current location");
    const char *title = "";
-   e_dialog_textblock_add(od, "Edit title", title, 40, obj);
+   e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
    const char *message = "";
-   e_dialog_textblock_add(od, "Edit message", message, 120, obj);
+   e_dialog_textblock_add(od, "Edit message", message, 120, 80, obj);
    e_dialog_button_add(od, "Save", dialog_location_save, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    

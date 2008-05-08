@@ -394,6 +394,26 @@ _e_textedit_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 } 
 
+void
+e_textedit_input_length_limit_set(Evas_Object *obj, size_t length_limit)
+{
+   E_Smart_Data *sd;
+   SMART_CHECK(obj, ;);
+
+   if(!sd) return;
+   if(length_limit > 0) etk_entry_text_limit_set(ETK_ENTRY(sd->embed->entry), length_limit);
+}
+
+size_t
+e_textedit_input_length_limit_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   SMART_CHECK(obj, 0;);
+
+   if(!sd) return;
+   return etk_entry_text_limit_get(ETK_ENTRY(sd->embed->entry));
+}
+
 void 
 e_textedit_input_set(Evas_Object *obj, const char *name, const char *input)
 {

@@ -44,6 +44,8 @@ void            e_textedit_source_object_set(Evas_Object *obj, void *src_obj);
 Evas_Object    *e_textedit_source_object_get(Evas_Object *obj);
 void            e_textedit_activate(Evas_Object *obj);
 void            e_textedit_deactivate(Evas_Object *obj);
+void            e_textedit_input_length_limit_set(Evas_Object *obj, size_t length_limit);
+size_t          e_textedit_input_length_limit_get(Evas_Object *obj);
 void            e_textedit_input_set(Evas_Object *obj, const char *name, const char *input);
 const char     *e_textedit_input_get(Evas_Object *obj);
 void            e_textedit_candidate_list_set(Evas_Object *obj, Ecore_List *list);
