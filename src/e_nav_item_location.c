@@ -27,6 +27,7 @@
 #include "widgets/e_nav_textedit.h"
 #include "e_ctrl.h"
 #include <time.h>
+#include <ctype.h>
 
 static char *get_time_diff_string(time_t time_then);
 
@@ -122,11 +123,32 @@ dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_alert_activate(oa);
 }
 
+static int
+is_phone_number(const char *input)
+{
+   int length;
+   int i;
+   if(input)
+     length = strlen(input);
+
+   if(!input || length<3)
+     return FALSE;
+
+   if(input[0]!='+' && !isdigit(input[0]))
+     return FALSE;
+
+   for(i=1; i<length; i++)
+     if(!isdigit(input[i]))
+       return FALSE;
+
+   return TRUE;     
+}
+
 static void
 location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Diversity_Equipment *eqp = NULL;
-   Neo_Other_Data *neod;
+   Neo_Other_Data *neod = NULL;
    Evas_Object *alert_dialog;
 
    int ok = FALSE;
@@ -155,23 +177,11 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
      }
 
    neod = e_ctrl_contact_get_by_name(input);
-   if(!neod )
+   if(!neod)
      neod = e_ctrl_contact_get_by_number(input);
 
-   if(!neod)
-     {
-        alert_dialog = e_alert_add(evas_object_evas_get(obj));
-        e_alert_theme_source_set(alert_dialog, THEME_PATH);
-        e_alert_source_object_set(alert_dialog, src_obj);     
-        e_alert_title_set(alert_dialog, "FAIL", "Contact not found");
-        e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-        e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
-        e_textedit_deactivate(obj);   
-        evas_object_show(alert_dialog);
-        e_alert_activate(alert_dialog); 
-        return;
-     }
-
+   /* send by contact */
+   if(neod) 
      {
         ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
         alert_dialog = e_alert_add(evas_object_evas_get(obj));
@@ -194,27 +204,43 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         e_alert_activate(alert_dialog); 
         return;
      }
-   
-   ok = diversity_sms_tag_send((Diversity_Sms *)eqp, input, locd->tag);
 
-   Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
-   e_alert_theme_source_set(od, THEME_PATH);
-   e_alert_source_object_set(od, src_obj);     
-   if(ok)
+   /* send by number */   
+   if(is_phone_number(input))
      {
-        e_alert_title_set(od, "SUCCESS", "Tag sent");
-        e_alert_title_color_set(od, 0, 255, 0, 255);
-        e_alert_button_add(od, "OK", alert_exit, od);
+        ok = diversity_sms_tag_send((Diversity_Sms *)eqp, input, locd->tag);
+
+        Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
+        e_alert_theme_source_set(od, THEME_PATH);
+        e_alert_source_object_set(od, src_obj);     
+        if(ok)
+          {
+             e_alert_title_set(od, "SUCCESS", "Tag sent");
+             e_alert_title_color_set(od, 0, 255, 0, 255);
+             e_alert_button_add(od, "OK", alert_exit, od);
+          }
+        else
+          {
+             e_alert_title_set(od, "FAIL", "Tag sent fail");
+             e_alert_title_color_set(od, 255, 0, 0, 255);
+             e_alert_button_add(od, "OK", alert_exit, od);
+          }
+        e_textedit_deactivate(obj);   
+        evas_object_show(od);
+        e_alert_activate(od); 
+        return;
      }
-   else
-     {
-        e_alert_title_set(od, "FAIL", "Tag sent fail");
-        e_alert_title_color_set(od, 255, 0, 0, 255);
-        e_alert_button_add(od, "OK", alert_exit, od);
-     }
+
+   /* can't find contact and is not a phone number */
+   alert_dialog = e_alert_add(evas_object_evas_get(obj));
+   e_alert_theme_source_set(alert_dialog, THEME_PATH);
+   e_alert_source_object_set(alert_dialog, src_obj);     
+   e_alert_title_set(alert_dialog, "FAIL", "Contact not found");
+   e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
+   e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
    e_textedit_deactivate(obj);   
-   evas_object_show(od);
-   e_alert_activate(od); 
+   evas_object_show(alert_dialog);
+   e_alert_activate(alert_dialog); 
 }
 
 static void

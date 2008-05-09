@@ -170,8 +170,12 @@ e_ctrl_contact_get_by_name(const char *name)
      {
         neod =  ecore_list_index_goto(cl, n);
         if(neod && !strcmp(neod->name, name))
-          return neod;
+          {
+             ecore_list_destroy(cl);
+             return neod;
+          }
      }
+   ecore_list_destroy(cl);
    return NULL;
 }
 
@@ -189,8 +193,12 @@ e_ctrl_contact_get_by_number(const char *number)
      {
         neod =  ecore_list_index_goto(cl, n);
         if(neod && !strcmp(neod->phone, number))
-          return neod;
+          {
+             ecore_list_destroy(cl);
+             return neod;
+          }
      }
+   ecore_list_destroy(cl);
    return NULL;
 }
 
