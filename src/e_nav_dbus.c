@@ -889,7 +889,8 @@ diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name)
 
    if (strcmp(eqp_name, "osm") != 0 &&
        strcmp(eqp_name, "nmea") != 0 &&
-       strcmp(eqp_name, "phonekit") != 0)
+       strcmp(eqp_name, "phonekit") != 0 &&
+       strcmp(eqp_name, "qtopia") )
      return NULL;
 
    bpath = diversity_dbus_path_get((Diversity_DBus *) bard);

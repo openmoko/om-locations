@@ -144,6 +144,17 @@ is_phone_number(const char *input)
    return TRUE;     
 }
 
+static Diversity_Equipment *
+get_phone_equip()
+{
+   Diversity_Equipment *eqp = NULL;
+   eqp = e_ctrl_self_equipment_get("qtopia");
+   if(!eqp)
+     eqp = e_ctrl_self_equipment_get("phonekit");
+
+   return eqp;
+}
+
 static void
 location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
@@ -169,8 +180,9 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         return;
      }
 
-   eqp = e_ctrl_self_equipment_get("phonekit");
-   if (!eqp) 
+   eqp = get_phone_equip();
+     
+   if(!eqp) 
      {
         e_textedit_deactivate(obj);   
         return;
