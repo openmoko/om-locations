@@ -583,8 +583,20 @@ _e_dialog_update(Evas_Object *obj)
    Evas_List *l;
    E_TextBlock_Item *tbi;
    int indent = 10;
+   int button_w, button_h; 
+   int bc;
+
    tmp_y =  dialog_y + dialog_h*(1.0/6) + (indent*2.5);
-   
+   bc = evas_list_count(sd->buttons);
+   if(bc==0) return;
+   E_Button_Item *bi;
+   tmp_x = dialog_x;
+   button_w = (int)(dialog_w/bc);
+   if(tbc==0) 
+     button_h = dialog_h*(1.0/2);
+   else 
+     button_h = dialog_h*(1.0/8);
+
    for (l = sd->textblocks; l; l = l->next)
      {
         tbi = l->data;
@@ -592,27 +604,20 @@ _e_dialog_update(Evas_Object *obj)
         evas_object_show(tbi->label_obj);
         tmp_y = tmp_y + (indent*2.5);
         evas_object_move(tbi->item_obj, indent, tmp_y);
-        evas_object_resize(tbi->item_obj, (dialog_w-(indent*2)), tbi->sz);
-        evas_object_show(tbi->item_obj);
-
+        if((tmp_y + tbi->sz + indent + button_h) > (dialog_y + dialog_h) ) 
+          {
+             evas_object_resize(tbi->item_obj, (dialog_w-(indent*2)), (dialog_y + dialog_h - tmp_y - button_h - indent));
+             evas_object_show(tbi->item_obj);
+             break;
+          }
+        else
+          {
+             evas_object_resize(tbi->item_obj, (dialog_w-(indent*2)), tbi->sz);
+             evas_object_show(tbi->item_obj);
+          }
         tmp_y = tmp_y + tbi->sz + indent;
      }
    tmp_y = tmp_y + (indent*2.5);
- 
-   int button_w, button_h; 
-   int bc = evas_list_count(sd->buttons);
-   if(bc==0) return;
-   E_Button_Item *bi;
-   tmp_x = dialog_x;
-   button_w = (int)(dialog_w/bc);
-   if(tbc==0) 
-     {
-        button_h = dialog_h*(1.0/2);
-     }
-   else 
-     {
-        button_h = dialog_h*(1.0/8);
-     }
 
    for (l = sd->buttons; l; l = l->next)
      {

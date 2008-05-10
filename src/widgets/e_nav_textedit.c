@@ -452,7 +452,7 @@ _e_textedit_update(Evas_Object *obj)
 
    evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
    evas_object_move(sd->bg_object, screen_x, screen_y);
-   evas_object_resize(sd->bg_object, screen_w, screen_h);
+   evas_object_resize(sd->bg_object, screen_w, 10000);
    evas_object_show(sd->bg_object);
    if(sd->left_button)
      {
