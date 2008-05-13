@@ -70,6 +70,10 @@ osm_tileset_add(Evas_Object *nav)
 	self = diversity_world_get_self(world);
 	if (self)
 	  eqp = diversity_bard_equipment_get(self, "osm");
+        else
+          {
+             return NULL;
+          }
      }
 
 
@@ -389,6 +393,12 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 	/* XXX */
 	e_nav_tileset_monitor_add(nt, "/media/card/diversity-maps");
      }
+   else 
+     {
+        _e_mod_nav_shutdown();
+        ecore_main_loop_quit();
+        return;
+     } 
 
    evas_object_show(nt);
 
@@ -544,7 +554,8 @@ _e_mod_nav_shutdown(void)
 	world = NULL;
      }
 
-   ecore_hash_destroy(objectStore);
+   if(objectStore)
+     ecore_hash_destroy(objectStore);
    evas_object_del(nav);
    nav = NULL;
    e_nav_dbus_shutdown();
