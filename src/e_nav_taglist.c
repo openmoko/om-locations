@@ -185,7 +185,6 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
     * swallow it into the edje
     */
    edje_object_part_swallow(tl->frame, "swallow", etk_embed_object_get(ETK_EMBED(tl->embed)));
-   evas_object_show(tl->frame);
 
    return tl;
 }
