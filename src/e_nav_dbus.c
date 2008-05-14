@@ -787,6 +787,23 @@ diversity_world_get_self(Diversity_World *world)
    return self;
 }
 
+int
+diversity_world_snapshot(Diversity_World *world)
+{
+   E_DBus_Proxy *proxy;
+
+   if (!world) return 0;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) world,
+	 	DIVERSITY_DBUS_IFACE_WORLD);
+   if (!proxy) return 0;
+
+   return e_dbus_proxy_simple_call(proxy,
+				   "Snapshot", NULL,
+				   DBUS_TYPE_INVALID,
+				   DBUS_TYPE_INVALID);
+}
+
 Diversity_Viewport *
 diversity_viewport_new(const char *path)
 {

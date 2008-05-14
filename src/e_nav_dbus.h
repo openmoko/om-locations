@@ -92,6 +92,7 @@ int                 diversity_world_viewport_remove(Diversity_World *world, Dive
 Diversity_Tag      *diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description);
 int                 diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag);
 Diversity_Bard     *diversity_world_get_self(Diversity_World *world);
+int                 diversity_world_snapshot(Diversity_World *world);
 
 Diversity_Equipment *diversity_equipment_new(const char *path);
 void                diversity_equipment_destroy(Diversity_Equipment *eqp);

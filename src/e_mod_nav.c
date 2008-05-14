@@ -550,6 +550,7 @@ _e_mod_nav_shutdown(void)
 	     diversity_bard_destroy(self);
 	     self = NULL;
 	  }
+	diversity_world_snapshot(world);
 	diversity_world_destroy(world);
 	world = NULL;
      }
