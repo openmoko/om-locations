@@ -46,5 +46,8 @@ Ecore_List         *e_ctrl_contacts_get(void);
 void                e_ctrl_contact_remove(const char *id);
 int                 e_ctrl_follow_get(Evas_Object* obj);
 void                e_ctrl_follow_set(int follow);
+void                e_ctrl_message_text_set(Evas_Object *obj, const char *msg);
+void                e_ctrl_message_hide(Evas_Object *obj);
+void                e_ctrl_message_show(Evas_Object *obj);
 
 #endif

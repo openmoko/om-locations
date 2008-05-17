@@ -32,6 +32,7 @@
 #include "e_nav_tileset.h"
 #include "e_ctrl.h"
 #include <etk/Etk.h>
+#include "widgets/e_nav_alert.h"
 
 /* FIXME: need objects:
  * 
@@ -50,6 +51,7 @@ static Evas_Object *ctrl   = NULL;
 static Evas_Object *nav    = NULL;
 static Evas_Object *neo_me = NULL;
 static Diversity_Nav_Config *cfg = NULL; 
+Ecore_Timer *timer = NULL;
 
 static Diversity_World *world = NULL;
 static Diversity_Bard  *self  = NULL;
@@ -57,6 +59,9 @@ static Diversity_Viewport *worldview = NULL;
 static Ecore_Hash *objectStore = NULL;
 static void _e_mod_neo_me_init();
 static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
+static void position_search_timer_start();
+static void position_search_timer_stop();
+static int _e_nav_cb_timer_pos_search_pause(void *data);
 
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
@@ -360,6 +365,8 @@ on_property_changed(void *data, DBusMessage *msg)
      {
         e_nav_world_item_neo_me_fixed_set(nwi, 1);
         fixed = 1;
+        position_search_timer_stop();
+        e_ctrl_message_hide(ctrl);
      }
 }
 
@@ -476,6 +483,60 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    _e_mod_nav_update(evas);
    evas_object_show(nav);
    evas_object_show(ctrl);
+
+   if(!e_nav_world_item_neo_me_fixed_get(neo_me))
+     position_search_timer_start();
+}
+
+static void
+alert_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   e_alert_deactivate(obj);
+   e_ctrl_message_hide(ctrl);
+}
+
+static void
+position_search_timer_start()
+{
+   e_ctrl_message_show(ctrl);
+   timer = ecore_timer_add(60.0,
+                           _e_nav_cb_timer_pos_search_pause,
+                           NULL);
+}
+
+static void
+position_search_timer_stop()
+{
+   if(timer) ecore_timer_del(timer);
+   timer = NULL;
+}
+
+static int
+_e_nav_cb_timer_pos_search_pause(void *data)
+{
+   Evas_Object *alert_dialog;
+   int fix_status;
+    
+   alert_dialog = e_alert_add(evas_object_evas_get(nav));
+   e_alert_theme_source_set(alert_dialog, THEME_PATH);
+   e_alert_source_object_set(alert_dialog, neo_me);     
+   fix_status = e_nav_world_item_neo_me_fixed_get(neo_me);
+   if(fix_status)
+     {
+        e_alert_title_set(alert_dialog, "FIXED", "Got your position");
+        e_alert_title_color_set(alert_dialog, 0, 255, 0, 255);
+        e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
+     }
+   else
+     {
+        e_alert_title_set(alert_dialog, "NON-FIXED", "Not fixed yet");
+        e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
+        e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
+     }
+   evas_object_show(alert_dialog);
+   e_alert_activate(alert_dialog); 
+
+   return 0;
 }
 
 /* 
@@ -557,6 +618,7 @@ _e_mod_nav_shutdown(void)
 
    if(objectStore)
      ecore_hash_destroy(objectStore);
+
    evas_object_del(nav);
    nav = NULL;
    e_nav_dbus_shutdown();

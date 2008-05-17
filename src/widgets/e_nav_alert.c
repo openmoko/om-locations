@@ -399,7 +399,6 @@ e_alert_title_set(Evas_Object *obj, const char *title, const char *message)
 void
 e_alert_title_color_set(Evas_Object *obj, int r, int g, int b, int a)
 {
-   Evas_Object *o;
    E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
    if(!sd) return;

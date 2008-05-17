@@ -35,7 +35,7 @@ group {
                to:   "base";
             }
             text {
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 24;
                min:  1 1;
                 align: 0.0 0.0;
@@ -60,7 +60,7 @@ group {
                to:   "base";
             }
             text {
-               font: "Liberation-Sans-Bold";
+               font: "Edje-Sans-Bold";
                size: 24;
                min:  1 1;
                align: 0.0 0.0;

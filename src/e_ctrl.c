@@ -46,6 +46,7 @@ struct _E_Smart_Data
    Evas_Object *nav;
    Tag_List *listview;   
    Evas_Object *panel_buttons;
+   Evas_Object *message;
 
    int follow;
    Evas_Coord x, y, w, h;
@@ -99,6 +100,8 @@ _e_nav_tag_sel(void *data, void *data2)
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
+   if(evas_object_visible_get(sd->message))
+     evas_object_raise(sd->message);
    evas_object_raise(object);
    evas_object_show(sd->panel_buttons);
 }
@@ -247,6 +250,7 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
    evas_object_hide(sd->map_overlay);
    e_nav_taglist_activate(sd->listview);
    evas_object_raise(sd->panel_buttons);
+   evas_object_lower(sd->message);
 }
 
 static void   
@@ -268,6 +272,8 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    e_nav_taglist_deactivate(sd->listview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
+   if(evas_object_visible_get(sd->message))
+     evas_object_raise(sd->message);
    evas_object_show(sd->panel_buttons);
    evas_object_raise(neo_me);
 }
@@ -281,6 +287,8 @@ _e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    e_nav_taglist_deactivate(sd->listview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
+   if(evas_object_visible_get(sd->message))
+     evas_object_raise(sd->message);
    evas_object_show(sd->panel_buttons);
 }
 
@@ -406,6 +414,12 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_event_callback_add(list, EVAS_CALLBACK_MOUSE_UP,
 				  _e_nav_list_button_cb_mouse_down, ctrl);
    evas_object_show(sd->panel_buttons);
+
+   sd->message = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
+				      "modules/diversity_nav/message");
+   evas_object_move(sd->message, sd->x, sd->y);
+   evas_object_resize(sd->message, sd->w, sd->h);
+   evas_object_show(sd->message);
 }
 
 void
@@ -501,6 +515,7 @@ _e_ctrl_smart_del(Evas_Object *obj)
    evas_object_del(sd->clip);
    evas_object_del(sd->map_overlay);
    evas_object_del(sd->panel_buttons);
+   evas_object_del(sd->message);
    free(sd);
 }
 
@@ -517,6 +532,7 @@ _e_ctrl_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    evas_object_move(sd->clip, sd->x, sd->y);
    evas_object_move(sd->map_overlay, sd->x, sd->y);
    evas_object_move(sd->panel_buttons, sd->x, sd->y);
+   evas_object_move(sd->message, sd->x, sd->y);
 }
 
 static void
@@ -531,6 +547,7 @@ _e_ctrl_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_resize(sd->map_overlay, sd->w, sd->h);
    evas_object_resize(sd->panel_buttons, sd->w, sd->h);
+   evas_object_resize(sd->message, sd->w, sd->h);
 }
 
 static void
@@ -662,7 +679,7 @@ _e_ctrl_cb_signal_drag_stop(void *data, Evas_Object *obj, const char *emission, 
 }
 
 int
-e_ctrl_follow_get(Evas_Object* obj)
+e_ctrl_follow_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    SMART_CHECK(obj, 0;);
@@ -678,4 +695,32 @@ e_ctrl_follow_set(int follow)
    if(!sd) return;
    sd->follow = follow;
 }
+
+void
+e_ctrl_message_text_set(Evas_Object *obj, const char *msg)
+{
+   E_Smart_Data *sd;
+   SMART_CHECK(obj, ;);
+   if(!sd) return;
+   edje_object_part_text_set(sd->message, "message.text", msg);
+}
+
+void
+e_ctrl_message_hide(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   SMART_CHECK(obj, ;);
+   if(!sd) return;
+   evas_object_hide(sd->message);
+}
+
+void
+e_ctrl_message_show(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   SMART_CHECK(obj, ;);
+   if(!sd) return;
+   evas_object_show(sd->message);
+}
+
 
