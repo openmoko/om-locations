@@ -348,9 +348,9 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);   // obj is location evas object
    /* FIXME: real menu items */
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, "Edit",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, "edit",
 			       _e_nav_world_item_cb_menu_1, obj);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, "Send",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, "send",
 			       _e_nav_world_item_cb_menu_2, obj);
    evas_object_show(om);
    e_flyingmenu_activate(om);
@@ -359,24 +359,27 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
 static void
 _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
+   Evas_Object *location;
    Location_Data *locd;
    const char *text_part_state;
    double val_ret;
    char *time_diff_string;
-   
-   text_part_state = edje_object_part_state_get(obj, "e.text.name", &val_ret);
-   locd = evas_object_data_get(obj, "nav_world_item_location_data");
+ 
+   location = (Evas_Object *)data;   
+   if(!location) return;
+   text_part_state = edje_object_part_state_get(location, "e.text.name", &val_ret);
+   locd = evas_object_data_get(location, "nav_world_item_location_data");
 
    if(!strcmp(text_part_state, "default")) 
      {
         time_diff_string = get_time_diff_string(locd->timestamp);
-        edje_object_part_text_set(obj, "e.text.name2", time_diff_string);
+        edje_object_part_text_set(location, "e.text.name2", time_diff_string);
         free(time_diff_string);
-        edje_object_signal_emit(obj, "e,state,active", "e");
+        edje_object_signal_emit(location, "e,state,active", "e");
      }
    else 
      {
-        edje_object_signal_emit(obj, "e,state,passive", "e");
+        edje_object_signal_emit(location, "e,state,passive", "e");
      }
 }
 
@@ -413,11 +416,13 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    locd->tag = (Diversity_Tag *) tag;
    o = e_nav_theme_object_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/location");
-   edje_object_part_text_set(o, "e.text.name", "???");
+   edje_object_part_text_set(o, "e.text.name", "No Title");
    edje_object_signal_callback_add(o, "MENU_ACTIVATE", "e.text.name", cb_menu_activate, (void *)theme_dir);
-   evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,
+
+   evas_object_event_callback_add(edje_object_part_object_get(o, "e.image.location"),
+                                  EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
-				  theme_dir);
+				  o);
    evas_object_geometry_get(edje_object_part_object_get(o, "e.image.location"), &x, &y, &w, &h);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
@@ -444,7 +449,7 @@ e_nav_world_item_location_name_set(Evas_Object *item, const char *name)
    if (name) locd->name = evas_stringshare_add(name);
    else locd->name = NULL;
    if(!locd->name || !strcmp(locd->name, ""))
-     edje_object_part_text_set(item, "e.text.name", "???");
+     edje_object_part_text_set(item, "e.text.name", "No Title");
    else 
      edje_object_part_text_set(item, "e.text.name", locd->name);
 }

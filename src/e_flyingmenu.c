@@ -30,6 +30,7 @@ struct _E_Tagmenu_Item
 {
    Evas_Object *obj;
    Evas_Object *item_obj;
+   Evas_Object *interval;
    Evas_Coord sz;
    void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj);
    void *data;
@@ -191,6 +192,7 @@ e_flyingmenu_deactivate(Evas_Object *obj)
      {
 	ti = l->data;
         evas_object_hide(ti->item_obj);
+        evas_object_hide(ti->interval);
      }
 
    if (sd->animator) return;
@@ -219,6 +221,7 @@ e_flyingmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size,
 				  _e_flyingmenu_cb_item_up, ti);
    
    edje_object_part_text_set(ti->item_obj, "text", label);
+   ti->interval = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/flying_menu/interval");
    sd->items = evas_list_append(sd->items, ti);
 }
 
@@ -304,6 +307,7 @@ _e_flyingmenu_smart_del(Evas_Object *obj)
 	ti = sd->items->data;
 	sd->items = evas_list_remove_list(sd->items, sd->items);
 	evas_object_del(ti->item_obj);
+	evas_object_del(ti->interval);
 	free(ti);
      }
    evas_object_del(sd->bg_obj);
@@ -415,7 +419,7 @@ _e_flyingmenu_update(Evas_Object *obj)
 
         evas_object_move(sd->bg_obj, 
                          x+(w/2)-(tsize/2)-10, 
-                         y - menu_h - interspace);
+                         y - menu_h - interspace - 2);
         evas_object_resize(sd->bg_obj, tsize + (2 * 10), menu_h + interspace);
         evas_object_show(sd->bg_obj);
 
@@ -424,19 +428,31 @@ _e_flyingmenu_update(Evas_Object *obj)
 	  {
 	     ti = l->data;
 	     if (!sd->active)
-	       evas_object_hide(ti->item_obj);
+               {
+	          evas_object_hide(ti->item_obj);
+	          evas_object_hide(ti->interval);
+               }
 	     else
 	       {
 		  xx =  (-tsize/2) + size + (ti->sz/2);
 		  yy =  (-h/2) -interspace - (menu_h/2) ;
 		  ww = ti->sz ;
 		  hh = menu_h ;
+                  if(size!=0)
+                    {
+		       evas_object_move(ti->interval, 
+				   x + (w / 2) + xx - (ww / 2), 
+				   y + (h / 2) + yy - (hh / 2));
+		       evas_object_resize(ti->interval, 10, hh);
+		       evas_object_show(ti->interval);
+                    }
 		  evas_object_move(ti->item_obj, 
 				   x + (w / 2) + xx - (ww / 2), 
 				   y + (h / 2) + yy - (hh / 2));
 		  evas_object_resize(ti->item_obj, ww, hh);
 		  evas_object_show(ti->item_obj);
                   size = size + ti->sz;
+		  
 	       }
 	  }
 	if (!sd->active)
@@ -460,7 +476,7 @@ _e_flyingmenu_update(Evas_Object *obj)
           }
         evas_object_move(sd->bg_obj, 
                          x+(w/2)-(tsize/2)-10, 
-                         (int)((y*t) - menu_h - interspace));
+                         (int)((y*t) - menu_h - interspace - 2));
         evas_object_resize(sd->bg_obj, tsize + (2 * 10), menu_h + interspace);
         evas_object_show(sd->bg_obj);
 
@@ -468,6 +484,14 @@ _e_flyingmenu_update(Evas_Object *obj)
 	for (l = sd->items; l; l = l->next)
 	  {
 	     ti = l->data;
+             if(size!=0)
+               {
+                  evas_object_move(ti->interval, 
+                                   x+(w/2)-(tsize/2)+size-5,  
+                                   (int)((y*t)-menu_h-interspace));
+                  evas_object_resize(ti->interval, 10, menu_h);
+                  evas_object_show(ti->interval);
+               }
 	     evas_object_move(ti->item_obj, x+(w/2)-(tsize/2)+size, (int)((y*t)-menu_h-interspace));
 	     evas_object_resize(ti->item_obj, ti->sz, menu_h);
 	     evas_object_show(ti->item_obj);
@@ -482,6 +506,7 @@ _e_flyingmenu_update(Evas_Object *obj)
 	  {
 	     ti = l->data;
 	     if (!sd->active) evas_object_hide(ti->item_obj);
+	     if (!sd->active) evas_object_hide(ti->interval);
 	  }
         evas_object_hide(sd->bg_obj);
         evas_object_hide(sd->event);
