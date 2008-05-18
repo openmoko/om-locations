@@ -22,6 +22,7 @@
 
 #include "e_nav.h"
 #include "e_nav_taglist.h"
+#include "e_nav_item_location.h"
 #include "e_nav_theme.h"
 #include <stdlib.h>
 #include <time.h>
@@ -319,6 +320,7 @@ _e_taglist_update(Tag_List *tl)
    Tag_List_Item *item;
    char *time_diff_string;
    char *buf;
+   Evas_Object *location_obj;
 
    if(tl==NULL) return;
 
@@ -329,23 +331,24 @@ _e_taglist_update(Tag_List *tl)
    etk_tree_col_sort(tl->col, TRUE);  // ascendant sort
 
    row = etk_tree_first_row_get(ETK_TREE(tl->tree));
-   if (row)
-     {
-        item = (Tag_List_Item *)etk_tree_row_data_get(row);
-        buf = (char *)malloc(strlen(item->name) + 128);
-        sprintf(buf, "<title>%s</title><br><p><glow>%s</glow>", item->name, "NEW!");
-        etk_tree_row_fields_set(row, FALSE, tl->col, buf, NULL);
-        free(buf);
-        buf = NULL;
-        row = etk_tree_row_next_get(row);
-     }
 
+   int unread;
    for (; row; row = etk_tree_row_next_get(row))
      {
         item = (Tag_List_Item *)etk_tree_row_data_get(row);
         buf = (char *)malloc(strlen(item->name) + 128);
-        time_diff_string = get_time_diff_string(item->timestamp);
-        sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
+        location_obj = (Evas_Object *)item->data2;
+     
+        unread = e_nav_world_item_location_unread_get(location_obj);
+        if(unread)
+          {
+             sprintf(buf, "<title>%s</title><br><p><glow>%s</glow>", item->name, "NEW!");
+          }
+        else 
+          {
+             time_diff_string = get_time_diff_string(item->timestamp);
+             sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
+          }
 
         free(time_diff_string);
         time_diff_string = NULL;

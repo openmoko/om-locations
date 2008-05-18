@@ -152,9 +152,14 @@ viewport_object_added(void *data, DBusMessage *msg)
           {
              char *name = NULL;
              char *description = NULL;
+             int unread;
              nwi = e_nav_world_item_location_add(nav, THEME_PATH,
 				     lon, lat, obj);
              diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
+	     diversity_dbus_property_get((Diversity_DBus *) obj,
+		   DIVERSITY_DBUS_IFACE_TAG, "Unread", &unread);
+             e_nav_world_item_location_unread_set(nwi, unread);
+
              name = strsep(&description, "\n");
              e_nav_world_item_location_name_set(nwi, name);
              e_nav_world_item_location_note_set(nwi, description);

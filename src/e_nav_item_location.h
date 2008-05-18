@@ -35,5 +35,8 @@ void                    e_nav_world_item_location_lon_set(Evas_Object *item, dou
 double                  e_nav_world_item_location_lon_get(Evas_Object *item);
 void                    e_nav_world_item_location_timestamp_set(Evas_Object *item, time_t secs);
 int                     e_nav_world_item_location_timestamp_get(Evas_Object *item);
+void                    e_nav_world_item_location_unread_set(Evas_Object *item, uint unread);
+int                     e_nav_world_item_location_unread_get(Evas_Object *item);
+Diversity_Tag          *e_nav_world_item_location_tag_get(Evas_Object *item);
     
 #endif

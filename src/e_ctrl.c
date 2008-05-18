@@ -85,7 +85,10 @@ static void
 _e_nav_tag_sel(void *data, void *data2)
 {
    Evas_Object *object;
+   Diversity_Tag *tag;
    E_Smart_Data *sd; 
+   int unread;
+
    sd = evas_object_smart_data_get(data);
    if(!sd) {
        printf("sd is NULL\n");
@@ -93,9 +96,21 @@ _e_nav_tag_sel(void *data, void *data2)
    }
     
    object = (Evas_Object *)data2;
+   tag = e_nav_world_item_location_tag_get(object);
 
    double lon = e_nav_world_item_location_lon_get(data2);
    double lat = e_nav_world_item_location_lat_get(data2);
+   unread = e_nav_world_item_location_unread_get(object); 
+   int val = 0;
+   if(unread && tag)
+     {
+        unread = 0;
+        val = diversity_dbus_property_set((Diversity_DBus *) tag,
+	      DIVERSITY_DBUS_IFACE_TAG, "Unread", DBUS_TYPE_UINT32, &unread);
+        if(val)
+          e_nav_world_item_location_unread_set(object, 0); 
+     }
+
    e_nav_taglist_deactivate(sd->listview);
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
