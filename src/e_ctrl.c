@@ -106,7 +106,7 @@ _e_nav_tag_sel(void *data, void *data2)
      {
         unread = 0;
         val = diversity_dbus_property_set((Diversity_DBus *) tag,
-	      DIVERSITY_DBUS_IFACE_TAG, "Unread", DBUS_TYPE_UINT32, &unread);
+	      DIVERSITY_DBUS_IFACE_TAG, "Unread", DBUS_TYPE_BOOLEAN, &unread);
         if(val)
           e_nav_world_item_location_unread_set(object, 0); 
      }
