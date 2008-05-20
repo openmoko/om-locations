@@ -193,12 +193,42 @@ e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when)
 {
    E_Smart_Data *sd;
    double t;
+   double lon_off, lat_off;
+   double lon_left, lon_right;
    
    SMART_CHECK(obj, ;);
    if (lon < -180.0) lon = -180.0;
    else if (lon > 180.0) lon = 180.0;
    if (lat < -90.0) lat = -90.0;
    else if (lat > 90.0) lat = 90.0;
+
+   /* 
+    * Translate pixel offset to lan/lon to get the lonitudes at left and right edge of the screen.
+    */
+   Evas_Coord screen_w, screen_h;
+   evas_output_viewport_get(evas_object_evas_get(obj), NULL, NULL, &screen_w, &screen_h);
+   if(lon) 
+     _e_nav_from_offsets(obj, -(screen_w/2), (screen_h/2), &lon_off, &lat_off);
+   else
+     _e_nav_from_offsets(obj, (screen_w/2), (screen_h/2), &lon_off, &lat_off);
+
+   if(lon_off < 0) 
+     lon_off = -lon_off;
+   lon_left = lon - lon_off; 
+   lon_right = lon + lon_off; 
+
+   /* 
+    * Make a shift adjust to make the map occupy the width of the screen. 
+    */
+   if(lon_left < -180.0) 
+     {
+        lon = lon + (-180 - lon_left);
+     }
+   if(lon_right > 180.0) 
+     {
+        lon = lon - (lon_right - 180.0);
+     }
+
 
    e_ctrl_follow_set(FALSE);
 
@@ -834,6 +864,8 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 {
    E_Smart_Data *sd;
    double lon, lat, when = 0.0;
+   double lon_off, lat_off;
+   double lon_left, lon_right;
 
    sd = evas_object_smart_data_get(obj);
    if (action == E_NAV_MOVEENGINE_START)
@@ -849,9 +881,33 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 	return;
      }
    
+   /* calculate how many lon and lat we moved from x and y pixels. */ 
    _e_nav_from_offsets(obj, sd->moveng.start.x - x,
 			    sd->moveng.start.y - y,
 			    &lon, &lat);
+
+   /* 
+    * Translate pixel offset to lan/lon to get the lonitudes at left and right edge of the screen.
+    */
+   Evas_Coord screen_w, screen_h;
+   evas_output_viewport_get(evas_object_evas_get(obj), NULL, NULL, &screen_w, &screen_h);
+   if(sd->moveng.start.lon) 
+     _e_nav_from_offsets(obj, -(screen_w/2), (screen_h/2), &lon_off, &lat_off);
+   else
+     _e_nav_from_offsets(obj, (screen_w/2), (screen_h/2), &lon_off, &lat_off);
+
+   if(lon_off < 0) 
+     lon_off = -lon_off;
+   lon_left = sd->moveng.start.lon - lon_off; 
+   lon_right = sd->moveng.start.lon + lon_off; 
+
+   /* We lock the moving when the case it's already reach the left and right edge of the map
+    * at the left/right side of screen. 
+    */
+   if(lon <=0 && lon_left + lon <= -180.0) return;
+   if(lon >=0 && lon_right + lon >= 180.0) return;
+   
+
    lon += sd->moveng.start.lon;
    lat += sd->moveng.start.lat;
 
