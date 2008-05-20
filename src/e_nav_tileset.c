@@ -138,7 +138,7 @@ e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir
 
    sd->format = format;
    sd->dir = strdup(dir);
-   sd->src = strdup("tah");
+   sd->src = strdup("osm");
    sd->suffix = strdup("png");
    sd->size = 256;
    sd->min_level = 0;
@@ -375,6 +375,12 @@ e_nav_tileset_proxy_set(Evas_Object *obj, E_DBus_Proxy *proxy)
    sd->proxy = proxy;
    e_dbus_proxy_connect_signal(sd->proxy, "TileCompleted",
 	 (E_DBus_Signal_Cb) _e_nav_tileset_tile_completed_cb, obj);
+
+   e_dbus_proxy_simple_call(sd->proxy, "SetSource",
+			    NULL,
+			    DBUS_TYPE_STRING, &sd->src,
+			    DBUS_TYPE_INVALID,
+			    DBUS_TYPE_INVALID);
 }
 
 E_DBus_Proxy *
