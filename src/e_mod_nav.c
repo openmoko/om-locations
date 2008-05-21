@@ -457,10 +457,11 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 	     dev = "/dev/ttySAC1:9600";
 	     diversity_equipment_config_set(eqp, "device-path",
 		   DBUS_TYPE_STRING, &dev);
-	     /* enable logging */
+	     /*
 	     dev = "/tmp/nmea.log";
 	     diversity_equipment_config_set(eqp, "log",
 		   DBUS_TYPE_STRING, &dev);
+		   */
 	}
 
 	diversity_dbus_signal_connect((Diversity_DBus *) self,
