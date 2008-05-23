@@ -905,7 +905,6 @@ group {
             color: 51 51 51 255;
             color3: 0 0 0 0;
             text {
-               text: "Test";
                font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;

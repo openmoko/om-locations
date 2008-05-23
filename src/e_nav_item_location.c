@@ -606,6 +606,65 @@ e_nav_world_item_location_timestamp_get(Evas_Object *item)
    return locd->timestamp;
 }
 
+void
+e_nav_world_item_location_title_show(Evas_Object *location)
+{
+   Location_Data *locd;
+   const char *text_part_state;
+   double val_ret;
+   char *time_diff_string;
+
+   if(!location) return;
+   text_part_state = edje_object_part_state_get(location, "e.text.name", &val_ret);
+   locd = evas_object_data_get(location, "nav_world_item_location_data");
+
+   if(!strcmp(text_part_state, "default")) 
+     {
+        time_diff_string = get_time_diff_string(locd->timestamp);
+        edje_object_part_text_set(location, "e.text.name2", time_diff_string);
+        free(time_diff_string);
+        edje_object_signal_emit(location, "e,state,active", "e");
+     }
+}
+
+Evas_Object *
+e_nav_world_item_location_new(Evas_Object *nav, Diversity_Object *obj)
+{
+   Evas_Object *nwi;
+   double lon, lat, width, height;
+   char *name = NULL;
+   char *description = NULL;
+   int secs = 0;
+   time_t timep;
+   int unread;
+   const char *obj_path;
+
+   if(!obj) return NULL;
+   obj_path = diversity_dbus_path_get((Diversity_DBus *)obj);
+
+   diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
+   diversity_dbus_property_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &secs);
+   timep = (time_t)secs;
+   nwi = e_nav_world_item_location_add(nav, THEME_PATH,
+               lon, lat, obj);
+   if(!nwi) return NULL;
+   diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
+   diversity_dbus_property_get((Diversity_DBus *) obj,
+         DIVERSITY_DBUS_IFACE_TAG, "Unread", &unread);
+   e_nav_world_item_location_unread_set(nwi, unread);
+
+   name = strsep(&description, "\n");
+   e_nav_world_item_location_name_set(nwi, name);
+   e_nav_world_item_location_note_set(nwi, description);
+   e_nav_world_item_location_timestamp_set(nwi, timep);
+
+   e_ctrl_taglist_tag_add(name, description, timep, nwi); 
+
+   e_ctrl_object_store_item_add( (void *)strdup(obj_path), (void *)nwi);
+   e_nav_world_item_location_title_show(nwi);
+   return nwi;
+}
+
 static char *
 get_time_diff_string(time_t time_then)
 {

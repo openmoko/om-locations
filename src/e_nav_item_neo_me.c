@@ -24,6 +24,8 @@
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
 #include "e_nav_dbus.h"
+#include "e_nav_item_location.h"
+#include "e_ctrl.h"
 
 typedef struct _Neo_Me_Data Neo_Me_Data;
 
@@ -40,37 +42,47 @@ struct _Neo_Me_Data
 static void
 dialog_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("dialog exit\n");
    e_dialog_deactivate(obj);
 }
 
 static void
-dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
+location_new(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("location new\n");
    if(!src_obj) return;
-   const char *name = e_dialog_textblock_text_get(obj, "Edit title");
-   const char *note = e_dialog_textblock_text_get(obj, "Edit message");
-   printf("title = %s\n", name);
-   printf("note = %s\n", note);
+   Diversity_Tag *tag;
+   const char *path;
+   const char *name, *note;
+   char *description;
+   double lat, lon;
+   Evas_Object *nav, *location;
 
-   char *description; 
+   name = e_dialog_textblock_text_get(obj, "Edit title");
+   note = e_dialog_textblock_text_get(obj, "Edit message");
    description = malloc(strlen(name) + 1 + strlen(note) + 1);
    if (!description) return ;
    sprintf(description, "%s%c%s", name, '\n', note);
-   printf("description is %s\n", description);
 
-   double lat, lon;
    e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
-   printf("New a tag: %f, %f\n", lon, lat);
-
    Diversity_World *world = (Diversity_World*)e_nav_world_get();
-   diversity_world_tag_add(world, lon, lat, description);
+   tag = diversity_world_tag_add(world, lon, lat, description);
+   if(!tag) 
+     {
+        printf("New location error \n");
+        return;
+     }
+
+   path = diversity_dbus_path_get((Diversity_DBus *)tag);
+
+   nav = e_nav_world_item_nav_get(src_obj);
+   location = e_nav_world_item_location_new(nav, (Diversity_Object *)tag);
+   if(location)
+     evas_object_raise(location);
+   
    e_dialog_deactivate(obj);
 }
 
 static void 
-save_current_location(void *data, Evas_Object *obj, Evas_Object *src_obj)
+location_save_dialog_show(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    e_flyingmenu_deactivate(obj);
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
@@ -81,7 +93,7 @@ save_current_location(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
    const char *message = "";
    e_dialog_textblock_add(od, "Edit message", message, 120, 80, obj);
-   e_dialog_button_add(od, "Save", dialog_location_save, od);
+   e_dialog_button_add(od, "Save", location_new, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    
    evas_object_show(od);
@@ -98,29 +110,9 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);
    e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, "Touch Me!",
-			       save_current_location, obj);  
+			       location_save_dialog_show, obj);  
    evas_object_show(om);
    e_flyingmenu_activate(om);
-#if 0
-   Evas_Object *om;
-   
-   om = e_spiralmenu_add(evas);
-   e_spiralmenu_theme_source_set(om, data);
-   e_spiralmenu_autodelete_set(om, 1);
-   e_spiralmenu_deacdelete_set(om, 1);
-   e_spiralmenu_source_object_set(om, obj);
-   /* FIXME: real menu items */
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Zoom",
-			       _e_nav_world_item_cb_menu_1, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Visible",
-			       _e_nav_world_item_cb_menu_2, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Auto Join",
-			       _e_nav_world_item_cb_menu_3, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Information",
-			       _e_nav_world_item_cb_menu_4, NULL);
-   evas_object_show(om);
-   e_spiralmenu_activate(om);
-#endif
 }
 
 static void
@@ -143,9 +135,8 @@ show_welcome_message(Evas_Object *item)
    e_flyingmenu_theme_source_set(om, THEME_PATH);
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, item);
-   /* FIXME: real menu items */
    e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, "Touch Me!",
-			       save_current_location, item);  
+			       location_save_dialog_show, item);  
    evas_object_show(om);
    e_flyingmenu_activate(om);
 }

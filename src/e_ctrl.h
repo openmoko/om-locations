@@ -49,5 +49,9 @@ void                e_ctrl_follow_set(int follow);
 void                e_ctrl_message_text_set(Evas_Object *obj, const char *msg);
 void                e_ctrl_message_hide(Evas_Object *obj);
 void                e_ctrl_message_show(Evas_Object *obj);
+void                e_ctrl_object_store_item_add(void *path, void *item);
+Evas_Object        *e_ctrl_object_store_item_get(const char *obj_path);
+void                e_ctrl_object_store_item_remove(const char *obj_path);
+
 
 #endif

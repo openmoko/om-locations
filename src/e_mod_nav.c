@@ -56,7 +56,6 @@ Ecore_Timer *timer = NULL;
 static Diversity_World *world = NULL;
 static Diversity_Bard  *self  = NULL;
 static Diversity_Viewport *worldview = NULL;
-static Ecore_Hash *objectStore = NULL;
 static void _e_mod_neo_me_init();
 static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
 static void position_search_timer_start();
@@ -136,13 +135,17 @@ viewport_object_added(void *data, DBusMessage *msg)
         int secs = 0;
 	time_t timep;
 
-        printf("object added in the viewport, path:%s\n", obj_path);  
+        if(e_ctrl_object_store_item_get(obj_path))
+          {
+             printf("item  %s already existed. ignore\n", obj_path);
+             return;
+          }
+
 	obj = diversity_object_new(obj_path);
 	if (!obj)
 	  return;
 
         diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
-        printf("location geo get lon:%f lat:%f\n", lon, lat);
 	diversity_dbus_property_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &secs);
 
         timep = (time_t)secs;
@@ -165,7 +168,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_location_note_set(nwi, description);
              e_nav_world_item_location_timestamp_set(nwi, timep);
              e_ctrl_taglist_tag_add(name, description, timep, nwi); 
-             ecore_hash_set(objectStore, (void *)strdup(obj_path), (void *)nwi);
+             e_ctrl_object_store_item_add((void *)(obj_path), (void *)nwi);           
           }
         else if(type==DIVERSITY_OBJECT_TYPE_BARD) 
           {
@@ -201,7 +204,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_neo_other_phone_set(nwi, phone);
              e_nav_world_item_neo_other_alias_set(nwi, alias);
              e_nav_world_item_neo_other_twitter_set(nwi, twitter);
-             ecore_hash_set(objectStore, (void *)obj_path, (void *)nwi);
+             e_ctrl_object_store_item_add((void *)obj_path, (void *)nwi);           
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
                   DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_neo_other_geometry_changed, nwi);
           }
@@ -258,10 +261,10 @@ viewport_object_removed(void *data, DBusMessage *msg)
    else 
      {
         printf("object deleted: %s \n", obj_path);
-        world_item = (Evas_Object *)ecore_hash_get(objectStore, obj_path);
+        world_item = e_ctrl_object_store_item_get(obj_path);
         if(world_item) 
           {
-             ecore_hash_remove(objectStore, obj_path);
+             e_ctrl_object_store_item_remove(obj_path);
              e_nav_world_item_delete(nav, world_item);
              evas_object_del(world_item);
           }
@@ -414,12 +417,9 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 
    evas_object_show(nt);
 
-   objectStore = ecore_hash_new(ecore_str_hash, ecore_str_compare);
-   if(!objectStore)
-     return; 
-   ecore_hash_free_key_cb_set(objectStore, free);
-
    ctrl = e_ctrl_add(evas);
+   if(!ctrl) return;
+
    e_ctrl_theme_source_set(ctrl, THEME_PATH);
    e_ctrl_nav_set(nav);
 
@@ -621,9 +621,6 @@ _e_mod_nav_shutdown(void)
 	diversity_world_destroy(world);
 	world = NULL;
      }
-
-   if(objectStore)
-     ecore_hash_destroy(objectStore);
 
    evas_object_del(nav);
    nav = NULL;

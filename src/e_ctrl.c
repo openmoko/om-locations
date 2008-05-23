@@ -32,6 +32,7 @@
 static Evas_Object *ctrl = NULL;
 static Evas_Object *neo_me = NULL;
 static Ecore_Hash *bardRoster = NULL;
+static Ecore_Hash *objectStore = NULL;
 
 typedef struct _E_Smart_Data E_Smart_Data;
 static void _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source);
@@ -78,6 +79,12 @@ e_ctrl_add(Evas *e)
    _e_ctrl_smart_init();
    if(ctrl) return ctrl;
    ctrl = evas_object_smart_add(e, _e_smart);
+   objectStore = ecore_hash_new(ecore_str_hash, ecore_str_compare);
+
+   if(!objectStore)
+     return NULL; 
+   ecore_hash_free_key_cb_set(objectStore, free);
+
    return ctrl;
 }
 
@@ -90,10 +97,8 @@ _e_nav_tag_sel(void *data, void *data2)
    int unread;
 
    sd = evas_object_smart_data_get(data);
-   if(!sd) {
-       printf("sd is NULL\n");
-       return;
-   }
+   if(!sd) 
+     return;
     
    object = (Evas_Object *)data2;
    tag = e_nav_world_item_location_tag_get(object);
@@ -114,6 +119,7 @@ _e_nav_tag_sel(void *data, void *data2)
    e_nav_taglist_deactivate(sd->listview);
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
+   e_nav_world_item_location_title_show(object);
    evas_object_show(sd->map_overlay);
    if(evas_object_visible_get(sd->message))
      evas_object_raise(sd->message);
@@ -518,6 +524,8 @@ _e_ctrl_smart_add(Evas_Object *obj)
    evas_object_smart_data_set(obj, sd);
 
    bardRoster = ecore_hash_new(ecore_str_hash, ecore_str_compare);
+   if(!bardRoster) return;
+   ecore_hash_free_key_cb_set(bardRoster, free);
 }
 
 static void
@@ -527,6 +535,12 @@ _e_ctrl_smart_del(Evas_Object *obj)
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
+
+   if(objectStore)
+     {
+        ecore_hash_destroy(objectStore);
+     }
+
    evas_object_del(sd->clip);
    evas_object_del(sd->map_overlay);
    evas_object_del(sd->panel_buttons);
@@ -738,4 +752,21 @@ e_ctrl_message_show(Evas_Object *obj)
    evas_object_show(sd->message);
 }
 
+void
+e_ctrl_object_store_item_add(void *path, void *item)
+{
+   ecore_hash_set(objectStore, strdup(path), item);
+}
+
+Evas_Object *
+e_ctrl_object_store_item_get(const char *obj_path)
+{
+   return (Evas_Object *)ecore_hash_get(objectStore, obj_path);
+}
+
+void
+e_ctrl_object_store_item_remove(const char *obj_path)
+{
+   ecore_hash_remove(objectStore, obj_path);
+}
 
