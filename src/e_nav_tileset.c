@@ -844,8 +844,18 @@ job_load(E_Nav_Tile_Job *job)
 	     evas_object_image_file_set(job->obj, l->data, key);
 	     err = evas_object_image_load_error_get(job->obj);
 
+	     /* XXX */
+	     if (err != EVAS_LOAD_ERROR_NONE)
+	       {
+		  memcpy(key, "tah", 3);
+		  evas_object_image_file_set(job->obj, l->data, key);
+		  err = evas_object_image_load_error_get(job->obj);
+	       }
+
 	     if (err == EVAS_LOAD_ERROR_NONE)
-	       break;
+	       {
+		  break;
+	       }
 	  }
 
 	/* `buf' is reloaded when job is done */
