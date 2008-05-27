@@ -111,11 +111,11 @@ dn_config_file_name_get(Diversity_Nav_Config *cfg)
 static void
 _init_default_config_value(Diversity_Nav_Config *cfg)
 {
-   dn_config_float_set(cfg, "lat", 0.0);
-   dn_config_float_set(cfg, "lon", 0.0);
-   dn_config_float_set(cfg, "scale", 8888.0);
-   dn_config_float_set(cfg, "neo_me_lon", 121.577286);
-   dn_config_float_set(cfg, "neo_me_lat", -25.072447);
+   dn_config_float_set(cfg, "lat", DEFAULT_VALUE_LAT);
+   dn_config_float_set(cfg, "lon", DEFAULT_VALUE_LON);
+   dn_config_float_set(cfg, "scale", DEFAULT_VALUE_SCALE);
+   dn_config_float_set(cfg, "neo_me_lon", DEFAULT_VALUE_NEO_ME_LON);
+   dn_config_float_set(cfg, "neo_me_lat", DEFAULT_VALUE_NEO_ME_LAT);
 }
 
 static int
