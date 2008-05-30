@@ -165,13 +165,12 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
    etk_tree_rows_height_set (ETK_TREE(tl->tree), 90);
    etk_tree_thaw(ETK_TREE(tl->tree));
 
-   tl->col = etk_tree_col_new(ETK_TREE(tl->tree), NULL, 480, 0.0);
+   tl->col = etk_tree_col_new(ETK_TREE(tl->tree), NULL, 455, 0.0);
 
    etk_tree_col_model_add(tl->col, etk_tree_model_text_new());
    etk_tree_col_sort_set(tl->col, _taglist_sort_compare_cb, NULL);
 
-   etk_tree_headers_visible_set(ETK_TREE(tl->tree), 1);
-   etk_tree_col_title_set(tl->col, "View Tags");
+   etk_tree_headers_visible_set(ETK_TREE(tl->tree), 0);
 
    etk_signal_connect_by_code(ETK_TREE_ROW_CLICKED_SIGNAL, ETK_OBJECT(tl->tree),
       ETK_CALLBACK(_etk_test_tree_row_clicked_cb), NULL);
