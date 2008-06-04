@@ -23,12 +23,6 @@
 #ifndef E_NAV_TEXTEDIT_H
 #define E_NAV_TEXTEDIT_H
 
-typedef enum {
-     TEXTEDIT_CANDIDATE_MODE_NONE,
-     TEXTEDIT_CANDIDATE_MODE_FALSE,
-     TEXTEDIT_CANDIDATE_MODE_TRUE,
-}TEXTEDIT_CANDIDATE_MODE;
-
 typedef struct _Textedit_List_Item Textedit_List_Item;
 
 struct _Textedit_List_Item
@@ -48,10 +42,6 @@ void            e_textedit_input_length_limit_set(Evas_Object *obj, size_t lengt
 size_t          e_textedit_input_length_limit_get(Evas_Object *obj);
 void            e_textedit_input_set(Evas_Object *obj, const char *name, const char *input);
 const char     *e_textedit_input_get(Evas_Object *obj);
-void            e_textedit_candidate_list_set(Evas_Object *obj, Ecore_List *list);
-Ecore_List     *e_textedit_candidate_list_get(Evas_Object *obj);
-void            e_textedit_candidate_mode_set(Evas_Object *obj, unsigned int candidate_mode);
-unsigned int    e_textedit_candidate_mode_get(Evas_Object *obj);
 void           *e_textedit_list_selected_get(Evas_Object *obj);
 void           *e_textedit_list_item_get_by_name(Evas_Object *obj, const char *name);
     

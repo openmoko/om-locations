@@ -25,6 +25,7 @@
 #include "widgets/e_nav_dialog.h"
 #include "widgets/e_nav_alert.h"
 #include "widgets/e_nav_textedit.h"
+#include "widgets/e_nav_contact_editor.h"
 #include "e_ctrl.h"
 #include <time.h>
 #include <ctype.h>
@@ -164,11 +165,12 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *alert_dialog;
 
    int ok = FALSE;
-   const char *input = e_textedit_input_get(obj); 
+   const char *input = e_contact_editor_input_get(obj); 
+   printf("location send\n");
 
    if(input==NULL)
      { 
-        e_textedit_deactivate(obj);   
+        e_contact_editor_deactivate(obj);   
         return;
      }
 
@@ -177,7 +179,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
    if (!locd) 
      {
-        e_textedit_deactivate(obj);   
+        e_contact_editor_deactivate(obj);   
         return;
      }
 
@@ -185,7 +187,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
      
    if(!eqp) 
      {
-        e_textedit_deactivate(obj);   
+        e_contact_editor_deactivate(obj);   
         return;
      }
 
@@ -212,7 +214,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
              e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
              e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
           }
-        e_textedit_deactivate(obj);   
+        e_contact_editor_deactivate(obj);   
         evas_object_show(alert_dialog);
         e_alert_activate(alert_dialog); 
         return;
@@ -238,7 +240,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
              e_alert_title_color_set(od, 255, 0, 0, 255);
              e_alert_button_add(od, "OK", alert_exit, od);
           }
-        e_textedit_deactivate(obj);   
+        e_contact_editor_deactivate(obj);   
         evas_object_show(od);
         e_alert_activate(od); 
         return;
@@ -251,7 +253,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_alert_title_set(alert_dialog, "FAIL", "Contact not found");
    e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
    e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
-   e_textedit_deactivate(obj);   
+   e_contact_editor_deactivate(obj);   
    evas_object_show(alert_dialog);
    e_alert_activate(alert_dialog); 
 }
@@ -259,36 +261,19 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   Evas_Object *teo = e_textedit_add( evas_object_evas_get(obj) );
-   e_textedit_theme_source_set(teo, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
-   e_textedit_source_object_set(teo, data);  //  src_object is location item evas object 
-   e_textedit_input_set(teo, "To:", "");
+   Evas_Object *editor = e_contact_editor_add( evas_object_evas_get(obj) );
+   e_contact_editor_theme_source_set(editor, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
+   e_contact_editor_source_object_set(editor, data);  //  src_object is location item evas object 
+   e_contact_editor_input_set(editor, "To:", "");
 
    Ecore_List *contacts = e_ctrl_contacts_get(); 
-   int count = ecore_list_count(contacts);
-   int n;
-   Ecore_List *list;
-   Textedit_List_Item *tli;
-   list = ecore_list_new();
-   for(n=0; n<count; n++)
-     {
-        Neo_Other_Data *neod = ecore_list_index_goto(contacts, n);
-        if(neod)
-          {
-              tli = calloc(1, sizeof(Textedit_List_Item));
-              if (!tli) return; 
-              if (neod->name)
-                tli->name = strdup(neod->name);
-              else 
-                tli->name = strdup("");
-              tli->data = neod;
-              ecore_list_append(list, tli);
-          }
-     }
 
+   //FIXME: contacts need to be destroyed later.
+   
    e_dialog_deactivate(obj);
-   evas_object_show(teo);
-   e_textedit_activate(teo);
+   evas_object_show(editor);
+   e_contact_editor_contacts_set(editor, contacts);
+   e_contact_editor_activate(editor);
 }
 
 static void

@@ -185,6 +185,113 @@ group {
 }
 
 group {
+   name: "modules/diversity_nav/contact_list";
+   parts {
+      part { name: "background";
+         type: RECT;
+         description {
+            state: "default" 0.0;
+            rel1.offset: 0 0;
+            rel2.offset: 0 0;
+            color: 0 0 0 255;
+         }     
+      }
+      part { name: "title";
+         type: TEXT;
+         mouse_events: 0;
+         description {
+            state: "default" 0.0;
+            rel1 {
+               relative: 0.0 0.0;
+               offset: 10 0;
+               to: "background";
+            }
+            rel2 {
+               relative: 1.0 0.125;
+               offset: 0 0;
+               to: "background";
+            }
+            align: 0.0 0.0;
+            color: 255 255 255 255;
+            text {
+               text: "Contacts";
+               font: "Edje-Sans-Bold";
+               size: 16;
+               min: 1 1;
+               align: 0.0 1.0;
+            }
+         }
+      }
+      part { name: "button";
+         type: RECT;
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            color: 0 0 0 255;
+            rel1 {
+               relative: 0.67 0.0;
+               offset: 0 0;
+               to: background;
+            }
+            rel2 {
+               relative: 1.0 0.125;
+               offset: 0 0;
+               to: background;
+            }
+         }
+      }
+      part { name: "button.text";
+         type: TEXT;
+         effect: SOFT_SHADOW;
+         mouse_events: 0;
+         description { state: "default" 0.0;
+            rel1 {
+               to: "button";
+               relative: 0.0 0.0;
+               offset: 0 0;
+            }
+            rel2 {
+               to: "button";
+               relative: 1.0 1.0;
+               offset: 0 0;
+            }
+            align: 0.5 0.5;
+            visible: 1;
+            color: 255 255 255 255;
+            color3: 0 0 0 0;
+            text {
+               text: "Back";
+               font: "Edje-Sans-Bold";
+               size: 28;
+               min: 1 1;
+               align: 0.5 0.5;
+            }
+         }
+         description {
+            state: "activated" 0.0;
+            inherit: "default" 0.0;
+            color: 0 255 0 255;
+         }
+      }
+      part { name: "swallow";
+         type: SWALLOW;
+         description {
+            state: "default" 0.0;
+            rel1 {
+               relative: 0.0 0.125;
+               offset: 10 0;
+               to: background;
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: -10 0;
+               to: background;
+            }
+         } 
+      }
+   }
+}
+
+group {
    name: "modules/diversity_nav/textedit";
    parts {
       part { name: "background";
@@ -196,7 +303,6 @@ group {
             color: 0 0 0 255;
          }     
       }
-      
       part { name: "title";
          type: TEXT;
          mouse_events: 0;
@@ -222,7 +328,6 @@ group {
             }
          }
       }
-
       part { name: "swallow";
          type: SWALLOW;
          description {
@@ -238,6 +343,126 @@ group {
                to: "background";
             }
          } 
+      }
+   }
+}
+
+group {
+   name: "modules/diversity_nav/contact_editor";
+   parts {
+      part { name: "background";
+         type: RECT;
+         description {
+            state: "default" 0.0;
+            rel1.offset: 10 10;
+            rel2.offset: -10 -10;
+            color: 0 0 0 255;
+         }     
+      }
+      part { name: "title";
+         type: TEXT;
+         mouse_events: 0;
+         description {
+            state: "default" 0.0;
+            rel1 {
+               relative: 0.0 0.0;
+               offset: 0 0;
+               to: "background";
+            }
+            rel2 {
+               relative: 1.0 0.15;
+               offset: 0 0;
+               to: "background";
+            }
+            align: 0.0 0.0;
+            color: 255 255 255 255;
+            text {
+               font: "Edje-Sans-Bold";
+               size: 48;
+               min: 1 1;
+               align: 0.0 0.0;
+            }
+         }
+      }
+      part { name: "swallow";
+         type: SWALLOW;
+         description {
+            state: "default" 0.0;
+            rel1 {
+               relative: 0.0 1.0;
+               offset: 0 20;
+               to: "title";
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: 0 70;
+               to: "title";
+            }
+         } 
+      }
+      part { name: "button";
+         type: RECT;
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            color: 0 0 0 255;
+            rel1 {
+               relative: 0.0 1.0;
+               offset: 100 15;
+               to: swallow;
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: -100 75;
+               to: swallow;
+            }
+         }
+      }
+      part { name: "button.text";
+         type: TEXT;
+         effect: SOFT_SHADOW;
+         mouse_events: 0;
+         description { state: "default" 0.0;
+            rel1 {
+               to_y: "button";
+               relative: 0.0 0.0;
+               offset: 0 0;
+            }
+            rel2 {
+               to_y: "button";
+               relative: 1.0 1.0;
+               offset: 0 0;
+            }
+            align: 0.5 0.5;
+            visible: 1;
+            color: 255 255 255 255;
+            color3: 0 0 0 0;
+            text {
+               text: "Add Contact";
+               font: "Edje-Sans";
+               size: 36;
+               min: 1 1;
+               align: 0.5 0.5;
+            }
+         }
+         description {
+            state: "activated" 0.0;
+            inherit: "default" 0.0;
+            color: 0 255 0 255;
+         }
+      }
+   }
+   programs {
+      program { 
+         name:   "match_item_clicked"; 
+         signal: "mouse,down,*"; 
+         source: "button";
+         action: STATE_SET "activated" 0.0; target: "button.text";
+      }
+      program { 
+         name:   "match_item_unclicked"; 
+         signal: "mouse,up,*"; 
+         source: "button";
+         action: STATE_SET "default" 0.0; target: "button.text";
       }
    }
 }
