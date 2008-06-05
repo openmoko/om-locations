@@ -309,6 +309,7 @@ on_geometry_changed(void *data, DBusMessage *msg)
    double lon, lat;
    double dummy1, dummy2;
    int follow;
+   Evas_Coord w, h; 
 
    dbus_error_init(&err);
    dbus_message_get_args(msg, &err, DBUS_TYPE_DOUBLE, &lon, DBUS_TYPE_DOUBLE, &lat,
@@ -327,7 +328,8 @@ on_geometry_changed(void *data, DBusMessage *msg)
 
    nwi = neo_me;
 
-   e_nav_world_item_geometry_set(nwi, lon, lat, 0.0, 0.0);
+   evas_object_geometry_get(edje_object_part_object_get(nwi, "phone"), NULL, NULL, &w, &h);
+   e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
    e_nav_world_item_update(nwi);
 
    follow = e_ctrl_follow_get(ctrl);
