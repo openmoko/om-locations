@@ -156,6 +156,8 @@ viewport_object_added(void *data, DBusMessage *msg)
              char *name = NULL;
              char *description = NULL;
              int unread;
+
+	     lat = -lat;
              nwi = e_nav_world_item_location_add(nav, THEME_PATH,
 				     lon, lat, obj);
              diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
@@ -199,6 +201,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
              if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;  
 
+	     lat = -lat;
              nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH, lon, lat, obj);
              e_nav_world_item_neo_other_name_set(nwi, name);
              e_nav_world_item_neo_other_phone_set(nwi, phone);
