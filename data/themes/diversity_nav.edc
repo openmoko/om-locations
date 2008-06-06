@@ -730,51 +730,34 @@ group {
    programs {
       program { 
          name:   "star_clicked"; 
-         after: "star_clicked_make_refresh_default";
          signal: "mouse,down,*"; 
          source: "star_button";
          action: STATE_SET "activated" 0.0; target: "star_text";
       }
       program { 
          name:   "star_unclicked"; 
-         after: "star_clicked_make_refresh_default";
          signal: "mouse,up,*"; 
          source: "star_button";
          action: STATE_SET "default" 0.0; target: "star_text";
       }
-      program { 
-         name: "star_clicked_make_refresh_default"; 
-         after: "refresh_clicked_make_map_default";
-         action: STATE_SET "default" 0.0;   target: "refresh_text";
-      }
-      program { 
-         name: "star_clicked_make_map_default"; 
-         after: "refresh_clicked_make_list_default";
-         action: STATE_SET "default" 0.0;   target: "map_text";
-      }
-      program { 
-         name: "star_clicked_make_list_default"; 
-         action: STATE_SET "default" 0.0;   target: "list_text";
-      }
 
       program { 
          name:   "refresh_clicked"; 
-         after: "refresh_clicked_make_map_default";
          signal: "mouse,down,*"; 
          source: "refresh_button";
          action: STATE_SET "activated" 0.0; target: "refresh_text";
       }
       program { 
          name:   "refresh_unclicked"; 
-         after: "refresh_clicked_make_map_default";
+         after: "refresh_clicked_make_map_activate";
          signal: "mouse,up,*"; 
          source: "refresh_button";
          action: STATE_SET "default" 0.0; target: "refresh_text";
       }
       program { 
-         name: "refresh_clicked_make_map_default"; 
+         name: "refresh_clicked_make_map_activate"; 
          after: "refresh_clicked_make_list_default";
-         action: STATE_SET "default" 0.0;   target: "map_text";
+         action: STATE_SET "activated" 0.0;   target: "map_text";
       }
       program { 
          name: "refresh_clicked_make_list_default"; 
@@ -782,18 +765,11 @@ group {
       }
 
       program { 
-         name:   "map_clicked";
-         after: "map_clicked_make_refresh_default";
-         signal: "mouse,down,*"; 
-         source: "map_button";
-         action: STATE_SET "activated" 0.0;   target: "map_text";
-      }
-      program { 
          name:   "map_unclicked";
          after: "map_clicked_make_refresh_default";
          signal: "mouse,up,*"; 
          source: "map_button";
-         action: STATE_SET "default" 0.0;   target: "map_text";
+         action: STATE_SET "activated" 0.0;   target: "map_text";
       }
       program { 
          name: "map_clicked_make_refresh_default";
@@ -806,9 +782,9 @@ group {
       }
 
       program {
-         name:   "list_clicked";
+         name:   "list_unclicked";
          after:  "list_clicked_make_refresh_default";
-         signal: "mouse,clicked,*"; 
+         signal: "mouse,up,*"; 
          source: "list_button";
          action: STATE_SET "activated" 0.0;  target: "list_text";
       }
