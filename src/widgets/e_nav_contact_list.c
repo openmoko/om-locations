@@ -22,6 +22,7 @@
 
 #include "../e_nav.h"
 #include "../e_nav_theme.h"
+#include "../e_nav_misc.h"
 #include "e_nav_contact_list.h"
 
 static void _e_contact_list_update(Contact_List *sd);
@@ -64,6 +65,7 @@ _e_nav_back_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
    if(!data) return;
    cl = (Contact_List *)data;
    e_nav_contact_list_deactivate(cl);
+   e_misc_keyboard_launch();
 }
 
 Contact_List *
