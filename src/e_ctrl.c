@@ -174,6 +174,24 @@ e_ctrl_contact_add(const char *id, Neo_Other_Data *data)
    return ecore_hash_set(bardRoster, (void *)strdup(id), (void *)data);
 }
 
+int
+e_ctrl_contact_remove(const char *id)
+{
+   Neo_Other_Data *neod = ecore_hash_remove(bardRoster, (void *)id);
+   if (!neod) return FALSE;
+   if (neod->bard) diversity_bard_destroy(neod->bard);
+   free(neod);
+   return TRUE;
+}
+
+int
+e_ctrl_contact_update(const char *id, Neo_Other_Data *data)
+{
+   if(!id || !data) return FALSE;
+   if(!e_ctrl_contact_remove(id)) return FALSE;
+   return e_ctrl_contact_add(id, data);
+}
+
 Neo_Other_Data *
 e_ctrl_contact_get(const char *id)
 {
@@ -246,15 +264,6 @@ e_ctrl_contacts_get(void)
           }
      }
    return values;
-}
-
-void
-e_ctrl_contact_remove(const char *id)
-{
-   Neo_Other_Data *neod = ecore_hash_remove(bardRoster, (void *)id);
-   if (!neod) return;
-   if (neod->bard) diversity_bard_destroy(neod->bard);
-   free(neod);
 }
 
 static void   

@@ -58,6 +58,7 @@ static Diversity_Bard  *self  = NULL;
 static Diversity_Viewport *worldview = NULL;
 static void _e_mod_neo_me_init();
 static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
+static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void position_search_timer_start();
 static void position_search_timer_stop();
 static int _e_nav_cb_timer_pos_search_pause(void *data);
@@ -192,14 +193,11 @@ viewport_object_added(void *data, DBusMessage *msg)
              if(alias) neod->alias = strdup(alias);
              if(twitter) neod->twitter = strdup(twitter);
              neod->bard = (Diversity_Bard *) obj;
-             printf("Add a bard contact: name:%s, phone:%s, alias:%s, twitter:%s\n", name, phone, alias, twitter);
+             printf("Add a bard contact: name:%s, phone:%s, alias:%s, twitter:%s, lon:%f, lat:%f\n", name, phone, alias, twitter, lon, lat);
              ok = e_ctrl_contact_add(obj_path, neod);
              if(!ok) printf("there is an error on add bard contact for %s\n", obj_path);
-            
 
-             /* ignore bard object if its position not accurate */
              diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-             if(accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;  
 
 	     lat = -lat;
              nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH, lon, lat, obj);
@@ -210,6 +208,8 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_ctrl_object_store_item_add((void *)obj_path, (void *)nwi);           
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
                   DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_neo_other_geometry_changed, nwi);
+             diversity_dbus_signal_connect((Diversity_DBus *) obj,
+                  DIVERSITY_DBUS_IFACE_OBJECT, "PropertyChanged", on_neo_other_property_changed, nwi);            
           }
         else if(type==DIVERSITY_OBJECT_TYPE_AP) 
 	  {
@@ -287,6 +287,7 @@ on_neo_other_geometry_changed(void *data, DBusMessage *msg)
    DBusError err;
    double lon, lat;
    double dummy1, dummy2;
+   Evas_Coord w, h; 
 
    dbus_error_init(&err);
    dbus_message_get_args(msg, &err, DBUS_TYPE_DOUBLE, &lon, DBUS_TYPE_DOUBLE, &lat,
@@ -297,8 +298,72 @@ on_neo_other_geometry_changed(void *data, DBusMessage *msg)
    }
 
    lat = -lat;
-   e_nav_world_item_geometry_set(nwi, lon, lat, 0.0, 0.0);
+   evas_object_geometry_get(edje_object_part_object_get(nwi, "phone"), NULL, NULL, &w, &h);
+   e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
    e_nav_world_item_update(nwi);
+}
+
+/* 
+ * neo_other property changed cb function 
+ */
+static void
+on_neo_other_property_changed(void *data, DBusMessage *msg)
+{
+   Evas_Object *neo_other_obj;
+   DBusMessageIter args;
+   DBusMessageIter subargs;
+   void *name;
+   void *value;
+   int type;
+   Neo_Other_Data *neod; 
+   const char *path;
+
+   /* Parse the dbus signal message, get property name and value */
+   if (!dbus_message_iter_init(msg, &args))
+     return;
+   if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&args))
+     return;
+   dbus_message_iter_get_basic(&args, &name);
+   if(!dbus_message_iter_has_next(&args)) return;
+   dbus_message_iter_next(&args);
+   if(dbus_message_iter_get_arg_type(&args) != DBUS_TYPE_VARIANT)
+     return;
+   dbus_message_iter_recurse(&args, &subargs);
+   type = dbus_message_iter_get_arg_type(&subargs);
+   if (!dbus_type_is_basic(type))
+     return;
+   dbus_message_iter_get_basic(&subargs, &value); 
+
+   if(!data) return;
+   neo_other_obj = data;
+   path = e_nav_world_item_neo_other_path_get(neo_other_obj);
+   neod = e_ctrl_contact_get(path);
+   if (!neod) return;
+
+   if(!strcasecmp(name, "fullname"))
+     {
+        e_nav_world_item_neo_other_name_set(neo_other_obj, value);
+        if(neod->name) free((char *)neod->name);
+        neod->name = strdup(value);
+     }
+   if(!strcasecmp(name, "phone"))
+     {
+        e_nav_world_item_neo_other_phone_set(neo_other_obj, value);
+        if(neod->phone) free((char *)neod->phone);
+        neod->phone = strdup(value);
+     }
+   if(!strcasecmp(name, "alias"))
+     {
+        e_nav_world_item_neo_other_alias_set(neo_other_obj, value);
+        if(neod->alias) free((char *)neod->alias);
+        neod->alias = strdup(value);
+     }
+   if(!strcasecmp(name, "twitter"))
+     {
+        e_nav_world_item_neo_other_twitter_set(neo_other_obj, value);
+        if(neod->twitter) free((char *)neod->twitter);
+        neod->twitter = strdup(value);
+     }
 }
 
 /* 

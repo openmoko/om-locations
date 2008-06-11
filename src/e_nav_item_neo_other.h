@@ -30,6 +30,7 @@ struct _Neo_Other_Data
    const char             *phone;
    const char             *alias;
    const char             *twitter;
+   int                     accuracy;
    Diversity_Bard         *bard;
 };
 
@@ -42,5 +43,9 @@ void                    e_nav_world_item_neo_other_alias_set(Evas_Object *item, 
 const char             *e_nav_world_item_neo_other_alias_get(Evas_Object *item);
 void                    e_nav_world_item_neo_other_twitter_set(Evas_Object *item, const char *twitter);
 const char             *e_nav_world_item_neo_other_twitter_get(Evas_Object *item);
+void                    e_nav_world_item_neo_other_accuracy_set(Evas_Object *item, int accuracy);
+int                     e_nav_world_item_neo_other_accuracy_get(Evas_Object *item);
+Diversity_Bard         *e_nav_world_item_neo_other_bard_get(Evas_Object *item);
+const char             *e_nav_world_item_neo_other_path_get(Evas_Object *item);
     
 #endif

@@ -121,7 +121,7 @@ e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double l
    evas_object_event_callback_add(o, EVAS_CALLBACK_DEL,
 				  _e_nav_world_item_cb_del, NULL);
    evas_object_data_set(o, "nav_world_item_neo_other_data", neod);
-   evas_object_show(o);
+   //evas_object_show(o);
    return o;
 }
 
@@ -213,3 +213,47 @@ e_nav_world_item_neo_other_twitter_get(Evas_Object *item)
    if (!neod) return NULL;
    return neod->twitter;
 }
+
+void
+e_nav_world_item_neo_other_accuracy_set(Evas_Object *item, int accuracy)
+{
+   Neo_Other_Data *neod;
+   
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return;
+   neod->accuracy = accuracy;
+   if(neod->accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)
+     evas_object_show(item);
+}
+
+int
+e_nav_world_item_neo_other_accuracy_get(Evas_Object *item)
+{
+   Neo_Other_Data *neod;
+   
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return DIVERSITY_OBJECT_ACCURACY_NONE;
+   return neod->accuracy;
+}
+
+Diversity_Bard *
+e_nav_world_item_neo_other_bard_get(Evas_Object *item)
+{
+   Neo_Other_Data *neod;
+
+   if(!item) return NULL;
+   neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
+   if (!neod) return NULL;
+   return neod->bard;
+}
+
+const char *
+e_nav_world_item_neo_other_path_get(Evas_Object *item)
+{
+   Diversity_Bard *bard;
+   if(!item) return NULL;
+   bard = e_nav_world_item_neo_other_bard_get(item); 
+   if(!bard) return NULL;
+   return diversity_dbus_path_get((Diversity_DBus *)bard);
+}
+

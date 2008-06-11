@@ -80,7 +80,6 @@ struct _E_Smart_Data
 
    Embed_Canvas    *embed;
    Contact_List    *contact_list;
-   Ecore_List      *contact_data_list;
 
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
@@ -524,10 +523,6 @@ e_contact_editor_contacts_set(Evas_Object *obj, Ecore_List *list)
    SMART_CHECK(obj, ;);
    Contact_List_Item *item;
    Neo_Other_Data *neod;
-
-   if(sd->contact_data_list)
-     ecore_list_destroy(sd->contact_data_list);
-   sd->contact_data_list = ecore_list_new();
 
    ecore_list_first_goto(list);
    while ((neod = ecore_list_current(list)))
