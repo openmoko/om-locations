@@ -20,6 +20,7 @@
 
 #include "e_nav.h"
 #include "e_mod_nav.h"
+#include "e_nav_misc.h"
 #include <libintl.h>
 #include <etk/Etk.h>
 
@@ -97,6 +98,24 @@ on_resize(Ecore_Evas *ee)
    _e_mod_nav_update(evas);
 }
 
+static int kbd_status = MTPRemoteNone;
+
+static void
+on_focused_in(Ecore_Evas *ee)
+{
+   if(kbd_status == MTPRemoteShow)
+     {
+        e_misc_keyboard_launch();
+     }
+}
+
+static void
+on_focused_out(Ecore_Evas *ee)
+{
+   kbd_status = e_misc_keyboard_status_get();
+   e_misc_keyboard_hide();
+}
+
 int
 main(int argc, char **argv)
 {
@@ -137,6 +156,9 @@ main(int argc, char **argv)
    ecore_evas_callback_delete_request_set(ee, on_delete_request);
    ecore_evas_callback_show_set(ee, on_show);
    ecore_evas_callback_resize_set(ee, on_resize);
+
+   ecore_evas_callback_focus_in_set(ee, on_focused_in);
+   ecore_evas_callback_focus_out_set(ee, on_focused_out);
 
    ecore_evas_show(ee);
 

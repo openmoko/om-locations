@@ -33,6 +33,8 @@ typedef enum {
 } MTPRemoteOperation;
 
 
-void            kbd_protocol_send_event(MTPRemoteOperation op);
+void            e_misc_keyboard_launch();
+void            e_misc_keyboard_hide();
+int             e_misc_keyboard_status_get();
 
 #endif

@@ -21,7 +21,30 @@
 #include "e_nav_misc.h"
 #include <string.h>
 
+static void kbd_protocol_send_event(MTPRemoteOperation op);
+static MTPRemoteOperation keyboard_status = MTPRemoteNone;
+
 void
+e_misc_keyboard_launch()
+{
+   keyboard_status = MTPRemoteShow;
+   kbd_protocol_send_event(MTPRemoteShow);
+}
+
+void
+e_misc_keyboard_hide()
+{
+   keyboard_status = MTPRemoteHide;
+   kbd_protocol_send_event(MTPRemoteHide);
+}
+
+int
+e_misc_keyboard_status_get()
+{
+   return keyboard_status;
+}
+
+static void
 kbd_protocol_send_event(MTPRemoteOperation op)
 {
   XEvent xev;

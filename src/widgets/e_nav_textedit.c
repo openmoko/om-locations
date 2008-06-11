@@ -126,6 +126,20 @@ _e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    if (bi->func) bi->func(bi->data, bi->obj, sd->src_obj);   // src_obj is location item object
 }
 
+static Etk_Bool 
+_editor_focused_cb(Etk_Object *object, Etk_Event_Key_Down *event, void *data)
+{
+   e_misc_keyboard_launch();
+   return TRUE;
+}
+
+static Etk_Bool 
+_editor_unfocused_cb(Etk_Object *object, Etk_Event_Key_Down *event, void *data)
+{
+   e_misc_keyboard_hide();
+   return TRUE;
+}
+
 void
 e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data2)
 {
@@ -198,6 +212,9 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    etk_box_append(ETK_BOX(ec->vbox), ec->entry, ETK_BOX_START, ETK_BOX_NONE, 0); // padding is 0
    etk_box_spacing_set(ETK_BOX(ec->vbox), 20);
 
+   etk_signal_connect_by_code(ETK_WIDGET_FOCUSED_SIGNAL, ETK_OBJECT(ec->entry), ETK_CALLBACK(_editor_focused_cb), NULL);
+   etk_signal_connect_by_code(ETK_WIDGET_UNFOCUSED_SIGNAL, ETK_OBJECT(ec->entry), ETK_CALLBACK(_editor_unfocused_cb), NULL);
+
    sd->embed = ec;
 }
 
@@ -226,7 +243,6 @@ e_textedit_activate(Evas_Object *obj)
    
    SMART_CHECK(obj, ;);
    evas_object_show(sd->event);
-
    _e_textedit_update(obj);
 }
 
@@ -237,8 +253,7 @@ e_textedit_deactivate(Evas_Object *obj)
    
    SMART_CHECK(obj, ;);
    evas_object_hide(sd->event);
-
-   kbd_protocol_send_event(MTPRemoteHide);
+   e_misc_keyboard_hide();
    _e_textedit_smart_hide(obj);
    _e_textedit_smart_del(obj);
 }
@@ -469,7 +484,5 @@ _e_textedit_update(Evas_Object *obj)
    etk_widget_show(sd->embed->vbox);
    etk_widget_show(sd->embed->entry);
    etk_widget_focus(sd->embed->entry);
-
-   kbd_protocol_send_event(MTPRemoteShow);
 }
 
