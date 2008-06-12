@@ -59,18 +59,21 @@ dialog_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
 }
 
 static void
-dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
+location_save(Evas_Object *obj, Evas_Object *src_obj)
 {
    Location_Data *locd;
+   const char *name, *note;
+   char *description;
+   int result;
+
    locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
    if (!locd) return;
-   const char *name = e_dialog_textblock_text_get(obj, "Edit title");
-   const char *note = e_dialog_textblock_text_get(obj, "Edit message");
-   char *description; 
+   name = e_dialog_textblock_text_get(obj, "Edit title");
+   note = e_dialog_textblock_text_get(obj, "Edit message");
    description = malloc(strlen(name) + 1 + strlen(note) + 1);
    if (!description) return ;
    sprintf(description, "%s%c%s", name, '\n', note);
-   int result = diversity_tag_prop_set(locd->tag, "description", description);
+   result = diversity_tag_prop_set(locd->tag, "description", description);
    if(result)
      {
         if (locd->name) evas_stringshare_del(locd->name);
@@ -84,6 +87,12 @@ dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
         e_nav_world_item_location_name_set(src_obj, name);
      }
    free(description);
+}
+
+static void
+dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   location_save(obj, src_obj);
    e_dialog_deactivate(obj);
 }
 
@@ -163,6 +172,8 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Diversity_Equipment *eqp = NULL;
    Neo_Other_Data *neod = NULL;
    Evas_Object *alert_dialog;
+   Evas_Object *location_object;
+   Location_Data *locd;
 
    int ok = FALSE;
    const char *input = e_contact_editor_input_get(obj); 
@@ -174,8 +185,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         return;
      }
 
-   Evas_Object *location_object = (Evas_Object*)data;
-   Location_Data *locd;
+   location_object = src_obj;
    locd = evas_object_data_get(location_object, "nav_world_item_location_data");
    if (!locd) 
      {
@@ -261,12 +271,17 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void
 dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   Evas_Object *editor = e_contact_editor_add( evas_object_evas_get(obj) );
+   Evas_Object *editor;
+   Ecore_List *contacts;
+
+   location_save(obj, src_obj); 
+
+   editor = e_contact_editor_add( evas_object_evas_get(obj) );
    e_contact_editor_theme_source_set(editor, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
    e_contact_editor_source_object_set(editor, data);  //  src_object is location item evas object 
    e_contact_editor_input_set(editor, "To:", "");
 
-   Ecore_List *contacts = e_ctrl_contacts_get(); 
+   contacts = e_ctrl_contacts_get(); 
 
    //FIXME: contacts need to be destroyed later.
    
