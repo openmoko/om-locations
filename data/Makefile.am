@@ -2,11 +2,11 @@ MAINTAINERCLEANFILES = Makefile.in
 SUBDIRS = themes
 
 pixmapdir = $(datadir)/pixmaps
-pixmap_DATA = diversity-nav.png
+pixmap_DATA = splinter.png
 
 mapdir = $(pkgdatadir)/maps
 map_DATA = base_ll.eet
 
 EXTRA_DIST =			\
-	diversity-nav.png	\
+	splinter.png	        \
 	base_ll.eet
