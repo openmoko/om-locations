@@ -264,6 +264,8 @@ viewport_object_removed(void *data, DBusMessage *msg)
    else 
      {
         printf("object deleted: %s \n", obj_path);
+        if(e_ctrl_contact_get(obj_path))
+          e_ctrl_contact_remove(obj_path);
         world_item = e_ctrl_object_store_item_get(obj_path);
         if(world_item) 
           {
