@@ -1,11 +1,11 @@
 [Desktop Entry]
 Encoding=UTF-8
-Name=Diversity Nav.
+Name=Splinter
 TryExec=@PACKAGE_TARNAME@
 GenericName=Diversity Navigation
 Comment=Diversity Navigation
 StartupNotify=false
-Exec=@PACKAGE_TARNAME@
+Exec=splinter.sh
 Icon=@PACKAGE_TARNAME@
 Terminal=false
 Type=Application

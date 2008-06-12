@@ -10,6 +10,8 @@ filesdir = $(pkgdatadir)
 applicationsdir = $(datadir)/applications
 applications_DATA = diversity-nav.desktop
 
+bin_SCRIPTS = splinter.sh
+
 EXTRA_DIST =				\
 	$(applications_DATA)
 
