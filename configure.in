@@ -49,7 +49,7 @@ CFLAGS="-Wall $CFLAGS"
 
 AC_OUTPUT([
 Makefile
-diversity-nav.desktop
+splinter.desktop
 src/Makefile
 src/widgets/Makefile
 tools/Makefile

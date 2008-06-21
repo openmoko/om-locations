@@ -2,8 +2,8 @@
 Encoding=UTF-8
 Name=Splinter
 TryExec=@PACKAGE_TARNAME@
-GenericName=Diversity Navigation
-Comment=Diversity Navigation
+GenericName=Splinter
+Comment=Splinter
 StartupNotify=false
 Exec=splinter.sh
 Icon=@PACKAGE_TARNAME@

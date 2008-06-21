@@ -8,7 +8,7 @@ SUBDIRS = dbus src po data tools
 filesdir = $(pkgdatadir)
 
 applicationsdir = $(datadir)/applications
-applications_DATA = diversity-nav.desktop
+applications_DATA = splinter.desktop
 
 bin_SCRIPTS = splinter.sh
 

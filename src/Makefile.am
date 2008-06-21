@@ -33,8 +33,8 @@ noinst_HEADERS =		\
         e_ctrl.h                \
         e_nav_misc.h
 
-bin_PROGRAMS = diversity-nav
-diversity_nav_SOURCES =		\
+bin_PROGRAMS = splinter
+splinter_SOURCES =		\
 	e_mod_main.c		\
         e_mod_config.c          \
 	e_mod_nav.c		\
@@ -54,7 +54,7 @@ diversity_nav_SOURCES =		\
         e_ctrl.c                \
         e_nav_misc.c
 		    
-diversity_nav_LDADD =		  \
+splinter_LDADD =		  \
 	$(EFL_LIBS)		  \
 	$(EDBUS_LIBS)		  \
 	../dbus/libedbus-proxy.la \
