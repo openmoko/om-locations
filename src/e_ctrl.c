@@ -147,6 +147,8 @@ e_ctrl_taglist_tag_add(const char *name, const char *note, time_t timestamp, voi
 
    if (name)
      item->name = strdup(name); 
+   else
+     item->name = strdup("");
 
    if (note)
      item->description = strdup(note);

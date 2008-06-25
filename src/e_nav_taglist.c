@@ -206,11 +206,19 @@ e_nav_taglist_tag_add(Tag_List *obj, Tag_List_Item *item)
 {
    Etk_Tree_Row *tree_row;
    char *time_diff_string;
+   char *buf;
 
-   char *buf = (char *)malloc(strlen(item->name) + 128);
+   if(!item) return;
+   if(item->name != NULL && !strcmp(item->name, "") )
+     {
+        free(item->name);
+        item->name = strdup("No Title");
+     }
+
+   buf = (char *)malloc(strlen(item->name) + 128);
 
    time_diff_string = get_time_diff_string(item->timestamp);
-   
+
    sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
 
    free(time_diff_string);
@@ -249,6 +257,11 @@ e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *descriptio
                {
                   free(item->description);
                   item->description = strdup(description);
+               }
+             if(item->name != NULL && !strcmp(item->name, "") )
+	       {
+                  free(item->name);
+                  item->name = strdup("No Title");
                }
              buf = (char *)malloc(strlen(item->name) + 128);
              time_diff_string = get_time_diff_string(item->timestamp);
