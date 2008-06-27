@@ -4,6 +4,7 @@ MAINTAINERCLEANFILES = Makefile.in
 SUBDIRS = widgets
 
 mapdir = $(pkgdatadir)/maps
+diversity_mapdir = $(datadir)/diversity-nav/maps
 
 AM_CPPFLAGS =					\
 	$(EFL_CFLAGS)				\
@@ -11,7 +12,8 @@ AM_CPPFLAGS =					\
 	-I$(top_srcdir)/dbus			\
 	-DTHEME_PATH=\"$(pkgdatadir)\"		\
         -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"	\
-	-DMAP_PATH=\"$(mapdir)\"
+	-DMAP_PATH=\"$(mapdir)\"                \
+	-DDIVERSITY_MAP_PATH=\"$(diversity_mapdir)\"
 
 noinst_HEADERS =		\
 	e_mod_main.h		\
