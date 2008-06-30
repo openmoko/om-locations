@@ -10,7 +10,6 @@ filesdir = $(pkgdatadir)
 applicationsdir = $(datadir)/applications
 applications_DATA = splinter.desktop
 
-bin_SCRIPTS = splinter.sh
 
 EXTRA_DIST =				\
 	$(applications_DATA)
