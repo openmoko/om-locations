@@ -14,17 +14,10 @@ default.edj
 
 EXTRA_DIST = \
 diversity_nav.edc \
-label.edc \
-entry.edc \
-diversity_widget.edc \
-diversity_text.edc \
-diversity_label.edc \
 default_nav_dialog.edc \
 default_nav_alert.edc \
 default_nav_button.edc \
-default_titlepane.edc \
 default_textblock.edc \
-default_entry.edc \
 default.edc
 
 default.edj: Makefile $(EXTRA_DIST)
