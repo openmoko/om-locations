@@ -451,7 +451,6 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 				      "modules/diversity_nav/message");
    evas_object_move(sd->message, sd->x, sd->y);
    evas_object_resize(sd->message, sd->w, sd->h);
-   evas_object_show(sd->message);
 }
 
 void

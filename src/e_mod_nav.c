@@ -61,6 +61,11 @@ static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void position_search_timer_start();
 static void position_search_timer_stop();
+static void alert_exit(void *data, Evas_Object *obj, Evas_Object *src_obj);
+static void alert_gps_turn_on(void *data, Evas_Object *obj, Evas_Object *src_obj);
+static void alert_gps_cancel(void *data, Evas_Object *obj, Evas_Object *src_obj);
+static int check_gps_state();
+static int turn_on_gps();
 static int _e_nav_cb_timer_pos_search_pause(void *data);
 
 static Evas_Object *
@@ -564,8 +569,44 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    evas_object_show(nav);
    evas_object_show(ctrl);
 
-   if(!e_nav_world_item_neo_me_fixed_get(neo_me))
+   // Check GPS state
+   int gps_state;
+   gps_state = check_gps_state();
+   if(!gps_state)
+     {
+        Evas_Object *alert_dialog;
+    
+        alert_dialog = e_alert_add(evas_object_evas_get(nav));
+        e_alert_theme_source_set(alert_dialog, THEME_PATH);
+        e_alert_source_object_set(alert_dialog, neo_me);     
+        e_alert_title_set(alert_dialog, "GPS is off", "Turn on GPS ?");
+        e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
+        e_alert_button_add(alert_dialog, "YES", alert_gps_turn_on, alert_dialog);
+        e_alert_button_add(alert_dialog, "NO", alert_gps_cancel, alert_dialog);
+        evas_object_show(alert_dialog);
+        e_alert_activate(alert_dialog); 
+     }
+   else
+     {
+        if(!e_nav_world_item_neo_me_fixed_get(neo_me))
+          position_search_timer_start();
+     }
+}
+
+static void
+alert_gps_turn_on(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   int ret;
+   e_alert_deactivate(obj);
+   ret = turn_on_gps();
+   if(ret)
      position_search_timer_start();
+}
+
+static void
+alert_gps_cancel(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   e_alert_deactivate(obj);
 }
 
 static void
@@ -573,6 +614,48 @@ alert_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    e_alert_deactivate(obj);
    e_ctrl_message_hide(ctrl);
+}
+
+#define GPS_DEVICE_NAME "/sys/bus/platform/drivers/neo1973-pm-gps/neo1973-pm-gps.0/pwron"
+
+static int
+check_gps_state()
+{
+   FILE *gpsd; 
+   int ret;
+   char data;
+   gpsd = fopen(GPS_DEVICE_NAME, "r");
+   if(!gpsd) 
+     {
+        printf("Open gps device %s failed.\n", GPS_DEVICE_NAME);
+        return FALSE;
+     }
+   ret=fread(&data, sizeof(char), sizeof(&data), gpsd);
+   fclose(gpsd);
+
+   if(ret <=  0) 
+     return FALSE;
+
+   if(data == '1')
+     return TRUE; 
+   else
+     return FALSE;
+} 
+
+static int
+turn_on_gps()
+{
+   FILE *gpsd; 
+   gpsd = fopen(GPS_DEVICE_NAME, "w");
+   if(!gpsd) 
+     {
+        printf("Open gps device %s to write failed.\n", GPS_DEVICE_NAME);
+        return FALSE;
+     }
+   char *on = "1\n";
+   fwrite(on, sizeof(char), strlen(on), gpsd);
+   fclose(gpsd);
+   return TRUE;
 }
 
 static void
