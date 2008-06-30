@@ -72,11 +72,18 @@ e_modapi_save(E_Module *m)
 }
 #else /* AS_MODULE */
 
+static int
+exit_handler(void *data, int type, void *event)
+{
+   _e_mod_nav_shutdown();
+   ecore_main_loop_quit();
+   return 1;
+}
+
 static void
 on_delete_request(Ecore_Evas *ee)
 {
    _e_mod_nav_shutdown();
-
    ecore_main_loop_quit();
 }
 
@@ -120,11 +127,14 @@ int
 main(int argc, char **argv)
 {
    Ecore_Evas *ee;
-
+   
    bindtextdomain(PACKAGE, LOCALEDIR);
    bind_textdomain_codeset(PACKAGE, "UTF-8");
 
    if (!ecore_init()) { printf("failed to init ecore\n"); return -1; }
+   ecore_event_handler_add(ECORE_EVENT_SIGNAL_HUP, exit_handler, NULL);
+   ecore_event_handler_add(ECORE_EVENT_SIGNAL_EXIT, exit_handler, NULL);
+
    if (!ecore_evas_init()) { printf("failed to init ecore_evas\n"); return -1; }
    if (!edje_init()) { printf("failed to init edje\n"); return -1; }
 
@@ -154,6 +164,7 @@ main(int argc, char **argv)
 
    ecore_evas_title_set(ee, PACKAGE_NAME);
    ecore_evas_callback_delete_request_set(ee, on_delete_request);
+   ecore_evas_callback_destroy_set(ee, on_delete_request);
    ecore_evas_callback_show_set(ee, on_show);
    ecore_evas_callback_resize_set(ee, on_resize);
 
