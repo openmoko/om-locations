@@ -125,6 +125,7 @@ _e_nav_tag_sel(void *data, void *data2)
      evas_object_raise(sd->message);
    evas_object_raise(object);
    evas_object_show(sd->panel_buttons);
+   edje_object_signal_emit(sd->panel_buttons, "JUMP_TO_MAP", "");
 }
 
 void

@@ -797,6 +797,14 @@ group {
          name: "list_clicked_make_map_default";
          action: STATE_SET "default" 0.0;   target: "map_text";
       }
+
+      program {
+         name: "jump_to_map";
+         after:  "map_clicked_make_refresh_default";
+         signal: "JUMP_TO_MAP";
+         source: *;
+         action: STATE_SET "activated" 0.0;   target: "map_text";
+      }
    }
 }
 
