@@ -849,6 +849,7 @@ job_load(E_Nav_Tile_Job *job)
 	       {
 		  memcpy(key, "tah", 3);
 		  evas_object_image_file_set(job->obj, l->data, key);
+		  memcpy(key, sd->src, 3);
 		  err = evas_object_image_load_error_get(job->obj);
 	       }
 
