@@ -33,6 +33,14 @@
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _E_Nav_Tile_Job E_Nav_Tile_Job;
 
+typedef struct _E_Nav_Map E_Nav_Map;
+
+struct _E_Nav_Map {
+	char *path;
+	double lon, lat;
+	double width, height;
+};
+
 struct _E_Smart_Data
 {
    Evas_Object *obj;
@@ -428,20 +436,35 @@ on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Ev
 	stat(path, &st);
 	if (S_ISREG(st.st_mode))
 	  {
+	     E_Nav_Map *map;
+	    
 	     //printf("add %s\n", path);
 
-	     sd->maps = evas_list_prepend(sd->maps, strdup(path));
+	     map = malloc(sizeof(*map));
+	     if (!map)
+	       return;
+
+	     map->path = strdup(path);
+	     map->lon = 0.0;
+	     map->lat = 0.0;
+	     map->width = 0.0;
+	     map->height = 0.0;
+
+	     sd->maps = evas_list_prepend(sd->maps, map);
 	  }
      }
    else
      {
 	for (l = sd->maps; l; l = l->next)
 	  {
-	     if (strcmp(l->data, path) == 0)
-	       {
-		  //printf("del %s\n", (char *) l->data);
+	     E_Nav_Map *map = l->data;
 
-		  free(l->data);
+	     if (strcmp(map->path, path) == 0)
+	       {
+		  //printf("del %s\n", (char *) map->path);
+
+		  free(map->path);
+		  free(map);
 		  sd->maps = evas_list_remove_list(sd->maps, l);
 
 		  break;
@@ -507,14 +530,15 @@ e_nav_tileset_monitor_del(Evas_Object *obj, const char *dn)
    l = sd->maps;
    for (l = sd->maps; l; l = l->next)
      {
-	char *p = l->data;
+	E_Nav_Map *map = l->data;
 	int len = strlen(dn);
 
-	if (strncmp(p, dn, len) == 0 && p[len] == '/' &&
-	    !strchr(p + len + 1, '/'))
+	if (strncmp(map->path, dn, len) == 0 && map->path[len] == '/' &&
+	    !strchr(map->path + len + 1, '/'))
 	  {
-	     printf("del %s\n", p);
-	     free(p);
+	     printf("del %s\n", map->path);
+	     free(map->path);
+	     free(map);
 
 	     l = l->prev;
 	     sd->maps = evas_list_remove_list(sd->maps, l->next);
@@ -598,7 +622,11 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
 
    while (sd->maps)
      {
-	free(sd->maps->data);
+	E_Nav_Map *map = sd->maps->data;
+
+	free(map->path);
+	free(map);
+
 	sd->maps = evas_list_remove_list(sd->maps, sd->maps);
      }
 
@@ -807,6 +835,34 @@ job_reset(E_Nav_Tile_Job *job, int x, int y)
    evas_object_hide(job->obj);
 }
 
+static int
+job_load_from_map(E_Nav_Tile_Job *job, E_Nav_Map *map)
+{
+   E_Smart_Data *sd;
+   int err;
+   char key[64];
+
+   sd = evas_object_smart_data_get(job->nt);
+   if (!sd) return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+
+   snprintf(key, sizeof(key), "%s/%d/%d/%d",
+	 sd->src, job->level, job->x, job->y);
+
+   evas_object_image_file_set(job->obj, map->path, key);
+   err = evas_object_image_load_error_get(job->obj);
+
+   /* XXX */
+   if (err != EVAS_LOAD_ERROR_NONE)
+     {
+	memcpy(key, "tah", 3);
+	evas_object_image_file_set(job->obj, map->path, key);
+	memcpy(key, sd->src, 3);
+	err = evas_object_image_load_error_get(job->obj);
+     }
+
+   return err;
+}
+
 static void
 job_load(E_Nav_Tile_Job *job)
 {
@@ -832,36 +888,11 @@ job_load(E_Nav_Tile_Job *job)
 	return;
      }
 
-   if (sd->maps)
+   for (l = sd->maps; l; l = l->next)
      {
-	char key[64];
-
-	snprintf(key, sizeof(key), "%s/%d/%d/%d",
-	      sd->src, job->level, job->x, job->y);
-
-	for (l = sd->maps; l; l = l->next)
-	  {
-	     evas_object_image_file_set(job->obj, l->data, key);
-	     err = evas_object_image_load_error_get(job->obj);
-
-	     /* XXX */
-	     if (err != EVAS_LOAD_ERROR_NONE)
-	       {
-		  memcpy(key, "tah", 3);
-		  evas_object_image_file_set(job->obj, l->data, key);
-		  memcpy(key, sd->src, 3);
-		  err = evas_object_image_load_error_get(job->obj);
-	       }
-
-	     if (err == EVAS_LOAD_ERROR_NONE)
-	       {
-		  break;
-	       }
-	  }
-
-	/* `buf' is reloaded when job is done */
-	if (err != EVAS_LOAD_ERROR_NONE)
-	  evas_object_image_file_set(job->obj, buf, NULL);
+	err = job_load_from_map(job, l->data);
+	if (err == EVAS_LOAD_ERROR_NONE)
+	  break;
      }
    
    if (err == EVAS_LOAD_ERROR_NONE)
@@ -871,6 +902,9 @@ job_load(E_Nav_Tile_Job *job)
    else
      {
 	evas_object_hide(job->obj);
+
+	/* `buf' is reloaded when job is done */
+	evas_object_image_file_set(job->obj, buf, NULL);
 
 	job_submit(job, 1);
      }
