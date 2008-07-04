@@ -38,7 +38,7 @@
 #define NAV_UNIT_M / ((40000.0 * 1000.0) / 360.0)
 #define NAV_UNIT_KM / (40000.0 / 360.0)
 #define E_NAV_ZOOM_MAX (M_EARTH_RADIUS / 100)
-#define E_NAV_ZOOM_MIN 1
+#define E_NAV_ZOOM_MIN 2
 #define E_NAV_ZOOM_SENSITIVITY 18
 
 /* types */
