@@ -39,6 +39,7 @@ typedef struct _E_Nav_Map_Desc E_Nav_Map_Desc;
 
 struct _E_Nav_Map_Desc
 {
+   unsigned char format;
    int version;
    char *source;
    int min_level, max_level;
@@ -428,6 +429,8 @@ map_describe(void)
 	 (void *) evas_hash_free);
 
    EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "format", format, EET_T_UCHAR);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
 	 "version", version, EET_T_INT);
    EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
 	 "source", source, EET_T_STRING);
@@ -469,8 +472,9 @@ map_new(const char *path)
 	  {
 	     map->desc = eet_data_read(ef, edd, "description");
 	     if (map->desc)
-	       printf("%s: %d %s %d %d %f %f %f %f\n",
+	       printf("%s: %d %d %s %d %d %f %f %f %f\n",
 		     path,
+		     map->desc->format,
 		     map->desc->version,
 		     map->desc->source,
 		     map->desc->min_level,
@@ -496,6 +500,7 @@ map_new(const char *path)
 	     return NULL;
 	  }
 
+	map->desc->format = 0;
 	map->desc->version = 0;
 	map->desc->source = NULL;
 	map->desc->min_level = 0;

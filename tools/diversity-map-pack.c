@@ -20,6 +20,7 @@ char *basedir;
 typedef struct _E_Nav_Map_Desc E_Nav_Map_Desc;
 
 struct _E_Nav_Map_Desc {
+	unsigned char format;
 	int version;
 	char *source;
 	int min_level, max_level;
@@ -136,6 +137,8 @@ map_describe(void)
 	 (void *) evas_hash_free);
 
    EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "format", format, EET_T_UCHAR);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
 	 "version", version, EET_T_INT);
    EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
 	 "source", source, EET_T_STRING);
@@ -163,6 +166,11 @@ int describe(const char *desc)
 	int ret;
 
 	p = desc;
+
+	md.format = strtol(p, (char **) &p, 10);
+	if (!p || *p != ',')
+		return 0;
+	p++;
 
 	md.version = strtol(p, (char **) &p, 10);
 	if (!p || *p != ',')
@@ -259,7 +267,7 @@ void _eet_merge(Eet_File *ef, Eet_File *base)
 
 void usage(const char *prog)
 {
-	printf("%s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] <cache-dir> <output>\n", prog);
+	printf("%s [-b base] [-d format,version,source,min_level,max_level,lon,lat,width,height] <cache-dir> <output>\n", prog);
 }
 
 int main(int argc, char **argv)
