@@ -29,16 +29,27 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <string.h>
+#include <Eet.h>
 
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _E_Nav_Tile_Job E_Nav_Tile_Job;
 
 typedef struct _E_Nav_Map E_Nav_Map;
+typedef struct _E_Nav_Map_Desc E_Nav_Map_Desc;
 
-struct _E_Nav_Map {
-	char *path;
-	double lon, lat;
-	double width, height;
+struct _E_Nav_Map_Desc
+{
+   int version;
+   char *source;
+   int min_level, max_level;
+   double lon, lat;
+   double width, height;
+};
+
+struct _E_Nav_Map
+{
+   char *path;
+   E_Nav_Map_Desc *desc;
 };
 
 struct _E_Smart_Data
@@ -401,6 +412,114 @@ e_nav_tileset_proxy_get(Evas_Object *obj)
    return sd->proxy;
 }
 
+static Eet_Data_Descriptor *
+map_describe(void)
+{
+   Eet_Data_Descriptor *edd;
+
+   edd = eet_data_descriptor_new(
+	 "E_Nav_Map_Desc", sizeof(E_Nav_Map_Desc),
+	 (void *) evas_list_next,
+	 (void *) evas_list_append,
+	 (void *) evas_list_data,
+	 (void *) evas_list_free,
+	 (void *) evas_hash_foreach,
+	 (void *) evas_hash_add,
+	 (void *) evas_hash_free);
+
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "version", version, EET_T_INT);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "source", source, EET_T_STRING);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "min_level", min_level, EET_T_INT);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "max_level", max_level, EET_T_INT);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "lon", lon, EET_T_DOUBLE);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "lat", lat, EET_T_DOUBLE);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "width", width, EET_T_DOUBLE);
+   EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
+	 "height", height, EET_T_DOUBLE);
+
+   return edd;
+}
+
+static E_Nav_Map *
+map_new(const char *path)
+{
+   E_Nav_Map *map;
+   Eet_File *ef;
+   Eet_Data_Descriptor *edd;
+
+   map = malloc(sizeof(*map));
+   if (!map)
+     return NULL;
+
+   map->path = strdup(path);
+   map->desc = NULL;
+
+   ef = eet_open(path, EET_FILE_MODE_READ);
+   if (ef)
+     {
+	edd = map_describe();
+	if (edd)
+	  {
+	     map->desc = eet_data_read(ef, edd, "description");
+	     if (map->desc)
+	       printf("%s: %d %s %d %d %f %f %f %f\n",
+		     path,
+		     map->desc->version,
+		     map->desc->source,
+		     map->desc->min_level,
+		     map->desc->max_level,
+		     map->desc->lon,
+		     map->desc->lat,
+		     map->desc->width,
+		     map->desc->height);
+
+	     eet_data_descriptor_free(edd);
+	  }
+
+	eet_close(ef);
+     }
+
+   if (!map->desc)
+     {
+	map->desc = malloc(sizeof(*map->desc));
+	if (!map->desc)
+	  {
+	     free(map);
+
+	     return NULL;
+	  }
+
+	map->desc->version = 0;
+	map->desc->source = NULL;
+	map->desc->min_level = 0;
+	map->desc->max_level = 20;
+	map->desc->lon = -180.0;
+	map->desc->lat = -90.0;
+	map->desc->width = 360.0;
+	map->desc->height = 180.0;
+     }
+
+   return map;
+}
+
+static void
+map_free(E_Nav_Map *map)
+{
+   if (map->desc->source)
+     free(map->desc->source);
+
+   free(map->desc);
+   free(map->path);
+   free(map);
+}
+
 static void
 on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Event event, const char *path)
 {
@@ -428,8 +547,19 @@ on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Ev
 	 break;
      }
 
+   for (l = sd->maps; l; l = l->next)
+     {
+	E_Nav_Map *map = l->data;
+
+	if (strcmp(map->path, path) == 0)
+	  break;
+     }
+
    if (event == ECORE_FILE_EVENT_CREATED_FILE)
      {
+	if (l)
+	  return;
+
 	if (access(path, R_OK) != 0)
 	  return;
 
@@ -439,36 +569,20 @@ on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Ev
 	     E_Nav_Map *map;
 	    
 	     //printf("add %s\n", path);
+	     map = map_new(path);
 
-	     map = malloc(sizeof(*map));
-	     if (!map)
-	       return;
-
-	     map->path = strdup(path);
-	     map->lon = 0.0;
-	     map->lat = 0.0;
-	     map->width = 0.0;
-	     map->height = 0.0;
-
-	     sd->maps = evas_list_prepend(sd->maps, map);
+	     if (map)
+	       sd->maps = evas_list_prepend(sd->maps, map);
 	  }
      }
    else
      {
-	for (l = sd->maps; l; l = l->next)
+	if (l)
 	  {
-	     E_Nav_Map *map = l->data;
+	     //printf("del %s\n", (char *) map->path);
 
-	     if (strcmp(map->path, path) == 0)
-	       {
-		  //printf("del %s\n", (char *) map->path);
-
-		  free(map->path);
-		  free(map);
-		  sd->maps = evas_list_remove_list(sd->maps, l);
-
-		  break;
-	       }
+	     map_free(l->data);
+	     sd->maps = evas_list_remove_list(sd->maps, l);
 	  }
      }
 }
@@ -537,8 +651,7 @@ e_nav_tileset_monitor_del(Evas_Object *obj, const char *dn)
 	    !strchr(map->path + len + 1, '/'))
 	  {
 	     printf("del %s\n", map->path);
-	     free(map->path);
-	     free(map);
+	     map_free(map);
 
 	     l = l->prev;
 	     sd->maps = evas_list_remove_list(sd->maps, l->next);
@@ -622,10 +735,7 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
 
    while (sd->maps)
      {
-	E_Nav_Map *map = sd->maps->data;
-
-	free(map->path);
-	free(map);
+	map_free(sd->maps->data);
 
 	sd->maps = evas_list_remove_list(sd->maps, sd->maps);
      }
@@ -841,9 +951,31 @@ job_load_from_map(E_Nav_Tile_Job *job, E_Nav_Map *map)
    E_Smart_Data *sd;
    int err;
    char key[64];
+   double x, y;
 
    sd = evas_object_smart_data_get(job->nt);
    if (!sd) return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+
+   if (job->level < map->desc->min_level ||
+       job->level > map->desc->max_level)
+     return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+
+   x = (double) (job->x + 1) / (1 << job->level);
+   y = (double) (job->y + 1) / (1 << job->level);
+   if (x < 1.0 && y < 1.0)
+     {
+	mercator_project_inv(x, y, &x, &y);
+
+	if (x < map->desc->lon || y >= map->desc->lat + map->desc->height)
+	  return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+     }
+
+   x = (double) job->x / (1 << job->level);
+   y = (double) job->y / (1 << job->level);
+   mercator_project_inv(x, y, &x, &y);
+
+   if (x >= map->desc->lon + map->desc->width || y < map->desc->lat)
+     return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
 
    snprintf(key, sizeof(key), "%s/%d/%d/%d",
 	 sd->src, job->level, job->x, job->y);
