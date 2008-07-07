@@ -989,11 +989,10 @@ job_load_from_map(E_Nav_Tile_Job *job, E_Nav_Map *map)
    err = evas_object_image_load_error_get(job->obj);
 
    /* XXX */
-   if (err != EVAS_LOAD_ERROR_NONE)
+   if (err != EVAS_LOAD_ERROR_NONE && !map->desc->format)
      {
 	memcpy(key, "tah", 3);
 	evas_object_image_file_set(job->obj, map->path, key);
-	memcpy(key, sd->src, 3);
 	err = evas_object_image_load_error_get(job->obj);
      }
 
