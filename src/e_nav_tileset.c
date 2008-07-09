@@ -50,6 +50,10 @@ struct _E_Nav_Map_Desc
 struct _E_Nav_Map
 {
    char *path;
+   int min_x[18];
+   int max_x[18];
+   int min_y[18];
+   int max_y[18];
    E_Nav_Map_Desc *desc;
 };
 
@@ -450,12 +454,76 @@ map_describe(void)
    return edd;
 }
 
+static int
+map_read(E_Nav_Map *map)
+{
+   Eet_File *ef;
+   Eet_Data_Descriptor *edd;
+
+   ef = eet_open(map->path, EET_FILE_MODE_READ);
+   if (!ef)
+     return 0;
+
+   edd = map_describe();
+   if (!edd)
+     {
+	eet_close(ef);
+
+	return 1;
+     }
+
+   map->desc = eet_data_read(ef, edd, "description");
+   if (map->desc)
+     {
+	if (map->desc->lon < -180.0)
+	  map->desc->lon = -180.0;
+	else if (map->desc->lon > 180.0)
+	  map->desc->lon = 180.0;
+
+	if (map->desc->lat < -90.0)
+	  map->desc->lat = -90.0;
+	else if (map->desc->lat > 90.0)
+	  map->desc->lat = 90.0;
+
+	if (map->desc->width < 0.0)
+	  map->desc->width = 0.0;
+	else if (map->desc->lon + map->desc->width > 180.0)
+	  map->desc->width = 180.0 - map->desc->lon;
+
+	if (map->desc->height < 0.0)
+	  map->desc->height = 0.0;
+	else if (map->desc->lat + map->desc->height > 90.0)
+	  map->desc->height = 90.0 - map->desc->lat;
+
+	if (map->desc->min_level < 0)
+	  map->desc->min_level = 0;
+	if (map->desc->max_level < 0)
+	  map->desc->max_level = 0;
+
+	printf("%s: %d %d %s %d %d %f %f %f %f\n",
+	      map->path,
+	      map->desc->format,
+	      map->desc->version,
+	      map->desc->source,
+	      map->desc->min_level,
+	      map->desc->max_level,
+	      map->desc->lon,
+	      map->desc->lat,
+	      map->desc->width,
+	      map->desc->height);
+     }
+
+   eet_data_descriptor_free(edd);
+   eet_close(ef);
+
+   return 1;
+}
+
 static E_Nav_Map *
 map_new(const char *path)
 {
    E_Nav_Map *map;
-   Eet_File *ef;
-   Eet_Data_Descriptor *edd;
+   int z;
 
    map = malloc(sizeof(*map));
    if (!map)
@@ -464,30 +532,12 @@ map_new(const char *path)
    map->path = strdup(path);
    map->desc = NULL;
 
-   ef = eet_open(path, EET_FILE_MODE_READ);
-   if (ef)
+   if (!map_read(map))
      {
-	edd = map_describe();
-	if (edd)
-	  {
-	     map->desc = eet_data_read(ef, edd, "description");
-	     if (map->desc)
-	       printf("%s: %d %d %s %d %d %f %f %f %f\n",
-		     path,
-		     map->desc->format,
-		     map->desc->version,
-		     map->desc->source,
-		     map->desc->min_level,
-		     map->desc->max_level,
-		     map->desc->lon,
-		     map->desc->lat,
-		     map->desc->width,
-		     map->desc->height);
+	free(map->path);
+	free(map);
 
-	     eet_data_descriptor_free(edd);
-	  }
-
-	eet_close(ef);
+	return NULL;
      }
 
    if (!map->desc)
@@ -509,6 +559,51 @@ map_new(const char *path)
 	map->desc->lat = -90.0;
 	map->desc->width = 360.0;
 	map->desc->height = 180.0;
+     }
+
+   for (z = 0; z < 18; z++)
+     {
+	double x, y;
+
+	if (z < map->desc->min_level || z > map->desc->max_level)
+	  {
+	     map->min_x[z] = 1 << z;
+	     map->max_x[z] = 0;
+	     map->min_y[z] = 1 << z;
+	     map->max_y[z] = 0;
+
+	     continue;
+	  }
+
+	mercator_project(map->desc->lon, map->desc->lat, &x, &y);
+	x *= 1 << z;
+	y *= 1 << z;
+
+	map->min_x[z] = (int) x;
+	map->max_y[z] = (int) y;
+
+	mercator_project(map->desc->lon + map->desc->width,
+	      map->desc->lat + map->desc->height, &x, &y);
+	x *= 1 << z;
+	y *= 1 << z;
+
+	map->max_x[z] = (int) x;
+	map->min_y[z] = (int) y;
+
+	if (map->max_x[z] - map->min_x[z] < 5)
+	  {
+	     map->min_x[z] -= 2;
+	     map->max_x[z] += 2;
+	  }
+
+	if (map->max_y[z] - map->min_y[z] < 5)
+	  {
+	     map->min_y[z] -= 2;
+	     map->max_y[z] += 2;
+	  }
+
+	//printf("%d: %d %d %d %d\n", z, map->min_x[z], map->max_x[z],
+	//      map->min_y[z], map->max_y[z]);
      }
 
    return map;
@@ -956,7 +1051,6 @@ job_load_from_map(E_Nav_Tile_Job *job, E_Nav_Map *map)
    E_Smart_Data *sd;
    int err;
    char key[64];
-   double x, y;
 
    sd = evas_object_smart_data_get(job->nt);
    if (!sd) return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
@@ -965,21 +1059,8 @@ job_load_from_map(E_Nav_Tile_Job *job, E_Nav_Map *map)
        job->level > map->desc->max_level)
      return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
 
-   x = (double) (job->x + 1) / (1 << job->level);
-   y = (double) (job->y + 1) / (1 << job->level);
-   if (x < 1.0 && y < 1.0)
-     {
-	mercator_project_inv(x, y, &x, &y);
-
-	if (x < map->desc->lon || y >= map->desc->lat + map->desc->height)
-	  return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-     }
-
-   x = (double) job->x / (1 << job->level);
-   y = (double) job->y / (1 << job->level);
-   mercator_project_inv(x, y, &x, &y);
-
-   if (x >= map->desc->lon + map->desc->width || y < map->desc->lat)
+   if (job->x < map->min_x[job->level] || job->x > map->max_x[job->level] ||
+       job->y < map->min_y[job->level] || job->y > map->max_y[job->level])
      return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
 
    snprintf(key, sizeof(key), "%s/%d/%d/%d",
