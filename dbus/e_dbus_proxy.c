@@ -397,7 +397,8 @@ async_proxy_call(DBusPendingCall *pending, void *data)
 {
   E_DBus_Pending_Notify *notify = data;
 
-  notify->cb_func(notify->data, notify->proxy, (E_DBus_Proxy_Call *) notify->call_id);
+  notify->cb_func(notify->data, notify->proxy,
+		  (E_DBus_Proxy_Call *) ((unsigned long) notify->call_id));
   if (notify->free_func)
     notify->free_func(notify->data);
 }
@@ -407,7 +408,7 @@ e_dbus_proxy_begin_call_with_timeout(E_DBus_Proxy *proxy, DBusMessage *message, 
 {
   E_DBus_Pending_Notify *notify = NULL;
   DBusPendingCall *pending;
-  unsigned int call_id;
+  unsigned long int call_id;
 
   if (!e_dbus_proxy_is_method_call(proxy, message))
     return NULL;
@@ -556,7 +557,7 @@ EAPI int
 e_dbus_proxy_simple_call(E_DBus_Proxy *proxy, const char *method, DBusError *error, int first_arg_type, ...)
 {
   DBusMessage *message, *reply = NULL;
-  va_list args;
+  va_list args, args_cp;
   int type;
 
   va_start(args, first_arg_type);
@@ -571,8 +572,14 @@ e_dbus_proxy_simple_call(E_DBus_Proxy *proxy, const char *method, DBusError *err
   }
 
   type = first_arg_type;
-  if (!dbus_message_append_args_valist(message, type, args))
+  va_copy(args_cp, args);
+  if (!dbus_message_append_args_valist(message, type, args_cp))
+  {
+    va_end(args_cp);
+
     goto fail;
+  }
+  va_end(args_cp);
 
   if (!e_dbus_proxy_call(proxy, message, &reply))
   {
@@ -593,8 +600,14 @@ e_dbus_proxy_simple_call(E_DBus_Proxy *proxy, const char *method, DBusError *err
   }
 
   type = va_arg(args, int);
-  if (!dbus_message_get_args_valist(reply, error, type, args))
+  va_copy(args_cp, args);
+  if (!dbus_message_get_args_valist(reply, error, type, args_cp))
+  {
+    va_end(args_cp);
+
     goto fail;
+  }
+  va_end(args_cp);
 
   /* steal OUTs */
   while (type != DBUS_TYPE_INVALID)
