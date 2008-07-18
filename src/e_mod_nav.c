@@ -565,7 +565,7 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    evas_object_show(ctrl);
 
    Ecore_Timer * show_alert_timer;
-   show_alert_timer = ecore_timer_add(1.0,
+   show_alert_timer = ecore_timer_add(2.0,
                             handle_gps,
                             NULL);
 }
