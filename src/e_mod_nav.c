@@ -67,6 +67,7 @@ static void alert_gps_cancel(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static int check_gps_state();
 static int turn_on_gps();
 static int _e_nav_cb_timer_pos_search_pause(void *data);
+static int handle_gps(void *data);
 
 static Evas_Object *
 osm_tileset_add(Evas_Object *nav)
@@ -563,7 +564,15 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    evas_object_show(nav);
    evas_object_show(ctrl);
 
-   // Check GPS state
+   Ecore_Timer * show_alert_timer;
+   show_alert_timer = ecore_timer_add(1.0,
+                            handle_gps,
+                            NULL);
+}
+
+static int 
+handle_gps(void *data)
+{
    int gps_state;
    gps_state = check_gps_state();
    if(!gps_state)
@@ -585,6 +594,7 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
         if(!e_nav_world_item_neo_me_fixed_get(neo_me))
           position_search_timer_start();
      }
+   return FALSE;
 }
 
 static void
