@@ -117,7 +117,7 @@ e_dialog_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_smart_member_add(sd->bg_object, obj);
    evas_object_move(sd->bg_object, sd->x, sd->y);
    evas_object_resize(sd->bg_object, sd->w, sd->h);
-   evas_object_color_set(sd->bg_object, 0, 0, 0, 200);
+   evas_object_color_set(sd->bg_object, 0, 0, 0, 255);
    evas_object_clip_set(sd->bg_object, sd->clip);
    evas_object_repeat_events_set(sd->bg_object, 1);
    evas_object_show(sd->bg_object);
@@ -479,11 +479,6 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
    Evas_Object *text_object;
    text_object = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/label");
    edje_object_part_text_set(text_object, "dialog.label.text", label);
-                                                                             
-   //text_object = evas_object_text_add( evas_object_evas_get(obj) ); 
-   //evas_object_text_text_set(text_object, label);
-   //evas_object_text_font_set(text_object, "fonts/Edje-Sans-Bold", 16);
-   //evas_object_text_glow_color_set(text_object, 255, 255, 255, 255);
 
    tbi->label_obj = text_object;
    evas_object_smart_member_add(tbi->label_obj, obj);
@@ -535,7 +530,7 @@ _e_dialog_update(Evas_Object *obj)
    int dialog_w = screen_w;
    int dialog_h = 0;
 
-   double t;
+   double t = 1.0;
    int tbc = evas_list_count(sd->textblocks);
    if (sd->activate_deactivate == 0)
      {
@@ -554,7 +549,12 @@ _e_dialog_update(Evas_Object *obj)
      {
 	t = ecore_time_get() - sd->activate_time;
 	t = t / 1.0; /* anim time */
-	if (t >= 1.0) t = 1.0;
+	if (t >= 1.0) 
+          {
+             t = 1.0;
+             evas_object_color_set(sd->bg_object, 0, 0, 0, 200);
+          }
+ 
 	t = 1.0 - ((1.0 - t) * (1.0 - t)); /* decelerate */
 	if (t >= 1.0) sd->activate_deactivate = 0;
         if(tbc==0) 
@@ -632,6 +632,8 @@ _e_dialog_update(Evas_Object *obj)
           }
 
         evas_object_resize(bi->item_obj, button_w, button_h);
+	if (t >= 1.0) 
+          evas_object_color_set(edje_object_part_object_get(bi->item_obj, "base"), 0, 0, 0, 128);
         evas_object_show(bi->item_obj);
         tmp_x = tmp_x + button_w + 1;
      }
