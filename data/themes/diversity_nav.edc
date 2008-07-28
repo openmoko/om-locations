@@ -492,19 +492,19 @@ group {
          description { state: "default" 0.0;
             rel1 {
                relative: 0.0 0.0;
-               offset: 4 0;
+               offset: 4 8;
                to: "star_button";
             }
             rel2 {
                relative: 1.0 1.0;
-               offset: 0 0;
+               offset: 0 11;
                to: "star_button";
             }
             color: 255 255 255 255;
             text {
                text: "*";
-               font: "Edje-Sans-Bold";
-               size: 16;
+               font: "Edje-Sans";
+               size: 28;
                min: 1 1;
                align: 0.0 1.0;
             }
