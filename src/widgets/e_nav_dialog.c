@@ -584,18 +584,16 @@ _e_dialog_update(Evas_Object *obj)
    E_TextBlock_Item *tbi;
    int indent = 10;
    int button_w, button_h; 
+   int interspace;
    int bc;
 
    tmp_y =  dialog_y + dialog_h*(1.0/6) + (indent*2.5);
    bc = evas_list_count(sd->buttons);
-   if(bc==0) return;
+   if(bc < 1 || bc > 3) return;
    E_Button_Item *bi;
    tmp_x = dialog_x;
-   button_w = (int)(dialog_w/bc);
-   if(tbc==0) 
-     button_h = dialog_h*(1.0/2);
-   else 
-     button_h = dialog_h*(1.0/8);
+   button_w = 158;
+   button_h = 60;
 
    for (l = sd->textblocks; l; l = l->next)
      {
@@ -619,23 +617,38 @@ _e_dialog_update(Evas_Object *obj)
      }
    tmp_y = tmp_y + (indent*2.5);
 
+   if (bc == 2)
+     { 
+        tmp_x = tmp_x + 50;
+        interspace = (dialog_w - (button_w * bc)) - (50 * 2); 
+     }
+   else if (bc == 3)
+     {
+        tmp_x = tmp_x;
+        interspace = (dialog_w - (button_w * bc)) / 2;
+     } 
+   else
+     {
+        interspace = (dialog_w - (button_w * bc)) / (bc + 1); 
+     }
+
    for (l = sd->buttons; l; l = l->next)
      {
         bi = l->data;
         if(tbc==0) 
           {
-             evas_object_move(bi->item_obj, tmp_x, (dialog_y+dialog_h*(1.0/2)) );
+             evas_object_move(bi->item_obj, tmp_x, dialog_y + dialog_h - button_h - 10 );
           }
         else 
           {
-             evas_object_move(bi->item_obj, tmp_x, (dialog_y+dialog_h*(7.0/8)) );
+             evas_object_move(bi->item_obj, tmp_x, dialog_y + dialog_h - button_h - 10 );
           }
 
         evas_object_resize(bi->item_obj, button_w, button_h);
 	if (t >= 1.0) 
           evas_object_color_set(edje_object_part_object_get(bi->item_obj, "base"), 0, 0, 0, 128);
         evas_object_show(bi->item_obj);
-        tmp_x = tmp_x + button_w + 1;
+        tmp_x = tmp_x + button_w + interspace;
      }
 }
 
