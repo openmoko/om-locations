@@ -217,6 +217,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
                   DIVERSITY_DBUS_IFACE_OBJECT, "PropertyChanged", on_neo_other_property_changed, nwi);            
           }
+#if 0
         else if(type==DIVERSITY_OBJECT_TYPE_AP) 
 	  {
 	     char *ssid;
@@ -244,6 +245,7 @@ viewport_object_added(void *data, DBusMessage *msg)
 
 	     free(ssid);
 	  }
+#endif
         else
           printf("other kind of object added\n");
 
