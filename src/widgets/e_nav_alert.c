@@ -479,7 +479,7 @@ _e_alert_update(Evas_Object *obj)
         evas_object_move(bi->item_obj, tmp_x, (alert_y+alert_h*(3.0/7)) );
         evas_object_resize(bi->item_obj, button_w, button_h);
         evas_object_show(bi->item_obj);
-        tmp_x = tmp_x + button_w + 1;
+        tmp_x = tmp_x + button_w + 3;
      }
 }
 

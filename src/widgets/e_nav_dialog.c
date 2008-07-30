@@ -598,7 +598,7 @@ _e_dialog_update(Evas_Object *obj)
    for (l = sd->textblocks; l; l = l->next)
      {
         tbi = l->data;
-        evas_object_move(tbi->label_obj, indent + 4, tmp_y + 9);
+        evas_object_move(tbi->label_obj, indent + 9, tmp_y + 7);
         evas_object_show(tbi->label_obj);
         tmp_y = tmp_y + (indent * 2.5);
         evas_object_move(tbi->item_obj, indent, tmp_y);

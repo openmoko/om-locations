@@ -1,0 +1,468 @@
+
+images {
+   image: "touch0001.png" COMP;
+   image: "touch0002.png" COMP;
+   image: "touch0003.png" COMP;
+   image: "touch0004.png" COMP;
+   image: "touch0005.png" COMP;
+   image: "touch0006.png" COMP;
+   image: "touch0007.png" COMP;
+   image: "touch0008.png" COMP;
+   image: "touch0009.png" COMP;
+   image: "touch0010.png" COMP;
+   image: "touch0011.png" COMP;
+   image: "touch0012.png" COMP;
+   image: "touch0013.png" COMP;
+   image: "touch0014.png" COMP;
+   image: "touch0015.png" COMP;
+   image: "touch0016.png" COMP;
+   image: "touch0017.png" COMP;
+   image: "touch0018.png" COMP;
+   image: "touch0019.png" COMP;
+   image: "touch0020.png" COMP;
+   image: "touch0021.png" COMP;
+   image: "touch0022.png" COMP;
+   image: "touch0023.png" COMP;
+   image: "touch0024.png" COMP;
+   image: "touch0025.png" COMP;
+   image: "touch0026.png" COMP;
+   image: "touch0027.png" COMP;
+   image: "touch0028.png" COMP;
+   image: "touch0029.png" COMP;
+   image: "touch0030.png" COMP;
+}
+
+
+group {
+   name: "modules/diversity_nav/neo/me";
+   parts {
+      part { name: "phone";
+         description { state: "default" 0.0;
+            min: 48 48;
+            max: 48 48;
+            image.normal: "touch0001.png";
+         }
+         description { state: "red0" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0001.png";
+            fill.smooth: 0;
+         }
+         description { state: "red1" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0001.png";
+            fill.smooth: 0;
+         }
+         description { state: "red2" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0002.png";
+            fill.smooth: 0;
+         }
+         description { state: "red3" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0003.png";
+            fill.smooth: 0;
+         }
+         description { state: "red4" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0004.png";
+            fill.smooth: 0;
+         }
+         description { state: "red5" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0005.png";
+            fill.smooth: 0;
+         }
+         description { state: "red6" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0006.png";
+            fill.smooth: 0;
+         }
+         description { state: "red7" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0007.png";
+            fill.smooth: 0;
+         }
+         description { state: "red8" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0008.png";
+            fill.smooth: 0;
+         }
+         description { state: "red9" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0008.png";
+            fill.smooth: 0;
+         }
+         description { state: "red10" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0010.png";
+            fill.smooth: 0;
+         }
+         description { state: "red11" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0011.png";
+            fill.smooth: 0;
+         }
+         description { state: "red12" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0012.png";
+            fill.smooth: 0;
+         }
+         description { state: "red13" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0013.png";
+            fill.smooth: 0;
+         }
+         description { state: "red14" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0014.png";
+            fill.smooth: 0;
+         }
+         description { state: "red15" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0015.png";
+            fill.smooth: 0;
+         }
+         description { state: "red16" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0016.png";
+            fill.smooth: 0;
+         }
+         description { state: "red14" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0014.png";
+            fill.smooth: 0;
+         }
+         description { state: "red14" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0014.png";
+            fill.smooth: 0;
+         }
+         description { state: "red14" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0014.png";
+            fill.smooth: 0;
+         }
+         description { state: "red14" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0014.png";
+            fill.smooth: 0;
+         }
+         description { state: "red15" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0015.png";
+            fill.smooth: 0;
+         }
+         description { state: "red16" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0016.png";
+            fill.smooth: 0;
+         }
+         description { state: "red17" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0017.png";
+            fill.smooth: 0;
+         }
+         description { state: "red18" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0018.png";
+            fill.smooth: 0;
+         }
+         description { state: "red19" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0019.png";
+            fill.smooth: 0;
+         }
+         description { state: "red20" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0020.png";
+            fill.smooth: 0;
+         }
+         description { state: "red21" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0021.png";
+            fill.smooth: 0;
+         }
+         description { state: "red22" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0022.png";
+            fill.smooth: 0;
+         }
+         description { state: "red23" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0023.png";
+            fill.smooth: 0;
+         }
+         description { state: "red24" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0024.png";
+            fill.smooth: 0;
+         }
+         description { state: "red25" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0025.png";
+            fill.smooth: 0;
+         }
+         description { state: "red26" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0026.png";
+            fill.smooth: 0;
+         }
+         description { state: "red27" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0027.png";
+            fill.smooth: 0;
+         }
+         description { state: "red28" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0028.png";
+            fill.smooth: 0;
+         }
+         description { state: "red29" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0029.png";
+            fill.smooth: 0;
+         }
+         description { state: "red30" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "touch0030.png";
+            fill.smooth: 0;
+         }
+      }
+   }
+   programs { /* programs - where we react to events/signals */
+      program {
+         name: "show1";
+         action: STATE_SET "red0" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show2";
+      }
+      program {
+         name: "show2";
+         action: STATE_SET "red1" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show3";
+      }
+      program {
+         name: "show3";
+         action: STATE_SET "red2" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show4";
+      }
+      program {
+         name: "show4";
+         action: STATE_SET "red3" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show5";
+      }
+      program {
+         name: "show5";
+         action: STATE_SET "red4" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show6";
+      }
+      program {
+         name: "show6";
+         action: STATE_SET "red5" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show7";
+      }
+      program {
+         name: "show7";
+         action: STATE_SET "red6" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show8";
+      }
+      program {
+         name: "show8";
+         action: STATE_SET "red7" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show9";
+      }
+      program {
+         name: "show9";
+         action: STATE_SET "red8" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show10";
+      }
+      program {
+         name: "show10";
+         action: STATE_SET "red9" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show11";
+      }
+      program {
+         name: "show11";
+         action: STATE_SET "red10" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show12";
+      }
+      program {
+         name: "show12";
+         action: STATE_SET "red11" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show13";
+      }
+      program {
+         name: "show13";
+         action: STATE_SET "red12" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show14";
+      }
+      program {
+         name: "show14";
+         action: STATE_SET "red13" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show15";
+      }
+      program {
+         name: "show15";
+         action: STATE_SET "red14" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show16";
+      }
+      program {
+         name: "show16";
+         action: STATE_SET "red15" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show17";
+      }
+      program {
+         name: "show17";
+         action: STATE_SET "red16" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show18";
+      }
+      program {
+         name: "show18";
+         action: STATE_SET "red17" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show19";
+      }
+      program {
+         name: "show19";
+         action: STATE_SET "red18" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show20";
+      }
+      program {
+         name: "show20";
+         action: STATE_SET "red19" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show21";
+      }
+      program {
+         name: "show21";
+         action: STATE_SET "red20" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show22";
+      }
+      program {
+         name: "show22";
+         action: STATE_SET "red21" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show23";
+      }
+      program {
+         name: "show23";
+         action: STATE_SET "red22" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show24";
+      }
+      program {
+         name: "show24";
+         action: STATE_SET "red23" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show25";
+      }
+      program {
+         name: "show25";
+         action: STATE_SET "red24" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show26";
+      }
+      program {
+         name: "show26";
+         action: STATE_SET "red25" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show27";
+      }
+      program {
+         name: "show27";
+         action: STATE_SET "red26" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show28";
+      }
+      program {
+         name: "show28";
+         action: STATE_SET "red27" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show29";
+      }
+      program {
+         name: "show29";
+         action: STATE_SET "red28" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show30";
+      }
+      program {
+         name: "show30";
+         action: STATE_SET "red29" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show31";
+      }
+      program {
+         name: "show31";
+         action: STATE_SET "red30" 0.0;
+         transition: LINEAR 0.03;
+         target: "phone";
+         after: "show1";
+      }
+      
+      program {
+         name: "fixed";
+         signal: "FIXED";
+         source: "*";
+         action: STATE_SET "red0" 0.0;
+         target: "phone";
+         after: "show1";
+      }
+      program {
+         name: "nonfixed";
+         signal: "NONFIXED";
+         source: "*";
+         action: STATE_SET "default" 0.0;
+         target: "phone";
+      }
+        
+   }
+}

@@ -165,7 +165,7 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    if(!positive_func) bi->func = textedit_save;
    else bi->func = positive_func;
    bi->data = data1;
-   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_28");
+   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_left_28");
    evas_object_smart_member_add(bi->item_obj, obj);
    evas_object_clip_set(bi->item_obj, sd->clip);
    evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,

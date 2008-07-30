@@ -220,7 +220,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
           }
         else 
           {
-             e_alert_title_set(alert_dialog, "FAIL", "Tag sent fail");
+             e_alert_title_set(alert_dialog, "ERROR", "Send tag failed");
              e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
              e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
           }
@@ -246,7 +246,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
           }
         else
           {
-             e_alert_title_set(od, "FAIL", "Tag sent fail");
+             e_alert_title_set(od, "ERROR", "Send tag failed");
              e_alert_title_color_set(od, 255, 0, 0, 255);
              e_alert_button_add(od, "OK", alert_exit, od);
           }
@@ -260,7 +260,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    alert_dialog = e_alert_add(evas_object_evas_get(obj));
    e_alert_theme_source_set(alert_dialog, THEME_PATH);
    e_alert_source_object_set(alert_dialog, src_obj);     
-   e_alert_title_set(alert_dialog, "FAIL", "Contact not found");
+   e_alert_title_set(alert_dialog, "ERROR", "Contact not found");
    e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
    e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
    e_contact_editor_deactivate(obj);   
@@ -302,11 +302,11 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);  
    e_dialog_source_object_set(od, src_obj);  
-   e_dialog_title_set(od, "Edit your location", "Edit or delete your location");
+   e_dialog_title_set(od, "Edit your location", "Press the text boxes to edit this location.");
    const char *title = e_nav_world_item_location_name_get(location_object);
    e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
    const char *message = e_nav_world_item_location_note_get(location_object);
-   e_dialog_textblock_add(od, "Edit message", message, 120, 80, obj);
+   e_dialog_textblock_add(od, "Edit message", message, 100, 80, obj);
    e_dialog_button_add(od, "Save", dialog_location_save, od);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    e_dialog_button_add(od, "Delete", dialog_location_delete, od);
@@ -327,11 +327,11 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEME_PATH);  
    e_dialog_source_object_set(od, src_obj);  
-   e_dialog_title_set(od, "Send your location", "Send your favorite location to friends by SMS");
+   e_dialog_title_set(od, "Send your location", "Send your favorite location to a friend by SMS.");
    const char *title = e_nav_world_item_location_name_get(location_object);
    e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
    const char *message = e_nav_world_item_location_note_get(location_object);
-   e_dialog_textblock_add(od, "Edit message", message, 120, 80, obj);
+   e_dialog_textblock_add(od, "Edit message", message, 100, 80, obj);
    e_dialog_button_add(od, "Send", dialog_location_send, data);
    e_dialog_button_add(od, "Cancel", dialog_exit, od);
    

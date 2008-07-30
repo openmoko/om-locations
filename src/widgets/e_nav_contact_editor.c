@@ -217,12 +217,12 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
    if(!positive_func) bi->func = contact_editor_save;
    else bi->func = positive_func;
    bi->data = data1;
-   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_28");
+   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_left_28");
    evas_object_smart_member_add(bi->item_obj, obj);
    evas_object_clip_set(bi->item_obj, sd->clip);
    evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,
                                   _e_button_cb_mouse_up, bi);
-   edje_object_part_text_set(bi->item_obj, "text", "OK");
+   edje_object_part_text_set(bi->item_obj, "text", "Send");
    sd->left_button = bi->item_obj;
 
    bi2 = calloc(1, sizeof(E_Button_Item));

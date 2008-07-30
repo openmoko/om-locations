@@ -51,7 +51,7 @@ group {
             color: 98 98 98 255;
             rel1 {
                relative: 0.0 1.0;
-               offset: 0 10;
+               offset: 8 10;
                to:   "title";
             }
             rel2 {
@@ -82,7 +82,7 @@ group {
             align: 0.0 0.0;
             color: 255 255 255 255;
             text {
-               font: "Edje-Sans";
+               font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
                align: 0.0 0.0;

@@ -23,6 +23,7 @@ spectra {
 
 collections {
 #include "diversity_nav.edc"
+#include "diversity_neo_me.edc"
 #include "default_nav_dialog.edc"
 #include "default_nav_alert.edc"
 #include "default_nav_button.edc"
