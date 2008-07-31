@@ -37,18 +37,12 @@ EXTRA_DIST =				\
 	ap_signal.png			\
 	ap_top.png			\
 	ap_tower.png			\
-	checkbox_down.png		\
-	checkbox_off_disabled.png	\
-	checkbox_off.png		\
-	checkbox_on_disabled.png	\
-	checkbox_on.png			\
 	city.png			\
 	diversity_ibar_bg.png		\
 	diversity_ibar_over.png		\
 	diversity_scrollpane_bg.png	\
 	diversity_scrollpane_over.png	\
 	down.png			\
-	drag_glow.png			\
 	e17_ibar_bg_v.png		\
 	e17_ibar_over_v.png		\
 	e17_ilist_bg0.png		\
@@ -63,10 +57,7 @@ EXTRA_DIST =				\
 	entry_black.png			\
 	entry_disabled.png		\
 	entry.png			\
-	focus_glow.png			\
 	focus.png			\
-	hscrollbar_trough2.png		\
-	hscrollbar_trough.png		\
 	left.png			\
 	location.png			\
 	logo.png			\
@@ -76,39 +67,8 @@ EXTRA_DIST =				\
 	neo.png				\
 	red_dot1.png			\
 	right.png			\
-	scrollbar_button_down1.png	\
-	scrollbar_button_down2.png	\
-	scrollbar_button_left1.png	\
-	scrollbar_button_left2.png	\
-	scrollbar_button_right1.png	\
-	scrollbar_button_right2.png	\
-	scrollbar_button_up1.png	\
-	scrollbar_button_up2.png	\
-	scrollbar_hdrag1.png		\
-	scrollbar_hdrag2.png		\
-	scrollbar_hdrag_thumb.png	\
-	scrollbar_vdrag1.png		\
-	scrollbar_vdrag2.png		\
-	scrollbar_vdrag_thumb.png	\
 	tag_icon.png			\
-	tree_asc_arrow.png		\
-	tree_desc_arrow.png		\
-	tree_expander_fold.png		\
-	tree_expander_unfold.png	\
-	tree_header_first2.png		\
-	tree_header_first.png		\
-	tree_header_last2.png		\
-	tree_header_last.png		\
-	tree_header_middle2.png		\
-	tree_header_middle.png		\
-	tree_header_over.png		\
-	tree_header_unique2.png		\
-	tree_header_unique.png		\
-	tree.png			\
-	tree_shadow.png			\
 	up.png				\
-	vscrollbar_trough2.png		\
-	vscrollbar_trough.png		\
 	zoomin.png			\
 	zoomout.png			\
 	zoom.png			\
