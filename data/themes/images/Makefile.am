@@ -1,11 +1,54 @@
 MAINTAINERCLEANFILES = Makefile.in
 
+touches =		\
+	touch0001.png	\
+	touch0002.png	\
+	touch0003.png	\
+	touch0004.png	\
+	touch0005.png	\
+	touch0006.png	\
+	touch0007.png	\
+	touch0008.png	\
+	touch0009.png	\
+	touch0010.png	\
+	touch0011.png	\
+	touch0012.png	\
+	touch0013.png	\
+	touch0014.png	\
+	touch0015.png	\
+	touch0016.png	\
+	touch0017.png	\
+	touch0018.png	\
+	touch0019.png	\
+	touch0020.png	\
+	touch0021.png	\
+	touch0022.png	\
+	touch0023.png	\
+	touch0024.png	\
+	touch0025.png	\
+	touch0026.png	\
+	touch0027.png	\
+	touch0028.png	\
+	touch0029.png	\
+	touch0030.png
+
 EXTRA_DIST =				\
 	ap_range.png			\
 	ap_signal.png			\
 	ap_top.png			\
 	ap_tower.png			\
+	checkbox_down.png		\
+	checkbox_off_disabled.png	\
+	checkbox_off.png		\
+	checkbox_on_disabled.png	\
+	checkbox_on.png			\
 	city.png			\
+	diversity_ibar_bg.png		\
+	diversity_ibar_over.png		\
+	diversity_scrollpane_bg.png	\
+	diversity_scrollpane_over.png	\
+	down.png			\
+	drag_glow.png			\
 	e17_ibar_bg_v.png		\
 	e17_ibar_over_v.png		\
 	e17_ilist_bg0.png		\
@@ -16,12 +59,57 @@ EXTRA_DIST =				\
 	e17_titlebar.png		\
 	e17_titlebar_shadow1.png	\
 	e17_titlebar_shadow2.png	\
+	edit_send.png			\
+	entry_black.png			\
+	entry_disabled.png		\
 	entry.png			\
+	focus_glow.png			\
 	focus.png			\
+	hscrollbar_trough2.png		\
+	hscrollbar_trough.png		\
+	left.png			\
 	location.png			\
 	logo.png			\
 	measure_64px.png		\
 	module_icon.png			\
 	neo_other.png			\
 	neo.png				\
-	zoom.png
+	red_dot1.png			\
+	right.png			\
+	scrollbar_button_down1.png	\
+	scrollbar_button_down2.png	\
+	scrollbar_button_left1.png	\
+	scrollbar_button_left2.png	\
+	scrollbar_button_right1.png	\
+	scrollbar_button_right2.png	\
+	scrollbar_button_up1.png	\
+	scrollbar_button_up2.png	\
+	scrollbar_hdrag1.png		\
+	scrollbar_hdrag2.png		\
+	scrollbar_hdrag_thumb.png	\
+	scrollbar_vdrag1.png		\
+	scrollbar_vdrag2.png		\
+	scrollbar_vdrag_thumb.png	\
+	tag_icon.png			\
+	tree_asc_arrow.png		\
+	tree_desc_arrow.png		\
+	tree_expander_fold.png		\
+	tree_expander_unfold.png	\
+	tree_header_first2.png		\
+	tree_header_first.png		\
+	tree_header_last2.png		\
+	tree_header_last.png		\
+	tree_header_middle2.png		\
+	tree_header_middle.png		\
+	tree_header_over.png		\
+	tree_header_unique2.png		\
+	tree_header_unique.png		\
+	tree.png			\
+	tree_shadow.png			\
+	up.png				\
+	vscrollbar_trough2.png		\
+	vscrollbar_trough.png		\
+	zoomin.png			\
+	zoomout.png			\
+	zoom.png			\
+	$(touches)
