@@ -17,6 +17,8 @@ Evas *evas;
 Eet_File *ef;
 char *basedir;
 
+#define MAP_FORMAT 1
+
 typedef struct _E_Nav_Map_Desc E_Nav_Map_Desc;
 
 struct _E_Nav_Map_Desc {
@@ -167,10 +169,7 @@ int describe(const char *desc)
 
 	p = desc;
 
-	md.format = strtol(p, (char **) &p, 10);
-	if (!p || *p != ',')
-		return 0;
-	p++;
+	md.format = MAP_FORMAT;
 
 	md.version = strtol(p, (char **) &p, 10);
 	if (!p || *p != ',')
@@ -267,7 +266,7 @@ void _eet_merge(Eet_File *ef, Eet_File *base)
 
 void usage(const char *prog)
 {
-	printf("%s [-b base] [-d format,version,source,min_level,max_level,lon,lat,width,height] <cache-dir> <output>\n", prog);
+	printf("%s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] <cache-dir> <output>\n", prog);
 }
 
 int main(int argc, char **argv)
