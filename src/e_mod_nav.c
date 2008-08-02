@@ -479,10 +479,12 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    if (nt)
      {
 	e_nav_tileset_monitor_add(nt, MAP_PATH);
-	e_nav_tileset_monitor_add(nt, DIVERSITY_MAP_PATH);
-	/* XXX */
-	e_nav_tileset_monitor_add(nt, "/media/card/maps");
-	e_nav_tileset_monitor_add(nt, "/media/card/diversity-maps");
+
+	/* known places where maps are stored */
+	e_nav_tileset_monitor_add(nt, "/usr/share/om-maps");
+	e_nav_tileset_monitor_add(nt, "/usr/local/share/om-maps");
+	e_nav_tileset_monitor_add(nt, "/media/card/om-maps");
+	e_nav_tileset_monitor_add(nt, "/usr/share/diversity-nav/maps");
      }
    else 
      {
