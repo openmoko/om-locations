@@ -35,8 +35,8 @@ noinst_HEADERS =		\
         e_ctrl.h                \
         e_nav_misc.h
 
-bin_PROGRAMS = splinter
-splinter_SOURCES =		\
+bin_PROGRAMS = om-locations
+om_locations_SOURCES =		\
 	e_mod_main.c		\
         e_mod_config.c          \
 	e_mod_nav.c		\
@@ -56,7 +56,7 @@ splinter_SOURCES =		\
         e_ctrl.c                \
         e_nav_misc.c
 		    
-splinter_LDADD =		  \
+om_locations_LDADD =		  \
 	$(EFL_LIBS)		  \
 	$(EDBUS_LIBS)		  \
 	../dbus/libedbus-proxy.la \

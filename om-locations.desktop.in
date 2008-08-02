@@ -1,9 +1,9 @@
 [Desktop Entry]
 Encoding=UTF-8
-Name=Splinter
+Name=Locations
 TryExec=@PACKAGE_TARNAME@
-GenericName=Splinter
-Comment=Splinter
+GenericName=Locations
+Comment=Locations
 StartupNotify=false
 Exec=@PACKAGE_TARNAME@
 Icon=@PACKAGE_TARNAME@

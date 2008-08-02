@@ -162,7 +162,7 @@ main(int argc, char **argv)
    ee = ecore_evas_software_x11_new(NULL, 0, 0, 0, 480, 640);
    if (!ee) { printf("failed to get ecore_evas\n"); return -1; }
 
-   ecore_evas_title_set(ee, PACKAGE_NAME);
+   ecore_evas_title_set(ee, "Locations");
    ecore_evas_callback_delete_request_set(ee, on_delete_request);
    ecore_evas_callback_destroy_set(ee, on_delete_request);
    ecore_evas_callback_show_set(ee, on_show);

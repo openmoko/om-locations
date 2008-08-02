@@ -481,7 +481,7 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 	e_nav_tileset_monitor_add(nt, MAP_PATH);
 	e_nav_tileset_monitor_add(nt, DIVERSITY_MAP_PATH);
 	/* XXX */
-	e_nav_tileset_monitor_add(nt, "/media/card/splinter-maps");
+	e_nav_tileset_monitor_add(nt, "/media/card/maps");
 	e_nav_tileset_monitor_add(nt, "/media/card/diversity-maps");
      }
    else 

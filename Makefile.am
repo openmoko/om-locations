@@ -8,7 +8,7 @@ SUBDIRS = dbus src po data tools
 filesdir = $(pkgdatadir)
 
 applicationsdir = $(datadir)/applications
-applications_DATA = splinter.desktop
+applications_DATA = om-locations.desktop
 
 
 EXTRA_DIST =				\
