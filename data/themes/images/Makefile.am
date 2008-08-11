@@ -1,5 +1,3 @@
-MAINTAINERCLEANFILES = Makefile.in
-
 touches =		\
 	touch0001.png	\
 	touch0002.png	\

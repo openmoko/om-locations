@@ -165,7 +165,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              int unread;
 
 	     lat = -lat;
-             nwi = e_nav_world_item_location_add(nav, THEME_PATH,
+             nwi = e_nav_world_item_location_add(nav, THEMEDIR,
 				     lon, lat, obj);
              diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
 	     diversity_dbus_property_get((Diversity_DBus *) obj,
@@ -206,7 +206,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
 
 	     lat = -lat;
-             nwi = e_nav_world_item_neo_other_add(nav, THEME_PATH, lon, lat, obj);
+             nwi = e_nav_world_item_neo_other_add(nav, THEMEDIR, lon, lat, obj);
              e_nav_world_item_neo_other_name_set(nwi, name);
              e_nav_world_item_neo_other_phone_set(nwi, phone);
              e_nav_world_item_neo_other_alias_set(nwi, alias);
@@ -230,7 +230,7 @@ viewport_object_added(void *data, DBusMessage *msg)
 
 	     lon += width / 2;
 	     lat += height / 2;
-             nwi = e_nav_world_item_ap_add(nav, THEME_PATH, lon, -lat);
+             nwi = e_nav_world_item_ap_add(nav, THEMEDIR, lon, -lat);
 	     e_nav_world_item_ap_range_set(nwi, width / 2);
 
 	     diversity_dbus_property_get((Diversity_DBus *) obj,
@@ -473,12 +473,12 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    world = diversity_world_new();
 
    nav = e_nav_add(evas, world);
-   e_nav_theme_source_set(nav, THEME_PATH);
+   e_nav_theme_source_set(nav, THEMEDIR);
 
    nt = osm_tileset_add(nav);
    if (nt)
      {
-	e_nav_tileset_monitor_add(nt, MAP_PATH);
+	e_nav_tileset_monitor_add(nt, MAPSDIR);
 
 	/* known places where maps are stored */
 	e_nav_tileset_monitor_add(nt, "/usr/share/om-maps");
@@ -498,7 +498,7 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    ctrl = e_ctrl_add(evas);
    if(!ctrl) return;
 
-   e_ctrl_theme_source_set(ctrl, THEME_PATH);
+   e_ctrl_theme_source_set(ctrl, THEMEDIR);
    e_ctrl_nav_set(nav);
 
    _e_mod_neo_me_init();
@@ -584,7 +584,7 @@ handle_gps(void *data)
         Evas_Object *alert_dialog;
     
         alert_dialog = e_alert_add(evas_object_evas_get(nav));
-        e_alert_theme_source_set(alert_dialog, THEME_PATH);
+        e_alert_theme_source_set(alert_dialog, THEMEDIR);
         e_alert_source_object_set(alert_dialog, neo_me);     
         e_alert_title_set(alert_dialog, "GPS is off", "Turn on GPS?");
         e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
@@ -689,7 +689,7 @@ _e_nav_cb_timer_pos_search_pause(void *data)
    int fix_status;
     
    alert_dialog = e_alert_add(evas_object_evas_get(nav));
-   e_alert_theme_source_set(alert_dialog, THEME_PATH);
+   e_alert_theme_source_set(alert_dialog, THEMEDIR);
    e_alert_source_object_set(alert_dialog, neo_me);     
    fix_status = e_nav_world_item_neo_me_fixed_get(neo_me);
    if(fix_status)
@@ -724,7 +724,7 @@ _e_mod_neo_me_init()
 
    neo_me_lat = dn_config_float_get(cfg, "neo_me_lat");
    neo_me_lon = dn_config_float_get(cfg, "neo_me_lon");
-   nwi = e_nav_world_item_neo_me_add(nav, THEME_PATH,
+   nwi = e_nav_world_item_neo_me_add(nav, THEMEDIR,
 				     neo_me_lon, neo_me_lat, self);
 
    /* if already fixed, change the skin.   */

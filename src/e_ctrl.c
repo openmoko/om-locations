@@ -427,7 +427,7 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 				  _e_nav_view_right,
 				  obj);
 
-   sd->listview = e_nav_taglist_new(obj, THEME_PATH);
+   sd->listview = e_nav_taglist_new(obj, THEMEDIR);
 
    sd->panel_buttons = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/panel");

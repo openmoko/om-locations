@@ -199,7 +199,7 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
    SMART_CHECK(obj, ;);
    char theme_file[PATH_MAX];
 
-   snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEME_PATH, e_nav_theme_name_get());
+   snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEMEDIR, e_nav_theme_name_get());
    
    sd->dir = custom_dir;
    sd->bg_object = evas_object_rectangle_add(evas_object_evas_get(obj)); 
@@ -274,7 +274,7 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
    evas_object_event_callback_add(contact_button, EVAS_CALLBACK_MOUSE_UP,
 				  _e_nav_contact_button_cb_mouse_down, obj);
 
-   sd->contact_list = e_nav_contact_list_new(obj, THEME_PATH);
+   sd->contact_list = e_nav_contact_list_new(obj, THEMEDIR);
 }
 
 void

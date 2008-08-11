@@ -1,5 +1,3 @@
-MAINTAINERCLEANFILES = Makefile.in
-
 AM_CPPFLAGS = @EDBUS_CFLAGS@
 
 noinst_LTLIBRARIES = libedbus-proxy.la
