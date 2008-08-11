@@ -1,12 +1,11 @@
 [Desktop Entry]
-Encoding=UTF-8
+Version=1.0
 Name=Locations
-TryExec=@PACKAGE_TARNAME@
 GenericName=Locations
-Comment=Locations
+Comment=Share locations through SMS
 StartupNotify=false
-Exec=@PACKAGE_TARNAME@
-Icon=@PACKAGE_TARNAME@
+Exec=om-locations
+Icon=om-locations
 Terminal=false
 Type=Application
 Categories=ENLIGHTENMENT;Network;GPS;
