@@ -453,7 +453,7 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_TextBlock_Item *tbi = (E_TextBlock_Item*)data;
    Evas_Object *teo = e_textedit_add(evas);
-   e_textedit_theme_source_set(teo, THEME_PATH, NULL, NULL, NULL, NULL);  
+   e_textedit_theme_source_set(teo, THEMEDIR, NULL, NULL, NULL, NULL);  
    e_textedit_source_object_set(teo, data); // data is tbi ( TextBlock_Item)
    e_textedit_input_set(teo, edje_object_part_text_get(tbi->label_obj, "dialog.label.text"), tbi->input);
    e_textedit_input_length_limit_set(teo, tbi->length_limit);
@@ -496,7 +496,7 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
    tbi->sz = size;
    tbi->data = data;
 
-   tbi->item_obj = e_nav_theme_object_new(evas_object_evas_get(obj), THEME_PATH,
+   tbi->item_obj = e_nav_theme_object_new(evas_object_evas_get(obj), THEMEDIR,
                                           "e/widgets/textblock");
    evas_object_smart_member_add(tbi->item_obj, obj);
    evas_object_clip_set(tbi->item_obj, sd->clip);

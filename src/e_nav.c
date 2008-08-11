@@ -585,7 +585,7 @@ e_nav_edje_object_set(Evas_Object *o, const char *category, const char *group)
    char buf[PATH_MAX];
    int ok;
    
-   snprintf(buf, sizeof(buf), "%s/%s.edj", THEME_PATH, category);
+   snprintf(buf, sizeof(buf), "%s/%s.edj", THEMEDIR, category);
    ok = edje_object_file_set(o, buf, group);
 
    return ok;

@@ -1,15 +1,9 @@
-ACLOCAL_AMFLAGS = -I m4
-MAINTAINERCLEANFILES = Makefile.in
-
 AM_CPPFLAGS =			\
 	$(EFL_CFLAGS)
 
 bin_PROGRAMS = om-locations-map-pack
 om_locations_map_pack_SOURCES =	\
 	diversity-map-pack.c
-		    
+
 om_locations_map_pack_LDADD =	\
 	$(EFL_LIBS)
-
-clean-local:
-	rm -rf *~

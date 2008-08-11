@@ -87,7 +87,7 @@ location_save_dialog_show(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    e_flyingmenu_deactivate(obj);
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
-   e_dialog_theme_source_set(od, THEME_PATH);  
+   e_dialog_theme_source_set(od, THEMEDIR);  
    e_dialog_source_object_set(od, src_obj);  
    e_dialog_title_set(od, "Save your location", "Save your current location");
    const char *title = "";
@@ -107,7 +107,7 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    Evas_Object *om;
    
    om = e_flyingmenu_add(evas);
-   e_flyingmenu_theme_source_set(om, THEME_PATH);
+   e_flyingmenu_theme_source_set(om, THEMEDIR);
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);
    e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, "touch me!",
@@ -133,7 +133,7 @@ show_welcome_message(Evas_Object *item)
    Evas_Object *om;
    
    om = e_flyingmenu_add( evas_object_evas_get(item) );
-   e_flyingmenu_theme_source_set(om, THEME_PATH);
+   e_flyingmenu_theme_source_set(om, THEMEDIR);
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, item);
    e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, "touch me!",

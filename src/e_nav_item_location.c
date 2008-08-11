@@ -123,7 +123,7 @@ static void
 dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Evas_Object *oa = e_alert_add(evas_object_evas_get(obj));
-   e_alert_theme_source_set(oa, THEME_PATH);
+   e_alert_theme_source_set(oa, THEMEDIR);
    e_alert_source_object_set(oa, src_obj);
    e_alert_title_set(oa, "DELETE", "Are you sure?");
    e_alert_title_color_set(oa, 255, 0, 0, 255);
@@ -210,7 +210,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
      {
         ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
         alert_dialog = e_alert_add(evas_object_evas_get(obj));
-        e_alert_theme_source_set(alert_dialog, THEME_PATH);
+        e_alert_theme_source_set(alert_dialog, THEMEDIR);
         e_alert_source_object_set(alert_dialog, src_obj);     
         if (ok)
           {
@@ -236,7 +236,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         ok = diversity_sms_tag_send((Diversity_Sms *)eqp, input, locd->tag);
 
         Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
-        e_alert_theme_source_set(od, THEME_PATH);
+        e_alert_theme_source_set(od, THEMEDIR);
         e_alert_source_object_set(od, src_obj);     
         if(ok)
           {
@@ -258,7 +258,7 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 
    /* can't find contact and is not a phone number */
    alert_dialog = e_alert_add(evas_object_evas_get(obj));
-   e_alert_theme_source_set(alert_dialog, THEME_PATH);
+   e_alert_theme_source_set(alert_dialog, THEMEDIR);
    e_alert_source_object_set(alert_dialog, src_obj);     
    e_alert_title_set(alert_dialog, "ERROR", "Contact not found");
    e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
@@ -277,7 +277,7 @@ dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    location_save(obj, src_obj); 
 
    editor = e_contact_editor_add( evas_object_evas_get(obj) );
-   e_contact_editor_theme_source_set(editor, THEME_PATH, location_send, data, NULL, NULL); // data is the location item evas object 
+   e_contact_editor_theme_source_set(editor, THEMEDIR, location_send, data, NULL, NULL); // data is the location item evas object 
    e_contact_editor_source_object_set(editor, data);  //  src_object is location item evas object 
    e_contact_editor_input_set(editor, "To:", "");
 
@@ -300,7 +300,7 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    if (!locd) return;
 
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
-   e_dialog_theme_source_set(od, THEME_PATH);  
+   e_dialog_theme_source_set(od, THEMEDIR);  
    e_dialog_source_object_set(od, src_obj);  
    e_dialog_title_set(od, "Edit your location", "Press the text boxes to edit this location.");
    const char *title = e_nav_world_item_location_name_get(location_object);
@@ -325,7 +325,7 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    if (!locd) return;
 
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
-   e_dialog_theme_source_set(od, THEME_PATH);  
+   e_dialog_theme_source_set(od, THEMEDIR);  
    e_dialog_source_object_set(od, src_obj);  
    e_dialog_title_set(od, "Send your location", "Send your favorite location to a friend by SMS.");
    const char *title = e_nav_world_item_location_name_get(location_object);
@@ -345,7 +345,7 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
 {
    Evas_Object *om;
    om = e_flyingmenu_add(evas_object_evas_get(obj));
-   e_flyingmenu_theme_source_set(om, data);  // data is THEME_PATH
+   e_flyingmenu_theme_source_set(om, data);  // data is THEMEDIR
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);   // obj is location evas object
    /* FIXME: real menu items */
@@ -646,7 +646,7 @@ e_nav_world_item_location_new(Evas_Object *nav, Diversity_Object *obj)
    lat = -lat;
    diversity_dbus_property_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &secs);
    timep = (time_t)secs;
-   nwi = e_nav_world_item_location_add(nav, THEME_PATH,
+   nwi = e_nav_world_item_location_add(nav, THEMEDIR,
                lon, lat, obj);
    if(!nwi) return NULL;
    diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 

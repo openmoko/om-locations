@@ -52,7 +52,7 @@ _e_nav_theme_edje_object_set(Evas_Object *o, const char *category, const char *g
 
    if(category==NULL) return ok;
    
-   snprintf(buf, sizeof(buf), "%s/%s.edj", THEME_PATH, category);
+   snprintf(buf, sizeof(buf), "%s/%s.edj", THEMEDIR, category);
    ok = edje_object_file_set(o, buf, group);
 
    return ok;

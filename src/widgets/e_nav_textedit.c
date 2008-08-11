@@ -147,7 +147,7 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    SMART_CHECK(obj, ;);
    char theme_file[PATH_MAX];
 
-   snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEME_PATH, e_nav_theme_name_get());
+   snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEMEDIR, e_nav_theme_name_get());
    
    sd->dir = custom_dir;
    sd->bg_object = evas_object_rectangle_add(evas_object_evas_get(obj)); 
