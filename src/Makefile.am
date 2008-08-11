@@ -9,6 +9,7 @@ AM_CPPFLAGS =					\
 	$(EFL_CFLAGS)				\
 	$(EDBUS_CFLAGS)				\
 	-I$(top_srcdir)/dbus			\
+	-DLOCALEDIR=\"$(datadir)/locale\"	\
 	-DTHEME_PATH=\"$(pkgdatadir)\"		\
 	-DMAP_PATH=\"$(mapdir)\"
 
