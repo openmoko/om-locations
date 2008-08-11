@@ -139,6 +139,7 @@ main(int argc, char **argv)
    if (!edje_init()) { printf("failed to init edje\n"); return -1; }
 
    if (!etk_init(argc, argv)) {printf("failed to init etk\n"); return -1; }
+   textdomain(PACKAGE);
 
    ecore_app_args_set(argc, (const char **) argv);
 
@@ -162,7 +163,7 @@ main(int argc, char **argv)
    ee = ecore_evas_software_x11_new(NULL, 0, 0, 0, 480, 640);
    if (!ee) { printf("failed to get ecore_evas\n"); return -1; }
 
-   ecore_evas_title_set(ee, "Locations");
+   ecore_evas_title_set(ee, _("Locations"));
    ecore_evas_callback_delete_request_set(ee, on_delete_request);
    ecore_evas_callback_destroy_set(ee, on_delete_request);
    ecore_evas_callback_show_set(ee, on_show);
