@@ -150,6 +150,8 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
    memset(tl, 0, sizeof(Tag_List)); 
 
    tl->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/taglist"); 
+   edje_object_part_text_set(tl->frame, "title", _("View Tags"));
+
    evas_object_smart_member_add(tl->frame, obj);
 
    /*

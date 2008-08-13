@@ -88,7 +88,6 @@ group {
             align: 0.0 0.5;
             color: 0 0 0 255;
             text {
-               text: "Searching for your location";
                font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
@@ -160,7 +159,6 @@ group {
             align: 0.0 0.0;
             color: 255 255 255 255;
             text {
-               text: "View Tags";
                font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
@@ -211,7 +209,6 @@ group {
             align: 0.0 0.0;
             color: 255 255 255 255;
             text {
-               text: "Select a contact";
                font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
@@ -256,7 +253,6 @@ group {
             color: 255 255 255 255;
             color3: 0 0 0 0;
             text {
-               text: "Cancel";
                font: "Edje-Sans-Bold";
                size: 28;
                min: 1 1;
@@ -434,7 +430,6 @@ group {
             color: 255 255 255 255;
             color3: 0 0 0 0;
             text {
-               text: "Add Contact";
                font: "Edje-Sans";
                size: 36;
                min: 1 1;
@@ -544,7 +539,6 @@ group {
             }
             color: 255 255 255 255;
             text {
-               text: "REFRESH";
                font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
@@ -589,7 +583,6 @@ group {
             }
             color: 255 255 255 255;
             text {
-               text: "MAP";
                font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
@@ -634,7 +627,6 @@ group {
             }
             color: 255 255 255 255;
             text {
-               text: "LIST";
                font: "Edje-Sans-Bold";
                size: 16;
                min: 1 1;
