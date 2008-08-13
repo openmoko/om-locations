@@ -432,6 +432,9 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 
    sd->panel_buttons = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/panel");
+   edje_object_part_text_set(sd->panel_buttons, "refresh_text", _("REFRESH"));
+   edje_object_part_text_set(sd->panel_buttons, "map_text", _("MAP"));
+   edje_object_part_text_set(sd->panel_buttons, "list_text", _("LIST"));
    evas_object_move(sd->panel_buttons, sd->x, sd->y);
    evas_object_resize(sd->panel_buttons, sd->w, sd->h);
 
@@ -450,6 +453,8 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 
    sd->message = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/message");
+   edje_object_part_text_set(sd->message, "message.text", _("Searching for your location"));
+
    evas_object_move(sd->message, sd->x, sd->y);
    evas_object_resize(sd->message, sd->w, sd->h);
 }

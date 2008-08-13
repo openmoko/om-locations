@@ -242,6 +242,7 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
    memset(ec, 0, sizeof(Embed_Canvas)); 
 
    ec->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/contact_editor"); 
+   edje_object_part_text_set(ec->frame, "button.text", _("Add Contact"));
    evas_object_smart_member_add(ec->frame, obj);
    evas_object_clip_set(ec->frame, sd->clip);
 
