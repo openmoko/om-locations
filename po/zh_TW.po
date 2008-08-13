@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: om-locations 0.1\n"
+"Project-Id-Version: om-locations 0.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-08-12 18:37+0800\n"
-"PO-Revision-Date: 2008-08-13 11:22+0800\n"
+"POT-Creation-Date: 2008-08-13 14:33+0800\n"
+"PO-Revision-Date: 2008-08-13 14:27+0800\n"
 "Last-Translator: Chia-I Wu <olv@openmoko.com>\n"
 "Language-Team: Traditional Chinese <LL@li.org>\n"
 "MIME-Version: 1.0\n"
