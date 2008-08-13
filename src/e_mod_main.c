@@ -18,14 +18,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <Etk.h>
+
 #include "e_nav.h"
 #include "e_mod_nav.h"
 #include "e_nav_misc.h"
-#include <libintl.h>
-#include <etk/Etk.h>
 
 static const char *theme_name = NULL;
-
 
 #ifdef AS_MODULE
 #include "e_mod_main.h"
@@ -139,6 +138,8 @@ main(int argc, char **argv)
    if (!edje_init()) { printf("failed to init edje\n"); return -1; }
 
    if (!etk_init(argc, argv)) {printf("failed to init etk\n"); return -1; }
+
+   /* XXX should we use dgettext? */
    textdomain(PACKAGE);
 
    ecore_app_args_set(argc, (const char **) argv);

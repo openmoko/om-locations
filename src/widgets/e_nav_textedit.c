@@ -20,12 +20,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <Etk.h>
 #include "../e_nav.h"
 #include "e_nav_textedit.h"
 #include "e_nav_dialog.h"
 #include "../e_nav_theme.h"
 #include "../e_nav_misc.h"
-#include <etk/Etk.h>
 
 typedef struct _E_Button_Item E_Button_Item;
 typedef struct _E_Smart_Data E_Smart_Data;

@@ -20,10 +20,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include "e_nav_contact_list.h"
 #include "../e_nav.h"
 #include "../e_nav_theme.h"
 #include "../e_nav_misc.h"
-#include "e_nav_contact_list.h"
 
 static void _e_contact_list_update(Contact_List *sd);
 
