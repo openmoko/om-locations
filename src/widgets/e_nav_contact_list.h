@@ -22,7 +22,7 @@
 
 #ifndef E_NAV_CONTACT_LIST_H
 #define E_NAV_CONTACT_LIST_H
-#include <etk/Etk.h>
+#include <Etk.h>
 
 typedef struct _Contact_List Contact_List;
 struct _Contact_List

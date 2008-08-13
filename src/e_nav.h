@@ -41,6 +41,20 @@
 #define E_NAV_ZOOM_MIN 2
 #define E_NAV_ZOOM_SENSITIVITY 18
 
+/* Etk.h defines _ */
+#ifdef _
+#undef _
+#endif
+
+#if ENABLE_NLS
+#include <libintl.h>
+#define _(str) gettext(str)
+#define N_(str) (str)
+#else
+#define _(str) (str)
+#define N_(str) (str)
+#endif
+
 /* types */
 typedef struct _E_Nav_Location E_Nav_Location; /* opaque object */
 

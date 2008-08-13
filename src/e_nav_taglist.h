@@ -22,7 +22,7 @@
 
 #ifndef E_NAV_TAGLIST_H
 #define E_NAV_TAGLIST_H
-#include <etk/Etk.h>
+#include <Etk.h>
 
 typedef struct _Tag_List Tag_List;
 struct _Tag_List

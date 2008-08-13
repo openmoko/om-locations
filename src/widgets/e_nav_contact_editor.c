@@ -20,14 +20,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include "../e_nav.h"
+#include <Etk.h>
 #include "e_nav_contact_editor.h"
 #include "e_nav_contact_list.h"
 #include "e_nav_dialog.h"
+#include "../e_nav.h"
 #include "../e_nav_theme.h"
 #include "../e_nav_misc.h"
 #include "../e_ctrl.h"
-#include <etk/Etk.h>
 
 #define E_NEW(s, n) (s *)calloc(n, sizeof(s))
 typedef struct _E_Button_Item E_Button_Item;

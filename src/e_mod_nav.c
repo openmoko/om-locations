@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <Etk.h>
+
 #include "e_nav.h"
 #include "e_mod_config.h"
 #include "e_mod_nav.h"
@@ -31,7 +33,6 @@
 #include "e_nav_dbus.h"
 #include "e_nav_tileset.h"
 #include "e_ctrl.h"
-#include <etk/Etk.h>
 #include "widgets/e_nav_alert.h"
 
 /* FIXME: need objects:

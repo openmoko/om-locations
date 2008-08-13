@@ -20,10 +20,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include "e_nav.h"
 #include "e_nav_taglist.h"
 #include "e_nav_item_location.h"
 #include "e_nav_theme.h"
+#include "e_nav.h"
 #include <stdlib.h>
 #include <time.h>
 
