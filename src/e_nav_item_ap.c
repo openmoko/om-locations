@@ -78,11 +78,11 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    e_spiralmenu_deacdelete_set(om, 1);
    e_spiralmenu_source_object_set(om, obj);
    /* FIXME: real menu items */
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Zoom",
+   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, _("Zoom"),
 			       _e_nav_world_item_cb_menu_1, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Join",
+   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, _("Join"),
 			       _e_nav_world_item_cb_menu_2, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, "Information",
+   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, _("Information"),
 			       _e_nav_world_item_cb_menu_3, NULL);
    evas_object_show(om);
    e_spiralmenu_activate(om);
@@ -112,7 +112,7 @@ e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, double lon, dou
    if (!apd) return NULL;
    o = e_nav_theme_object_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/access_point");
-   edje_object_part_text_set(o, "e.text.name", "???");
+   edje_object_part_text_set(o, "e.text.name", _("???"));
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
 				  theme_dir);

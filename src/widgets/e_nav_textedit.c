@@ -170,7 +170,7 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    evas_object_clip_set(bi->item_obj, sd->clip);
    evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,
                                   _e_button_cb_mouse_up, bi);
-   edje_object_part_text_set(bi->item_obj, "text", "OK");
+   edje_object_part_text_set(bi->item_obj, "text", _("OK"));
    sd->left_button = bi->item_obj;
 
    bi2 = calloc(1, sizeof(E_Button_Item));
@@ -183,7 +183,7 @@ e_textedit_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*pos
    evas_object_clip_set(bi2->item_obj, sd->clip);
    evas_object_event_callback_add(bi2->item_obj, EVAS_CALLBACK_MOUSE_UP,
                                   _e_button_cb_mouse_up, bi2);
-   edje_object_part_text_set(bi2->item_obj, "text", "Cancel");
+   edje_object_part_text_set(bi2->item_obj, "text", _("Cancel"));
    sd->right_button = bi2->item_obj;
 
    Embed_Canvas * ec = (Embed_Canvas *)malloc (sizeof(Embed_Canvas));

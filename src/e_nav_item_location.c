@@ -68,8 +68,8 @@ location_save(Evas_Object *obj, Evas_Object *src_obj)
 
    locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
    if (!locd) return;
-   name = e_dialog_textblock_text_get(obj, "Edit title");
-   note = e_dialog_textblock_text_get(obj, "Edit message");
+   name = e_dialog_textblock_text_get(obj, _("Edit title"));
+   note = e_dialog_textblock_text_get(obj, _("Edit message"));
    description = malloc(strlen(name) + 1 + strlen(note) + 1);
    if (!description) return ;
    sprintf(description, "%s%c%s", name, '\n', note);
@@ -125,10 +125,10 @@ dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *oa = e_alert_add(evas_object_evas_get(obj));
    e_alert_theme_source_set(oa, THEMEDIR);
    e_alert_source_object_set(oa, src_obj);
-   e_alert_title_set(oa, "DELETE", "Are you sure?");
+   e_alert_title_set(oa, _("DELETE"), _("Are you sure?"));
    e_alert_title_color_set(oa, 255, 0, 0, 255);
-   e_alert_button_add(oa, "Yes", alert_location_delete_confirmed, oa);
-   e_alert_button_add(oa, "No", alert_location_delete_cancelled, oa);
+   e_alert_button_add(oa, _("Yes"), alert_location_delete_confirmed, oa);
+   e_alert_button_add(oa, _("No"), alert_location_delete_cancelled, oa);
    e_dialog_deactivate(obj);
    evas_object_show(oa);
    e_alert_activate(oa);
@@ -214,15 +214,15 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         e_alert_source_object_set(alert_dialog, src_obj);     
         if (ok)
           {
-             e_alert_title_set(alert_dialog, "SUCCESS", "Tag sent");
+             e_alert_title_set(alert_dialog, _("SUCCESS"), _("Tag sent"));
              e_alert_title_color_set(alert_dialog, 0, 255, 0, 255);
-             e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
+             e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
           }
         else 
           {
-             e_alert_title_set(alert_dialog, "ERROR", "Send tag failed");
+             e_alert_title_set(alert_dialog, _("ERROR"), _("Send tag failed"));
              e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-             e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
+             e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
           }
         e_contact_editor_deactivate(obj);   
         evas_object_show(alert_dialog);
@@ -240,15 +240,15 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         e_alert_source_object_set(od, src_obj);     
         if(ok)
           {
-             e_alert_title_set(od, "SUCCESS", "Tag sent");
+             e_alert_title_set(od, _("SUCCESS"), _("Tag sent"));
              e_alert_title_color_set(od, 0, 255, 0, 255);
-             e_alert_button_add(od, "OK", alert_exit, od);
+             e_alert_button_add(od, _("OK"), alert_exit, od);
           }
         else
           {
-             e_alert_title_set(od, "ERROR", "Send tag failed");
+             e_alert_title_set(od, _("ERROR"), _("Send tag failed"));
              e_alert_title_color_set(od, 255, 0, 0, 255);
-             e_alert_button_add(od, "OK", alert_exit, od);
+             e_alert_button_add(od, _("OK"), alert_exit, od);
           }
         e_contact_editor_deactivate(obj);   
         evas_object_show(od);
@@ -260,9 +260,9 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    alert_dialog = e_alert_add(evas_object_evas_get(obj));
    e_alert_theme_source_set(alert_dialog, THEMEDIR);
    e_alert_source_object_set(alert_dialog, src_obj);     
-   e_alert_title_set(alert_dialog, "ERROR", "Contact not found");
+   e_alert_title_set(alert_dialog, _("ERROR"), _("Contact not found"));
    e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-   e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
+   e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
    e_contact_editor_deactivate(obj);   
    evas_object_show(alert_dialog);
    e_alert_activate(alert_dialog); 
@@ -279,7 +279,7 @@ dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    editor = e_contact_editor_add( evas_object_evas_get(obj) );
    e_contact_editor_theme_source_set(editor, THEMEDIR, location_send, data, NULL, NULL); // data is the location item evas object 
    e_contact_editor_source_object_set(editor, data);  //  src_object is location item evas object 
-   e_contact_editor_input_set(editor, "To:", "");
+   e_contact_editor_input_set(editor, _("To:"), "");
 
    contacts = e_ctrl_contacts_get(); 
 
@@ -302,14 +302,14 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEMEDIR);  
    e_dialog_source_object_set(od, src_obj);  
-   e_dialog_title_set(od, "Edit your location", "Press the text boxes to edit this location.");
+   e_dialog_title_set(od, _("Edit your location"), _("Press the text boxes to edit this location."));
    const char *title = e_nav_world_item_location_name_get(location_object);
-   e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
+   e_dialog_textblock_add(od, _("Edit title"), title, 40, 40, obj);
    const char *message = e_nav_world_item_location_note_get(location_object);
-   e_dialog_textblock_add(od, "Edit message", message, 100, 80, obj);
-   e_dialog_button_add(od, "Save", dialog_location_save, od);
-   e_dialog_button_add(od, "Cancel", dialog_exit, od);
-   e_dialog_button_add(od, "Delete", dialog_location_delete, od);
+   e_dialog_textblock_add(od, _("Edit message"), message, 100, 80, obj);
+   e_dialog_button_add(od, _("Save"), dialog_location_save, od);
+   e_dialog_button_add(od, _("Cancel"), dialog_exit, od);
+   e_dialog_button_add(od, _("Delete"), dialog_location_delete, od);
    
    e_flyingmenu_deactivate(obj);
    evas_object_show(od);
@@ -327,13 +327,13 @@ _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEMEDIR);  
    e_dialog_source_object_set(od, src_obj);  
-   e_dialog_title_set(od, "Send your location", "Send your favorite location to a friend by SMS.");
+   e_dialog_title_set(od, _("Send your location"), _("Send your favorite location to a friend by SMS."));
    const char *title = e_nav_world_item_location_name_get(location_object);
-   e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
+   e_dialog_textblock_add(od, _("Edit title"), title, 40, 40, obj);
    const char *message = e_nav_world_item_location_note_get(location_object);
-   e_dialog_textblock_add(od, "Edit message", message, 100, 80, obj);
-   e_dialog_button_add(od, "Send", dialog_location_send, data);
-   e_dialog_button_add(od, "Cancel", dialog_exit, od);
+   e_dialog_textblock_add(od, _("Edit message"), message, 100, 80, obj);
+   e_dialog_button_add(od, _("Send"), dialog_location_send, data);
+   e_dialog_button_add(od, _("Cancel"), dialog_exit, od);
    
    e_flyingmenu_deactivate(obj);
    evas_object_show(od);
@@ -349,9 +349,9 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);   // obj is location evas object
    /* FIXME: real menu items */
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, "edit",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, _("edit"),
 			       _e_nav_world_item_cb_menu_1, obj);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, "send",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, _("send"),
 			       _e_nav_world_item_cb_menu_2, obj);
    evas_object_show(om);
    e_flyingmenu_activate(om);
@@ -417,7 +417,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    locd->tag = (Diversity_Tag *) tag;
    o = e_nav_theme_object_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/location");
-   edje_object_part_text_set(o, "e.text.name", "No Title");
+   edje_object_part_text_set(o, "e.text.name", _("No Title"));
    edje_object_signal_callback_add(o, "MENU_ACTIVATE", "e.text.name", cb_menu_activate, (void *)theme_dir);
 
    evas_object_event_callback_add(edje_object_part_object_get(o, "e.image.location"),
@@ -450,7 +450,7 @@ e_nav_world_item_location_name_set(Evas_Object *item, const char *name)
    if (name) locd->name = evas_stringshare_add(name);
    else locd->name = NULL;
    if(!locd->name || !strcmp(locd->name, ""))
-     edje_object_part_text_set(item, "e.text.name", "No Title");
+     edje_object_part_text_set(item, "e.text.name", _("No Title"));
    else 
      edje_object_part_text_set(item, "e.text.name", locd->name);
 }
@@ -693,20 +693,20 @@ get_time_diff_string(time_t time_then)
      {
         if(now.tm_year - then.tm_year == 1)
           snprintf(time_diff_string, sizeof(time_diff_string),
-                   "Last year");
+                   _("Last year"));
         else
           snprintf(time_diff_string, sizeof(time_diff_string),
-                   "%d years ago", now.tm_year - then.tm_year);
+                   _("%d years ago"), now.tm_year - then.tm_year);
         return strdup(time_diff_string);
      }
    else if(now.tm_mon != then.tm_mon)
      {
         if(now.tm_mon - then.tm_mon == 1)
           snprintf(time_diff_string, sizeof(time_diff_string),
-                   "Last month");
+                   _("Last month"));
         else
           snprintf(time_diff_string, sizeof(time_diff_string),
-                   "%d months ago", now.tm_mon - then.tm_mon);
+                   _("%d months ago"), now.tm_mon - then.tm_mon);
         return strdup(time_diff_string);
      }
    else 
@@ -722,28 +722,28 @@ get_time_diff_string(time_t time_then)
                  if(days_diff == 0)
                    {
                       snprintf(time_diff_string, sizeof(time_diff_string),
-                               "Yesterday");
+                               _("Yesterday"));
                    }
                  else if((days_diff + 1) < 7)
                    {
                       snprintf(time_diff_string, sizeof(time_diff_string),
-                               "%d days ago", days_diff + 1 );
+                               _("%d days ago"), days_diff + 1 );
                    }
                  else 
                    {
                       if(( (days_diff + 1) / 7 ) == 1)
                         snprintf(time_diff_string, sizeof(time_diff_string),
-                                 "Last week");
+                                 _("Last week"));
                       else
                         snprintf(time_diff_string, sizeof(time_diff_string),
-                                 "%d weeks ago", (days_diff + 1) / 7);
+                                 _("%d weeks ago"), (days_diff + 1) / 7);
                    }
 
                  return strdup(time_diff_string);
               }
             else 
               {
-                 return strdup("Today");
+                 return strdup(_("Today"));
               } 
      }
 }

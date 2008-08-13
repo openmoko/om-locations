@@ -56,20 +56,20 @@ get_time_diff_string(time_t time_then)
      {
         if(now.tm_year - then.tm_year == 1)
           snprintf(time_diff_string, sizeof(time_diff_string),
-                   "Last year");
+                   _("Last year"));
         else
           snprintf(time_diff_string, sizeof(time_diff_string),
-                   "%d years ago", now.tm_year - then.tm_year);
+                   _("%d years ago"), now.tm_year - then.tm_year);
         return strdup(time_diff_string);
      }
    else if(now.tm_mon != then.tm_mon)
      {
         if(now.tm_mon - then.tm_mon == 1)
           snprintf(time_diff_string, sizeof(time_diff_string),
-                   "Last month");
+                   _("Last month"));
         else
           snprintf(time_diff_string, sizeof(time_diff_string),
-                   "%d months ago", now.tm_mon - then.tm_mon);
+                   _("%d months ago"), now.tm_mon - then.tm_mon);
         return strdup(time_diff_string);
      }
    else 
@@ -82,28 +82,28 @@ get_time_diff_string(time_t time_then)
                  if(days_diff == 0)
                    {
                       snprintf(time_diff_string, sizeof(time_diff_string),
-                               "Yesterday");
+                               _("Yesterday"));
                    }
                  else if((days_diff + 1) < 7)
                    {
                       snprintf(time_diff_string, sizeof(time_diff_string),
-                               "%d days ago", days_diff + 1 );
+                               _("%d days ago"), days_diff + 1 );
                    }
                  else 
                    {
                       if(( (days_diff + 1) / 7 ) == 1)
                         snprintf(time_diff_string, sizeof(time_diff_string),
-                                 "Last week");
+                                 _("Last week"));
                       else
                         snprintf(time_diff_string, sizeof(time_diff_string),
-                                 "%d weeks ago", (days_diff + 1) / 7);
+                                 _("%d weeks ago"), (days_diff + 1) / 7);
                    }
 
                  return strdup(time_diff_string);
               }
             else 
               {
-                 return strdup("Today");
+                 return strdup(_("Today"));
               } 
      }
 }
@@ -214,7 +214,7 @@ e_nav_taglist_tag_add(Tag_List *obj, Tag_List_Item *item)
    if(item->name != NULL && !strcmp(item->name, "") )
      {
         free(item->name);
-        item->name = strdup("No Title");
+        item->name = strdup(_("No Title"));
      }
 
    buf = (char *)malloc(strlen(item->name) + 128);
@@ -263,7 +263,7 @@ e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *descriptio
              if(item->name != NULL && !strcmp(item->name, "") )
 	       {
                   free(item->name);
-                  item->name = strdup("No Title");
+                  item->name = strdup(_("No Title"));
                }
              buf = (char *)malloc(strlen(item->name) + 128);
              time_diff_string = get_time_diff_string(item->timestamp);
@@ -356,7 +356,7 @@ _e_taglist_update(Tag_List *tl)
         unread = e_nav_world_item_location_unread_get(location_obj);
         if(unread)
           {
-             sprintf(buf, "<title>%s</title><br><p><glow>%s</glow>", item->name, "NEW!");
+             sprintf(buf, "<title>%s</title><br><p><glow>%s</glow>", item->name, _("NEW!"));
           }
         else 
           {

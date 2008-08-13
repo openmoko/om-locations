@@ -587,10 +587,10 @@ handle_gps(void *data)
         alert_dialog = e_alert_add(evas_object_evas_get(nav));
         e_alert_theme_source_set(alert_dialog, THEMEDIR);
         e_alert_source_object_set(alert_dialog, neo_me);     
-        e_alert_title_set(alert_dialog, "GPS is off", "Turn on GPS?");
+        e_alert_title_set(alert_dialog, _("GPS is off"), _("Turn on GPS?"));
         e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-        e_alert_button_add(alert_dialog, "Yes", alert_gps_turn_on, alert_dialog);
-        e_alert_button_add(alert_dialog, "No", alert_gps_cancel, alert_dialog);
+        e_alert_button_add(alert_dialog, _("Yes"), alert_gps_turn_on, alert_dialog);
+        e_alert_button_add(alert_dialog, _("No"), alert_gps_cancel, alert_dialog);
         evas_object_show(alert_dialog);
         e_alert_activate(alert_dialog); 
      }
@@ -695,15 +695,15 @@ _e_nav_cb_timer_pos_search_pause(void *data)
    fix_status = e_nav_world_item_neo_me_fixed_get(neo_me);
    if(fix_status)
      {
-        e_alert_title_set(alert_dialog, "GPS FIX", "Your approximate location");
+        e_alert_title_set(alert_dialog, _("GPS FIX"), _("Your approximate location"));
         e_alert_title_color_set(alert_dialog, 0, 255, 0, 255);
-        e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
+        e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
      }
    else
      {
-        e_alert_title_set(alert_dialog, "ERROR", "Unable to locate a fix");
+        e_alert_title_set(alert_dialog, _("ERROR"), _("Unable to locate a fix"));
         e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-        e_alert_button_add(alert_dialog, "OK", alert_exit, alert_dialog);
+        e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
      }
    evas_object_show(alert_dialog);
    e_alert_activate(alert_dialog); 
@@ -736,7 +736,7 @@ _e_mod_neo_me_init()
        e_nav_world_item_neo_me_fixed_set(nwi, 1);
      }
 
-   e_nav_world_item_neo_me_name_set(nwi, "Me");
+   e_nav_world_item_neo_me_name_set(nwi, _("Me"));
    show_welcome_message(nwi);
 
    neo_me = nwi;

@@ -56,8 +56,8 @@ location_new(void *data, Evas_Object *obj, Evas_Object *src_obj)
    double lat, lon;
    Evas_Object *nav, *location;
 
-   name = e_dialog_textblock_text_get(obj, "Edit title");
-   note = e_dialog_textblock_text_get(obj, "Edit message");
+   name = e_dialog_textblock_text_get(obj, _("Edit title"));
+   note = e_dialog_textblock_text_get(obj, _("Edit message"));
    description = malloc(strlen(name) + 1 + strlen(note) + 1);
    if (!description) return ;
    sprintf(description, "%s%c%s", name, '\n', note);
@@ -89,13 +89,13 @@ location_save_dialog_show(void *data, Evas_Object *obj, Evas_Object *src_obj)
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEMEDIR);  
    e_dialog_source_object_set(od, src_obj);  
-   e_dialog_title_set(od, "Save your location", "Save your current location");
+   e_dialog_title_set(od, _("Save your location"), _("Save your current location"));
    const char *title = "";
-   e_dialog_textblock_add(od, "Edit title", title, 40, 40, obj);
+   e_dialog_textblock_add(od, _("Edit title"), title, 40, 40, obj);
    const char *message = "";
-   e_dialog_textblock_add(od, "Edit message", message, 100, 80, obj);
-   e_dialog_button_add(od, "Save", location_new, od);
-   e_dialog_button_add(od, "Cancel", dialog_exit, od);
+   e_dialog_textblock_add(od, _("Edit message"), message, 100, 80, obj);
+   e_dialog_button_add(od, _("Save"), location_new, od);
+   e_dialog_button_add(od, _("Cancel"), dialog_exit, od);
    
    evas_object_show(od);
    e_dialog_activate(od);
@@ -110,7 +110,7 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    e_flyingmenu_theme_source_set(om, THEMEDIR);
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, "touch me!",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, _("touch me!"),
 			       location_save_dialog_show, obj);  
    evas_object_show(om);
    e_flyingmenu_activate(om);
@@ -136,7 +136,7 @@ show_welcome_message(Evas_Object *item)
    e_flyingmenu_theme_source_set(om, THEMEDIR);
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, item);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, "touch me!",
+   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, _("touch me!"),
 			       location_save_dialog_show, item);  
    evas_object_show(om);
    e_flyingmenu_activate(om);
@@ -166,7 +166,7 @@ e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon,
    neod->self = bard;
    o = e_nav_theme_object_new(evas_object_evas_get(nav), theme_dir,
 				       "modules/diversity_nav/neo/me");
-   edje_object_part_text_set(o, "e.text.name", "???");
+   edje_object_part_text_set(o, "e.text.name", _("???"));
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
 				  theme_dir);
