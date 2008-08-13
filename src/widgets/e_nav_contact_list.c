@@ -98,7 +98,7 @@ e_nav_contact_list_new(Evas_Object *obj, const char *custom_dir)
    etk_tree_col_sort_set(cl->col, _contact_list_sort_compare_cb, NULL);
 
    etk_tree_headers_visible_set(ETK_TREE(cl->tree), 0);
-   etk_tree_col_title_set(cl->col, "View Contacts");
+   etk_tree_col_title_set(cl->col, _("View Contacts"));
 
    etk_signal_connect_by_code(ETK_TREE_ROW_CLICKED_SIGNAL, ETK_OBJECT(cl->tree),
       ETK_CALLBACK(_etk_test_tree_row_clicked_cb), NULL);

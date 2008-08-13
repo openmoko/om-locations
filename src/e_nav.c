@@ -1072,10 +1072,10 @@ _e_nav_overlay_update(Evas_Object *obj)
    z = 64.0 * sd->zoom;
    /* if its more than 1000m lat - display the length in Km */
    if (z > 1000.0)
-     snprintf(buf, sizeof(buf), "%1.2fKm", z / 1000.0);
+     snprintf(buf, sizeof(buf), _("%1.2fKm"), z / 1000.0);
    else
      /* otherwise in meters */
-     snprintf(buf, sizeof(buf), "%1.2fm", z);
+     snprintf(buf, sizeof(buf), _("%1.2fm"), z);
    /* and set the text that is there to what we snprintf'd into the buffer
     * aboe */
    e_ctrl_zoom_text_value_set(buf);
