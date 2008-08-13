@@ -6,15 +6,273 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: om-locations 0.1\n"
-"Report-Msgid-Bugs-To: jeremy@openmoko.com\n"
-"POT-Creation-Date: 2008-08-11 12:55+0800\n"
-"PO-Revision-Date: 2008-08-10 03:22+0800\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-08-12 18:37+0800\n"
+"PO-Revision-Date: 2008-08-13 11:22+0800\n"
 "Last-Translator: Chia-I Wu <olv@openmoko.com>\n"
 "Language-Team: Traditional Chinese <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/e_mod_main.c:166
+#: src/widgets/e_nav_contact_editor.c:225 src/e_nav_item_location.c:335
+msgid "Send"
+msgstr "送出"
+
+#: src/widgets/e_nav_contact_editor.c:238 src/widgets/e_nav_contact_list.c:79
+#: src/widgets/e_nav_textedit.c:186 src/e_nav_item_location.c:311
+#: src/e_nav_item_location.c:336 src/e_nav_item_neo_me.c:98
+msgid "Cancel"
+msgstr "取消"
+
+#: src/widgets/e_nav_contact_editor.c:245
+msgid "Add Contact"
+msgstr "加入聯絡人"
+
+#: src/widgets/e_nav_contact_list.c:78
+msgid "Select a contact"
+msgstr "選取聯絡人"
+
+#: src/widgets/e_nav_contact_list.c:101
+msgid "View Contacts"
+msgstr "檢視通訊錄"
+
+#: src/widgets/e_nav_textedit.c:173 src/e_mod_nav.c:700 src/e_mod_nav.c:706
+#: src/e_nav_item_location.c:219 src/e_nav_item_location.c:225
+#: src/e_nav_item_location.c:245 src/e_nav_item_location.c:251
+#: src/e_nav_item_location.c:265
+msgid "OK"
+msgstr "OK"
+
+#: src/e_ctrl.c:435
+msgid "REFRESH"
+msgstr "更新"
+
+#: src/e_ctrl.c:436
+msgid "MAP"
+msgstr "地圖"
+
+#: src/e_ctrl.c:437
+msgid "LIST"
+msgstr "列表"
+
+#: src/e_ctrl.c:456
+msgid "Searching for your location"
+msgstr "正在尋找您的位置"
+
+#: src/e_mod_main.c:167
 msgid "Locations"
-msgstr "地點"
+msgstr "位置"
+
+#: src/e_mod_nav.c:590
+msgid "GPS is off"
+msgstr "GPS 沒開"
+
+#: src/e_mod_nav.c:590
+msgid "Turn on GPS?"
+msgstr "打開 GPS？"
+
+#: src/e_mod_nav.c:592 src/e_nav_item_location.c:130
+msgid "Yes"
+msgstr "是"
+
+#: src/e_mod_nav.c:593 src/e_nav_item_location.c:131
+msgid "No"
+msgstr "否"
+
+#: src/e_mod_nav.c:698
+msgid "GPS FIX"
+msgstr "GPS 定位"
+
+#: src/e_mod_nav.c:698
+msgid "Your approximate location"
+msgstr "您的大略位置"
+
+#: src/e_mod_nav.c:704 src/e_nav_item_location.c:223
+#: src/e_nav_item_location.c:249 src/e_nav_item_location.c:263
+msgid "ERROR"
+msgstr "錯誤"
+
+#: src/e_mod_nav.c:704
+msgid "Unable to locate a fix"
+msgstr "無法定位"
+
+#: src/e_mod_nav.c:739
+msgid "Me"
+msgstr "我"
+
+#: src/e_nav.c:1075
+#, c-format
+msgid "%1.2fKm"
+msgstr "%1.2f 公里"
+
+#: src/e_nav.c:1078
+#, c-format
+msgid "%1.2fm"
+msgstr "%1.2f 公尺"
+
+#: src/e_nav_item_ap.c:81 src/e_nav_item_neo_other.c:73
+msgid "Zoom"
+msgstr "拉近"
+
+#: src/e_nav_item_ap.c:83
+msgid "Join"
+msgstr "加入"
+
+#: src/e_nav_item_ap.c:85 src/e_nav_item_neo_other.c:79
+msgid "Information"
+msgstr "資訊"
+
+#: src/e_nav_item_ap.c:115 src/e_nav_item_neo_me.c:169
+#: src/e_nav_item_neo_other.c:111
+msgid "???"
+msgstr "？？？"
+
+#: src/e_nav_item_location.c:71 src/e_nav_item_location.c:307
+#: src/e_nav_item_location.c:332 src/e_nav_item_neo_me.c:59
+#: src/e_nav_item_neo_me.c:94
+msgid "Edit title"
+msgstr "編輯標題"
+
+#: src/e_nav_item_location.c:72 src/e_nav_item_location.c:309
+#: src/e_nav_item_location.c:334 src/e_nav_item_neo_me.c:60
+#: src/e_nav_item_neo_me.c:96
+msgid "Edit message"
+msgstr "編輯訊息"
+
+#: src/e_nav_item_location.c:128
+msgid "DELETE"
+msgstr "刪除"
+
+#: src/e_nav_item_location.c:128
+msgid "Are you sure?"
+msgstr "您確定嗎？"
+
+#: src/e_nav_item_location.c:217 src/e_nav_item_location.c:243
+msgid "SUCCESS"
+msgstr "成功"
+
+#: src/e_nav_item_location.c:217 src/e_nav_item_location.c:243
+msgid "Tag sent"
+msgstr "標籤已傳送"
+
+#: src/e_nav_item_location.c:223 src/e_nav_item_location.c:249
+msgid "Send tag failed"
+msgstr "無法傳送標籤"
+
+#: src/e_nav_item_location.c:263
+msgid "Contact not found"
+msgstr "找不到聯絡人"
+
+#: src/e_nav_item_location.c:282
+msgid "To:"
+msgstr "送給："
+
+#: src/e_nav_item_location.c:305
+msgid "Edit your location"
+msgstr "編輯您的位置"
+
+#: src/e_nav_item_location.c:305
+msgid "Press the text boxes to edit this location."
+msgstr "按一下文字方塊以編輯這個位置"
+
+#: src/e_nav_item_location.c:310 src/e_nav_item_neo_me.c:97
+msgid "Save"
+msgstr "儲存"
+
+#: src/e_nav_item_location.c:312
+msgid "Delete"
+msgstr "刪除"
+
+#: src/e_nav_item_location.c:330
+msgid "Send your location"
+msgstr "傳送您的位置"
+
+#: src/e_nav_item_location.c:330
+msgid "Send your favorite location to a friend by SMS."
+msgstr "透過簡訊將您最愛的位置傳給朋友"
+
+#: src/e_nav_item_location.c:352
+msgid "edit"
+msgstr "編輯"
+
+#: src/e_nav_item_location.c:354
+msgid "send"
+msgstr "送出"
+
+#: src/e_nav_item_location.c:420 src/e_nav_item_location.c:453
+#: src/e_nav_taglist.c:217 src/e_nav_taglist.c:266
+msgid "No Title"
+msgstr "沒有標題"
+
+#: src/e_nav_item_location.c:696 src/e_nav_taglist.c:59
+#, c-format
+msgid "Last year"
+msgstr "去年"
+
+#: src/e_nav_item_location.c:699 src/e_nav_taglist.c:62
+#, c-format
+msgid "%d years ago"
+msgstr "%d 年前"
+
+#: src/e_nav_item_location.c:706 src/e_nav_taglist.c:69
+#, c-format
+msgid "Last month"
+msgstr "上個月"
+
+#: src/e_nav_item_location.c:709 src/e_nav_taglist.c:72
+#, c-format
+msgid "%d months ago"
+msgstr "%d 個月前"
+
+#: src/e_nav_item_location.c:725 src/e_nav_taglist.c:85
+#, c-format
+msgid "Yesterday"
+msgstr "昨天"
+
+#: src/e_nav_item_location.c:730 src/e_nav_taglist.c:90
+#, c-format
+msgid "%d days ago"
+msgstr "%d 天前"
+
+#: src/e_nav_item_location.c:736 src/e_nav_taglist.c:96
+#, c-format
+msgid "Last week"
+msgstr "上個星期"
+
+#: src/e_nav_item_location.c:739 src/e_nav_taglist.c:99
+#, c-format
+msgid "%d weeks ago"
+msgstr "%d 星期前"
+
+#: src/e_nav_item_location.c:746 src/e_nav_taglist.c:106
+msgid "Today"
+msgstr "今天"
+
+#: src/e_nav_item_neo_me.c:92
+msgid "Save your location"
+msgstr "儲存您的位置"
+
+#: src/e_nav_item_neo_me.c:92
+msgid "Save your current location"
+msgstr "儲存您目前的位置"
+
+#: src/e_nav_item_neo_me.c:113 src/e_nav_item_neo_me.c:139
+msgid "touch me!"
+msgstr "碰我！"
+
+#: src/e_nav_item_neo_other.c:75
+msgid "Call"
+msgstr "呼叫"
+
+#: src/e_nav_item_neo_other.c:77
+msgid "Message"
+msgstr "訊息"
+
+#: src/e_nav_taglist.c:153
+msgid "View Tags"
+msgstr "觀看標籤"
+
+#: src/e_nav_taglist.c:359
+msgid "NEW!"
+msgstr "新的！"
