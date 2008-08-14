@@ -1094,10 +1094,10 @@ _e_nav_overlay_update(Evas_Object *obj)
    e_ctrl_longitude_set(buf);
    
    lat = sd->lat;
-   if (lat >= 0.0) ydir = "S";
+   if (lat >= 0.0) ydir = "N";
    else 
      {
-	ydir = "N";
+	ydir = "S";
 	lat = -lat;
      }
    latd = (int)lat;
@@ -1173,7 +1173,7 @@ _e_nav_wallpaper_update(Evas_Object *obj)
 
 	span = E_NAV_ZOOM_SPAN(sd->zoom);
 
-	e_nav_tileset_center_set(nt, sd->lon, -sd->lat);
+	e_nav_tileset_center_set(nt, sd->lon, sd->lat);
 	e_nav_tileset_span_set(nt, span);
 	e_nav_tileset_update(nt);
      }
@@ -1231,7 +1231,7 @@ static void _e_nav_to_offsets(Evas_Object *obj, double lon, double lat, double *
 	return;
      }
 
-   e_nav_tileset_to_offsets(sd->tilesets->data, lon, -lat, x, y);
+   e_nav_tileset_to_offsets(sd->tilesets->data, lon, lat, x, y);
 }
 
 static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lon, double *lat)
@@ -1248,11 +1248,10 @@ static void _e_nav_from_offsets(Evas_Object *obj, double x, double y, double *lo
      }
 
    e_nav_tileset_center_set(sd->tilesets->data,
-	 sd->moveng.start.lon, -sd->moveng.start.lat);
+	 sd->moveng.start.lon, sd->moveng.start.lat);
    /* no need to restore center */
 
    e_nav_tileset_from_offsets(sd->tilesets->data, x, y, lon, lat);
-   *lat = -*lat;
 }
 
 /* nav world internal calls - move to the end later */

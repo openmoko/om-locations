@@ -661,7 +661,6 @@ e_nav_world_item_location_new(Evas_Object *nav, Diversity_Object *obj)
    obj_path = diversity_dbus_path_get((Diversity_DBus *)obj);
 
    diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
-   lat = -lat;
    diversity_dbus_property_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &secs);
    timep = (time_t)secs;
    nwi = e_nav_world_item_location_add(nav, THEMEDIR,

@@ -165,7 +165,6 @@ viewport_object_added(void *data, DBusMessage *msg)
              char *description = NULL;
              int unread;
 
-	     lat = -lat;
              nwi = e_nav_world_item_location_add(nav, THEMEDIR,
 				     lon, lat, obj);
              diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
@@ -206,7 +205,6 @@ viewport_object_added(void *data, DBusMessage *msg)
 
              diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
 
-	     lat = -lat;
              nwi = e_nav_world_item_neo_other_add(nav, THEMEDIR, lon, lat, obj);
              e_nav_world_item_neo_other_name_set(nwi, name);
              e_nav_world_item_neo_other_phone_set(nwi, phone);
@@ -308,7 +306,6 @@ on_neo_other_geometry_changed(void *data, DBusMessage *msg)
       return;
    }
 
-   lat = -lat;
    evas_object_geometry_get(edje_object_part_object_get(nwi, "phone"), NULL, NULL, &w, &h);
    e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
    e_nav_world_item_update(nwi);
@@ -398,7 +395,6 @@ on_geometry_changed(void *data, DBusMessage *msg)
       return;
    }
 
-   lat = -lat;
    dn_config_float_set(cfg, "neo_me_lon", lon);
    dn_config_float_set(cfg, "neo_me_lat", lat);
 
@@ -435,7 +431,6 @@ on_property_changed(void *data, DBusMessage *msg)
      {
         diversity_object_geometry_get((Diversity_Object *) self,
                                       &lon, &lat, &dummy1, &dummy2);
-        lat = -lat;
         dn_config_float_set(cfg, "neo_me_lon", lon);
         dn_config_float_set(cfg, "neo_me_lat", lat);
         _e_mod_neo_me_init();
