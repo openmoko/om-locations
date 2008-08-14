@@ -114,7 +114,6 @@ e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double l
 				  theme_dir);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
-	 lat = -lat;
    e_nav_world_item_geometry_set(o, lon, lat, 0, 0);
    e_nav_world_item_scale_set(o, 0);
    e_nav_world_item_update(o);

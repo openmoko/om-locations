@@ -64,7 +64,6 @@ location_new(void *data, Evas_Object *obj, Evas_Object *src_obj)
 
    e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
    Diversity_World *world = (Diversity_World*)e_nav_world_get();
-   lat = -lat;
    tag = diversity_world_tag_add(world, lon, lat, description);
    if(!tag) 
      {
