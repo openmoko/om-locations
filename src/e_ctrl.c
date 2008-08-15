@@ -117,6 +117,7 @@ _e_nav_tag_sel(void *data, void *data2)
      }
 
    e_nav_taglist_deactivate(sd->listview);
+   sd->follow = 0;
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
    e_nav_world_item_location_title_show(object);
@@ -278,7 +279,6 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
        printf("sd is NULL\n");
        return;
    }
-   sd->follow = 0;
    evas_object_hide(sd->nav);
    evas_object_hide(sd->map_overlay);
    e_nav_taglist_activate(sd->listview);
@@ -316,7 +316,6 @@ _e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
 {
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(data);
-   sd->follow = 0;
    e_nav_taglist_deactivate(sd->listview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
@@ -388,7 +387,7 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-   sd->follow = 0;
+   sd->follow = 1;
    sd->map_overlay = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/main");
    evas_object_smart_member_add(sd->map_overlay, obj);

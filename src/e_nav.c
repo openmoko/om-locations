@@ -229,9 +229,6 @@ e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when)
         lon = lon - (lon_right - 180.0);
      }
 
-
-   e_ctrl_follow_set(FALSE);
-
    if (when == 0.0)
      {
 	sd->cur.target.lon_lat_time = 0.0;
@@ -930,6 +927,7 @@ _e_nav_movengine(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coord x, 
    double zoomout = 0.0;
 
    /* TODO provide parameters instead of calling another engine */
+   e_ctrl_follow_set(FALSE);
    _e_nav_movengine_plain(obj, action, x, y);
    return;
 
