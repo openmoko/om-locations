@@ -65,18 +65,17 @@ struct _E_Smart_Data
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
 
-   /* these are the CONFIGURED state - what the user or API has ASKED the
-    * nav to do. there are other "current" values that are used for
-    * animation etc. */
+   /* current state - display this currently */
    double           px, py;
    double           zoom; /* meters per pixel */
    
+   /* configured state - the state asked to do */
    struct {
       double           px, py;
       double           zoom;
    } conf;
    
-   /* current state - dispay this currently */
+   /* needed information for animation */
    struct {
       struct {
 	 double px, py;
@@ -86,8 +85,9 @@ struct _E_Smart_Data
       } start, target;
       unsigned char  mouse_down : 1;
       Ecore_Timer   *momentum_animator;
-   } cur;
+   } anim;
    
+   /* needed information for mouse gesture */
    struct {
       struct {
 	 Evas_Coord    x, y;
@@ -215,8 +215,8 @@ _e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
    
    if (when == 0.0)
      {
-	sd->cur.target.pos_time = 0.0;
-	sd->cur.start.pos_time = 0.0;
+	sd->anim.target.pos_time = 0.0;
+	sd->anim.start.pos_time = 0.0;
 
 	sd->px = px;
 	sd->py = py;
@@ -231,19 +231,19 @@ _e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
    t = ecore_time_get();
    _e_nav_momentum_calc(obj, t);
 
-   sd->cur.start.pos_time = t;
-   sd->cur.start.px = sd->px;
-   sd->cur.start.py = sd->py;
+   sd->anim.start.pos_time = t;
+   sd->anim.start.px = sd->px;
+   sd->anim.start.py = sd->py;
 
-   sd->cur.target.px = px;
-   sd->cur.target.py = py;
-   sd->cur.target.pos_time = sd->cur.start.pos_time + when;
+   sd->anim.target.px = px;
+   sd->anim.target.py = py;
+   sd->anim.target.pos_time = sd->anim.start.pos_time + when;
 
    sd->conf.px = px;
    sd->conf.py = py;
 
-   if (!sd->cur.momentum_animator)
-     sd->cur.momentum_animator = ecore_animator_add(_e_nav_cb_animator_momentum,
+   if (!sd->anim.momentum_animator)
+     sd->anim.momentum_animator = ecore_animator_add(_e_nav_cb_animator_momentum,
 						 obj);
 }
 
@@ -421,8 +421,8 @@ e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
 
    if (when == 0.0)
      {
-	sd->cur.target.zoom_time = 0.0;
-	sd->cur.start.zoom_time = 0.0;
+	sd->anim.target.zoom_time = 0.0;
+	sd->anim.start.zoom_time = 0.0;
 	sd->zoom = zoom;
 	sd->conf.zoom = zoom;
 	_e_nav_update(obj);
@@ -430,13 +430,13 @@ e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
      }
    t = ecore_time_get();
    _e_nav_momentum_calc(obj, t);
-   sd->cur.start.zoom_time = t;
-   sd->cur.start.zoom = sd->zoom;
-   sd->cur.target.zoom = zoom;
-   sd->cur.target.zoom_time = sd->cur.start.zoom_time + when;
+   sd->anim.start.zoom_time = t;
+   sd->anim.start.zoom = sd->zoom;
+   sd->anim.target.zoom = zoom;
+   sd->anim.target.zoom_time = sd->anim.start.zoom_time + when;
    sd->conf.zoom = zoom;
-   if (!sd->cur.momentum_animator)
-     sd->cur.momentum_animator = ecore_animator_add(_e_nav_cb_animator_momentum,
+   if (!sd->anim.momentum_animator)
+     sd->anim.momentum_animator = ecore_animator_add(_e_nav_cb_animator_momentum,
 						 obj);
 }
 
@@ -690,7 +690,7 @@ _e_nav_smart_del(Evas_Object *obj)
    evas_object_del(sd->clip);
    evas_object_del(sd->stacking);
    evas_object_del(sd->event);
-   if (sd->cur.momentum_animator) ecore_animator_del(sd->cur.momentum_animator);
+   if (sd->anim.momentum_animator) ecore_animator_del(sd->anim.momentum_animator);
    if (sd->moveng.pause_timer) ecore_timer_del(sd->moveng.pause_timer);
    while (sd->world_items)
      {
@@ -819,7 +819,7 @@ _e_nav_cb_event_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event
    sd = evas_object_smart_data_get(data);
    if (ev->button == 1)
      {
-	sd->cur.mouse_down = 1;
+	sd->anim.mouse_down = 1;
 	_e_nav_movengine(data, E_NAV_MOVEENGINE_START, ev->canvas.x, ev->canvas.y);
      }
 }
@@ -831,10 +831,10 @@ _e_nav_cb_event_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    E_Smart_Data *sd;
    
    sd = evas_object_smart_data_get(data);
-   if (ev->button == 1 && sd->cur.mouse_down)
+   if (ev->button == 1 && sd->anim.mouse_down)
      {
 	_e_nav_movengine(data, E_NAV_MOVEENGINE_STOP, ev->canvas.x, ev->canvas.y);
-	sd->cur.mouse_down = 0;
+	sd->anim.mouse_down = 0;
      }
 }
 
@@ -845,7 +845,7 @@ _e_nav_cb_event_mouse_move(void *data, Evas *evas, Evas_Object *obj, void *event
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(data);
-   if (sd->cur.mouse_down)
+   if (sd->anim.mouse_down)
      _e_nav_movengine(data, E_NAV_MOVEENGINE_GO, ev->cur.canvas.x, ev->cur.canvas.y);
 }
 
@@ -1105,10 +1105,10 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
    int done = 0;
    
    sd = evas_object_smart_data_get(obj);
-   if (sd->cur.target.pos_time > sd->cur.start.pos_time)
+   if (sd->anim.target.pos_time > sd->anim.start.pos_time)
      {
-	v = (t - sd->cur.start.pos_time) / 
-	  (sd->cur.target.pos_time - sd->cur.start.pos_time);
+	v = (t - sd->anim.start.pos_time) / 
+	  (sd->anim.target.pos_time - sd->anim.start.pos_time);
 	if (v >= 1.0)
 	  {
 	     v = 1.0;
@@ -1117,19 +1117,19 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
 	v = 1.0 - v;
 	v = 1.0 - (v * v * v * v);
 	sd->px =
-	  ((sd->cur.target.px - sd->cur.start.px) * v) +
-	  sd->cur.start.px;
+	  ((sd->anim.target.px - sd->anim.start.px) * v) +
+	  sd->anim.start.px;
 	sd->py =
-	  ((sd->cur.target.py - sd->cur.start.py) * v) +
-	  sd->cur.start.py;
+	  ((sd->anim.target.py - sd->anim.start.py) * v) +
+	  sd->anim.start.py;
      }
    else
      done++;
    
-   if (sd->cur.target.zoom_time > sd->cur.start.zoom_time)
+   if (sd->anim.target.zoom_time > sd->anim.start.zoom_time)
      {
-	v = (t - sd->cur.start.zoom_time) / 
-	  (sd->cur.target.zoom_time - sd->cur.start.zoom_time);
+	v = (t - sd->anim.start.zoom_time) / 
+	  (sd->anim.target.zoom_time - sd->anim.start.zoom_time);
 	if (v >= 1.0)
 	  {
 	     v = 1.0;
@@ -1138,8 +1138,8 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
 	v = 1.0 - v;
 	v = 1.0 - (v * v * v * v);
 	sd->zoom = 
-	  ((sd->cur.target.zoom - sd->cur.start.zoom) * v) +
-	  sd->cur.start.zoom;
+	  ((sd->anim.target.zoom - sd->anim.start.zoom) * v) +
+	  sd->anim.start.zoom;
      }
    else
      done++;
@@ -1179,11 +1179,11 @@ _e_nav_cb_animator_momentum(void *data)
    _e_nav_update(obj);
    if (done >= 2)
      {
-	sd->cur.target.pos_time = 0.0;
-	sd->cur.start.pos_time = 0.0;
-	sd->cur.target.zoom_time = 0.0;
-	sd->cur.start.zoom_time = 0.0;
-	sd->cur.momentum_animator = NULL;
+	sd->anim.target.pos_time = 0.0;
+	sd->anim.start.pos_time = 0.0;
+	sd->anim.target.zoom_time = 0.0;
+	sd->anim.start.zoom_time = 0.0;
+	sd->anim.momentum_animator = NULL;
 	return 0;
      }
    return 1;
