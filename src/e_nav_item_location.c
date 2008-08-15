@@ -155,6 +155,21 @@ is_phone_number(const char *input)
    return TRUE;     
 }
 
+static const char *
+trim_leading_space(const char *str)
+{
+   const char *buf;
+   if(!str) return str;
+   buf = str;
+   while(buf && isspace(*buf) )
+     buf++;
+
+   if(str != buf)
+     return buf;
+   else
+     return str;
+}
+
 static Diversity_Equipment *
 get_phone_equip()
 {
@@ -203,7 +218,10 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
 
    neod = e_ctrl_contact_get_by_name(input);
    if(!neod)
-     neod = e_ctrl_contact_get_by_number(input);
+     {
+        input = trim_leading_space(input);
+        neod = e_ctrl_contact_get_by_number(input);
+     }
 
    /* send by contact */
    if(neod) 
