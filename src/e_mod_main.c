@@ -161,7 +161,9 @@ main(int argc, char **argv)
           }
      }
 
-   ee = ecore_evas_software_x11_new(NULL, 0, 0, 0, 480, 640);
+   ee = ecore_evas_software_x11_16_new(NULL, 0, 0, 0, 480, 640);
+   if (!ee)
+     ee = ecore_evas_software_x11_new(NULL, 0, 0, 0, 480, 640);
    if (!ee) { printf("failed to get ecore_evas\n"); return -1; }
 
    ecore_evas_title_set(ee, _("Locations"));
