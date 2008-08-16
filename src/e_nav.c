@@ -201,17 +201,19 @@ _e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
 
    span = E_NAV_ZOOM_SPAN(sd->conf.zoom);
 
+   /* keep the world in the screen */
+   /* XXX zoom? */
    off = (double) sd->w / 2.0 / span;
-   if (px + off > 1.0)
-     px = 1.0 - off;
-   else if (px - off < 0.0)
+   if (px - off < 0.0 || off > 0.5)
      px = off;
+   else if (px + off > 1.0)
+     px = 1.0 - off;
 
    off = (double) sd->h / 2.0 / span;
-   if (py + off > 1.0)
-     py = 1.0 - off;
-   else if (py - off < 0.0)
+   if (py - off < 0.0 || off > 0.5)
      py = off;
+   else if (py + off > 1.0)
+     py = 1.0 - off;
    
    if (when == 0.0)
      {
