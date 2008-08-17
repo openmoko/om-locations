@@ -3,7 +3,9 @@ AM_CPPFLAGS =			\
 
 bin_PROGRAMS = om-locations-map-pack
 om_locations_map_pack_SOURCES =	\
-	diversity-map-pack.c
+	diversity-map-pack.c	\
+	tileiter.c		\
+	tileiter.h
 
 om_locations_map_pack_LDADD =	\
 	$(EFL_LIBS)
