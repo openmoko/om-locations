@@ -1,3 +1,22 @@
+/* om-locations-map-pack.c -
+ *
+ * Copyright 2008 OpenMoko, Inc.
+ * Authored by Chia-I Wu <olv@openmoko.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
@@ -13,9 +32,13 @@
 #include <Evas.h>
 #include <Eet.h>
 
+#include <Ecore_File.h>
+#include "tileiter.h"
+
 Evas *evas;
 Eet_File *ef;
 char *basedir;
+int verbose;
 
 #define MAP_FORMAT 1
 
@@ -50,6 +73,8 @@ void pack(const char *path)
 	char key[PATH_MAX];
 
 	get_key(path, key);
+	if (verbose)
+		printf("packing %s\n", key);
 
 	im = evas_object_image_add(evas);
 	if (!im)
@@ -160,66 +185,92 @@ map_describe(void)
    return edd;
 }
 
-int describe(const char *desc)
+int describe(const char *desc, E_Nav_Map_Desc *md)
 {
 	Eet_Data_Descriptor *edd;
-	E_Nav_Map_Desc md;
 	const char *p;
 	int ret;
 
 	p = desc;
 
-	md.format = MAP_FORMAT;
+	md->format = MAP_FORMAT;
 
-	md.version = strtol(p, (char **) &p, 10);
+	md->version = strtol(p, (char **) &p, 10);
 	if (!p || *p != ',')
 		return 0;
 	p++;
 
-	md.source = (char *) p;
+	md->source = (char *) p;
 	p = strchr(p, ',');
 	if (!p || *p != ',')
 		return 0;
 	{
 		char *src;
 
-		src = malloc(p - md.source + 1);
-		memcpy(src, md.source, p - md.source);
-		src[p - md.source] = '\0';
+		src = malloc(p - md->source + 1);
+		memcpy(src, md->source, p - md->source);
+		src[p - md->source] = '\0';
 
-		md.source = src;
+		md->source = src;
 	}
 
 	p++;
 
-	md.min_level = strtol(p, (char **) &p, 10);
+	md->min_level = strtol(p, (char **) &p, 10);
 	if (!p || *p != ',')
 		return 0;
 	p++;
 
-	md.max_level = strtol(p, (char **) &p, 10);
+	md->max_level = strtol(p, (char **) &p, 10);
 	if (!p || *p != ',')
 		return 0;
 	p++;
 
-	md.lon = strtod(p, (char **) &p);
+	md->lon = strtod(p, (char **) &p);
 	if (!p || *p != ',')
 		return 0;
 	p++;
 
-	md.lat = strtod(p, (char **) &p);
+	md->lat = strtod(p, (char **) &p);
 	if (!p || *p != ',')
 		return 0;
 	p++;
 
-	md.width = strtod(p, (char **) &p);
+	md->width = strtod(p, (char **) &p);
 	if (!p || *p != ',')
 		return 0;
 	p++;
 
-	md.height = strtod(p, NULL);
+	md->height = strtod(p, NULL);
 
-	if (md.width <= 0.0 || md.height <= 0.0)
+	if (verbose) {
+		printf("description:\n"
+		       "\tformat %d\n"
+		       "\tversion %d\n"
+		       "\tsource %s\n"
+		       "\tmin_level %d\n"
+		       "\tmax_level %d\n"
+		       "\tlon %f\n"
+		       "\tlat %f\n"
+		       "\twidth %f\n"
+		       "\theight %f\n",
+		       md->format,
+		       md->version,
+		       md->source,
+		       md->min_level,
+		       md->max_level,
+		       md->lon,
+		       md->lat,
+		       md->width,
+		       md->height);
+	}
+
+	if (md->min_level < 0 || md->max_level < md->min_level)
+		return 0;
+	if (md->width <= 0.0 || md->height <= 0.0)
+		return 0;
+	if (md->lon < -180.0 || md->lon + md->width > 360.0 ||
+	    md->lat < -90.0  || md->lat + md->height > 90.0)
 		return 0;
 
 	edd = map_describe();
@@ -228,16 +279,112 @@ int describe(const char *desc)
 		void *data;
 		int s;
 
-		data = eet_data_descriptor_encode(edd, &md, &s);
+		data = eet_data_descriptor_encode(edd, md, &s);
 		ret = eet_write(ef, "description", data, s, 0);
 		free(data);
 	} else {
-		ret = eet_data_write(ef, edd, "description", &md, 0);
+		ret = eet_data_write(ef, edd, "description", md, 0);
 	}
 
 	eet_data_descriptor_free(edd);
 
 	return ret;
+}
+
+static int fetch_sched(TileIter *iter);
+
+static void fetch_completion(void *data, const char *file, int status)
+{
+	TileIter *iter = data;
+
+	if (status) {
+		printf("failed to fetch %s\n", file);
+		ecore_main_loop_quit();
+
+		return;
+	}
+
+	if (verbose)
+		printf("saved to %s\n", file);
+
+	if (tile_iter_next(iter)) {
+		if (!fetch_sched(iter)) {
+			printf("failed to schedule fetch\n");
+			ecore_main_loop_quit();
+		}
+	} else {
+		ecore_main_loop_quit();
+	}
+}
+
+static int fetch_sched(TileIter *iter)
+{
+	const char *url;
+	char dst[PATH_MAX];
+	int skip = 0;
+
+	snprintf(dst, sizeof(dst), "%s/%s/%d/%d",
+			(const char *) iter->data, "osm",
+			iter->z, iter->x);
+
+	if (!ecore_file_is_dir(dst) && !ecore_file_mkpath(dst))
+		return 0;
+
+	snprintf(dst, sizeof(dst), "%s/%s/%d/%d/%d.png",
+			(const char *) iter->data, "osm",
+			iter->z, iter->x, iter->y);
+
+	if (ecore_file_exists(dst)) {
+		if (ecore_file_size(dst) > 0)
+			skip = 1;
+		else
+			ecore_file_unlink(dst);
+	}
+
+	url = tile_iter_url(iter);
+	printf("%s [%d/%d]: %s\n",
+			(skip) ? "skip" : "fetch",
+			tile_iter_cur(iter) + 1,
+			tile_iter_count(iter), url);
+	if (skip) {
+		fetch_completion(iter, dst, 0);
+
+		return 1;
+	}
+
+	return ecore_file_download(url, dst,
+			fetch_completion, NULL, iter);
+}
+
+static int fetch_tiles(E_Nav_Map_Desc *md, const char *dst)
+{
+	TileIter *iter;
+	int success = 1;
+
+	ecore_file_init();
+	iter = tile_iter_new(TILE_ITER_FORMAT_OSM,
+			md->lon, md->lat, md->width, md->height,
+			md->min_level, md->max_level);
+	iter->data = dst;
+
+	if (tile_iter_next(iter)) {
+		if (fetch_sched(iter))
+			ecore_main_loop_begin();
+		else
+			printf("failed to schedule fetch\n");
+	}
+
+	if (tile_iter_cur(iter) + 1 != tile_iter_count(iter)) {
+		printf("fetch failed: %d/%d\n",
+				tile_iter_cur(iter) + 1,
+				tile_iter_count(iter));
+		success = 0;
+	}
+
+	tile_iter_destroy(iter);
+	ecore_file_shutdown();
+
+	return success;
 }
 
 void _eet_merge(Eet_File *ef, Eet_File *base)
@@ -266,22 +413,30 @@ void _eet_merge(Eet_File *ef, Eet_File *base)
 
 void usage(const char *prog)
 {
-	printf("%s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] <cache-dir> <output>\n", prog);
+	printf("%s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] [-f] [-v] <cache-dir> <output>\n", prog);
 }
 
 int main(int argc, char **argv)
 {
 	Ecore_Evas *ee;
+	E_Nav_Map_Desc md;
 	char *map, *basemap = NULL, *desc = NULL;
+	int fetch = 0;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "b:d:")) != -1) {
+	while ((opt = getopt(argc, argv, "b:d:fv")) != -1) {
 		switch (opt) {
 		case 'b':
 			basemap = optarg;
 			break;
 		case 'd':
 			desc = optarg;
+			break;
+		case 'f':
+			fetch = 1;
+			break;
+		case 'v':
+			verbose = 1;
 			break;
 		default:
 			usage(argv[0]);
@@ -320,10 +475,23 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (desc && !describe(desc)) {
-		printf("failed to describe eet\n");
+	if (desc) {
+		if (!describe(desc, &md)) {
+			printf("failed to describe eet\n");
 
-		return 1;
+			return 1;
+		}
+		if (fetch && !fetch_tiles(&md, basedir)) {
+			printf("failed to fetch tiles\n");
+
+			return 1;
+		}
+	} else {
+		if (fetch) {
+			printf("ignore fetch flag: no description\n");
+
+			fetch = 0;
+		}
 	}
 
 	if (basemap) {
