@@ -2,8 +2,9 @@ AM_CPPFLAGS =			\
 	$(EFL_CFLAGS)
 
 bin_PROGRAMS = om-locations-map-pack
+
 om_locations_map_pack_SOURCES =	\
-	diversity-map-pack.c	\
+	om-locations-map-pack.c	\
 	tileiter.c		\
 	tileiter.h
 
