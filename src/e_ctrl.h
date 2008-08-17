@@ -31,7 +31,7 @@ void                e_ctrl_nav_set(Evas_Object* obj);
 void                e_ctrl_neo_me_set(Evas_Object *obj);
 void               *e_ctrl_neo_me_get(void);
 Diversity_Equipment *e_ctrl_self_equipment_get(const char *eqp_name);
-void                e_ctrl_zoom_drag_value_set(double y); 
+void                e_ctrl_zoom_drag_value_set(double z); 
 void                e_ctrl_zoom_text_value_set(const char* buf);
 void                e_ctrl_longitude_set(const char* buf);
 void                e_ctrl_latitude_set(const char* buf);

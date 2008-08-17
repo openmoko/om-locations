@@ -408,18 +408,14 @@ void
 e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
 {
    E_Smart_Data *sd;
-   double t, y;
+   double t;
 
    SMART_CHECK(obj, ;);
 
    if (zoom > E_NAV_ZOOM_MAX) zoom = E_NAV_ZOOM_MAX;
    else if (zoom < E_NAV_ZOOM_MIN) zoom = E_NAV_ZOOM_MIN;
 
-   y = (zoom - E_NAV_ZOOM_MIN) / (E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN);
-
-   y = log((y * (1 << E_NAV_ZOOM_SENSITIVITY)) + 1)
-		/ M_LOG2 / E_NAV_ZOOM_SENSITIVITY;
-   e_ctrl_zoom_drag_value_set(y);
+   e_ctrl_zoom_drag_value_set(zoom);
 
    if (when == 0.0)
      {

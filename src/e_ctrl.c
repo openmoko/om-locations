@@ -52,6 +52,10 @@ struct _E_Smart_Data
    int follow;
    Evas_Coord x, y, w, h;
    const char      *dir;
+
+#define NUM_DRAG_VALUES 18
+   double drag_values[NUM_DRAG_VALUES];
+   double drag_tolerance;
 };
 
 static void _e_ctrl_smart_init(void);
@@ -492,6 +496,28 @@ e_ctrl_self_equipment_get(const char *eqp_name)
    return eqp;
 }
 
+static double
+to_zoom(double v)
+{
+   v = (pow(2.0, v * E_NAV_ZOOM_SENSITIVITY) - 1.0)
+      / (1 << E_NAV_ZOOM_SENSITIVITY);
+
+   return E_NAV_ZOOM_MIN + ((E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN) * v);
+}
+
+static double
+from_zoom(double z)
+{
+   z = (z - E_NAV_ZOOM_MIN) / (E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN);
+   if (z < 0.0)
+     z = 0.0;
+   else if (z > 1.0)
+     z = 1.0;
+
+   return log((z * (1 << E_NAV_ZOOM_SENSITIVITY)) + 1)
+		/ M_LOG2 / E_NAV_ZOOM_SENSITIVITY;
+}
+
 /* internal calls */
 static void
 _e_ctrl_smart_init(void)
@@ -523,6 +549,7 @@ static void
 _e_ctrl_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
+   int i;
    
    sd = calloc(1, sizeof(E_Smart_Data));
    if (!sd) return;
@@ -541,6 +568,18 @@ _e_ctrl_smart_add(Evas_Object *obj)
    bardRoster = ecore_hash_new(ecore_str_hash, ecore_str_compare);
    if(!bardRoster) return;
    ecore_hash_free_key_cb_set(bardRoster, free);
+
+   for (i = 0; i < NUM_DRAG_VALUES; i++)
+     {
+	int span = 256 * (1 << i); /* XXX 256? */
+	double zoom = M_EARTH_RADIUS * M_PI * 2 / span;
+	double v;
+
+	v = from_zoom(zoom);
+
+	sd->drag_values[i] = v;
+     }
+   sd->drag_tolerance = 0.012;
 }
 
 static void
@@ -644,12 +683,14 @@ _e_ctrl_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 }
 
-void e_ctrl_zoom_drag_value_set(double y) 
+void e_ctrl_zoom_drag_value_set(double z) 
 {
    if(!ctrl) return;
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(ctrl);
-   edje_object_part_drag_value_set(sd->map_overlay, "e.dragable.zoom", 0.0, y);
+
+   z = from_zoom(z);
+   edje_object_part_drag_value_set(sd->map_overlay, "e.dragable.zoom", 0.0, z);
 }
 
 void e_ctrl_zoom_text_value_set(const char* buf)
@@ -685,13 +726,30 @@ _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const
    sd = data;
      {
 	double x = 0, y = 0, z;
+	int i;
 	
 	edje_object_part_drag_value_get(sd->map_overlay, "e.dragable.zoom", &x, &y);
 
-	y = (pow(2.0, y * E_NAV_ZOOM_SENSITIVITY) - 1.0)
-		/ (1 << E_NAV_ZOOM_SENSITIVITY);
+	/* drag values are revert sorted */
+	for (i = NUM_DRAG_VALUES - 1; i >= 0; i--)
+	  {
+	     if (sd->drag_values[i] < y)
+	       continue;
 
-	z = E_NAV_ZOOM_MIN + ((E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN) * y);
+	     if (fabs(y - sd->drag_values[i]) < sd->drag_tolerance)
+	       {
+		  y = sd->drag_values[i];
+	       }
+	     else if (i < NUM_DRAG_VALUES - 1)
+	       {
+		  if (fabs(y - sd->drag_values[i + 1]) < sd->drag_tolerance)
+		    y = sd->drag_values[i + 1];
+	       }
+
+	     break;
+	  }
+
+	z = to_zoom(y);
 	e_nav_zoom_set(sd->nav, z, 0.0);
      }
 }
