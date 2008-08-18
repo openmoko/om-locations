@@ -25,7 +25,7 @@
 
 #define RADIANS(d) ((d) * M_PI / 180.0)
 #define DEGREES(d) ((d) * 180.0 / M_PI)
-#define M_LOG2		(0.693147181)
+#define M_LOG2		(0.6931471805)
 
 typedef enum _E_Nav_Tileset_Format {
    E_NAV_TILESET_FORMAT_OSM,

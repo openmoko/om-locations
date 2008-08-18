@@ -223,7 +223,7 @@ e_nav_tileset_span_set(Evas_Object *obj, int span)
    sd->py *= (double) span / sd->span;
    sd->span = span;
 
-   level = (int) (log((double) span / sd->size) / M_LOG2 + 0.0001);
+   level = (int) (log((double) span / sd->size) / M_LOG2);
 
    if (level < sd->min_level)
      level = sd->min_level;
