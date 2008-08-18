@@ -193,8 +193,8 @@ static int _eet_describe(Eet_File *ef, E_Nav_Map_Desc *md)
 
 	edd = map_describe();
 
-	//ret = eet_data_write(ef, edd, "description", &md, 0);
-	data = eet_data_descriptor_encode(edd, &md, &s);
+	//ret = eet_data_write(ef, edd, "description", md, 0);
+	data = eet_data_descriptor_encode(edd, md, &s);
 	ret = eet_write(ef, "description", data, s, 0);
 	free(data);
 
