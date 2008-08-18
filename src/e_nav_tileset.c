@@ -176,7 +176,7 @@ e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir
    sd->max_lon = 180.0;
    mercator_project_inv(0.0, 0.0, NULL, &sd->max_lat);
 
-   e_nav_world_tileset_add(nav, obj);
+   e_nav_world_tileset_set(nav, obj);
 
    e_nav_tileset_level_set(obj, sd->min_level);
    e_nav_tileset_center_set(obj, 0.0, 0.0);

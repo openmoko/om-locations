@@ -70,6 +70,7 @@ typedef enum _E_Nav_World_Item_Type
 Evas_Object    *e_nav_add(Evas *e, void *world);
 void            e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir);
 
+void            e_nav_world_tileset_set(Evas_Object *obj, Evas_Object *nt);
 void           *e_nav_world_get();
     
 /* spatial & zoom controls */
@@ -98,8 +99,4 @@ Evas_Bool              e_nav_world_item_scale_get(Evas_Object *item);
 void                   e_nav_world_item_update(Evas_Object *item);
 Evas_Object           *e_nav_world_item_nav_get(Evas_Object *item);
 
-int                    e_nav_edje_object_set(Evas_Object *o, const char *category, const char *group);
-
-/* world tilesets */
-void                   e_nav_world_tileset_add(Evas_Object *obj, Evas_Object *nt);
 #endif

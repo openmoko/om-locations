@@ -56,6 +56,8 @@ struct _E_Smart_Data
    Evas_Object     *clip;
    Evas_Object     *stacking;
    Evas_Object     *event;
+
+   Evas_Object     *tileset;
    
    /* the list of items in the world as we have been told by the backend */
    Evas_List       *world_items;
@@ -98,8 +100,6 @@ struct _E_Smart_Data
       } history[20];
       Ecore_Timer   *pause_timer;
    } moveng;
-
-   Evas_List *tilesets;
 };
 
 static void _e_nav_smart_init(void);
@@ -186,6 +186,27 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    _e_nav_overlay_update(obj);
 }
 
+void
+e_nav_world_tileset_set(Evas_Object *obj, Evas_Object *nt)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (sd->tileset)
+     evas_object_del(sd->tileset);
+
+   sd->tileset = nt;
+   if (nt)
+     {
+	evas_object_smart_member_add(nt, sd->obj);
+	evas_object_clip_set(nt, sd->clip);
+	evas_object_stack_below(nt, sd->clip);
+     }
+
+   _e_nav_update(obj);
+}
+
 static void
 _e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
 {
@@ -257,8 +278,11 @@ e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when)
    if (lat < -85.0) lat = -85.0;
    else if (lat > 85.0) lat = 85.0;
 
-   e_nav_tileset_to_pos(sd->tilesets->data, lon, lat, &px, &py, FALSE);
-   _e_nav_pos_set(obj, px, py, when);
+   if (sd->tileset)
+     {
+	e_nav_tileset_to_pos(sd->tileset, lon, lat, &px, &py, FALSE);
+	_e_nav_pos_set(obj, px, py, when);
+     }
 }
 
 double
@@ -269,7 +293,10 @@ e_nav_coord_lon_get(Evas_Object *obj)
    
    SMART_CHECK(obj, 0.0;);
 
-   e_nav_tileset_center_get(sd->tilesets->data, &lon, NULL);
+   if (sd->tileset)
+     e_nav_tileset_center_get(sd->tileset, &lon, NULL);
+   else
+     lon = 0.0;
 
    return lon;
 }
@@ -280,10 +307,12 @@ e_nav_coord_lat_get(Evas_Object *obj)
    E_Smart_Data *sd;
    double lat;
 
-   
    SMART_CHECK(obj, 0.0;);
 
-   e_nav_tileset_center_get(sd->tilesets->data, NULL, &lat);
+   if (sd->tileset)
+     e_nav_tileset_center_get(sd->tileset, NULL, &lat);
+   else
+     lat = 0.0;
 
    return lat;
 }
@@ -340,7 +369,6 @@ static void
 _e_nav_move(Evas_Object *obj, char dir)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
    int screen_x, screen_y, screen_w, screen_h;
    double xoff, yoff;
 
@@ -371,12 +399,7 @@ _e_nav_move(Evas_Object *obj, char dir)
    xoff /= sd->span;
    yoff /= sd->span;
 
-   for (l = sd->tilesets; l; l = l->next)
-     {
-	Evas_Object *nt = l->data;
-
-	_e_nav_pos_set(nt, sd->px + xoff, sd->py + yoff, 0.0);
-     }
+   _e_nav_pos_set(obj, sd->px + xoff, sd->py + yoff, 0.0);
 }
 
 void
@@ -407,38 +430,32 @@ void
 e_nav_level_up(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
    int span, level;
 
    sd = evas_object_smart_data_get(obj);
-   for (l = sd->tilesets; l; l = l->next)
-     {
-	Evas_Object *nt = l->data;
+   if (!sd->tileset)
+     return;
 
-        level = e_nav_tileset_level_get(nt); 
-        e_nav_tileset_level_set(nt, level+1); 
-        span = e_nav_tileset_span_get(nt);
-        e_nav_span_set(obj, span, 0.0);
-     }
+   level = e_nav_tileset_level_get(sd->tileset); 
+   e_nav_tileset_level_set(sd->tileset, level + 1); 
+   span = e_nav_tileset_span_get(sd->tileset);
+   e_nav_span_set(obj, span, 0.0);
 }
 
 void
 e_nav_level_down(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
    int span, level;
 
    sd = evas_object_smart_data_get(obj);
-   for (l = sd->tilesets; l; l = l->next)
-     {
-	Evas_Object *nt = l->data;
+   if (!sd->tileset)
+     return;
 
-        level = e_nav_tileset_level_get(nt); 
-        e_nav_tileset_level_set(nt, level-1); 
-        span = e_nav_tileset_span_get(nt);
-        e_nav_span_set(obj, span, 0.0);
-     }
+   level = e_nav_tileset_level_get(sd->tileset); 
+   e_nav_tileset_level_set(sd->tileset, level - 1); 
+   span = e_nav_tileset_span_get(sd->tileset);
+   e_nav_span_set(obj, span, 0.0);
 }
 
 /* world items */
@@ -574,31 +591,6 @@ e_nav_world_item_nav_get(Evas_Object *item)
    return nwi->obj;
 }
 
-int
-e_nav_edje_object_set(Evas_Object *o, const char *category, const char *group)
-{
-   char buf[PATH_MAX];
-   int ok;
-   
-   snprintf(buf, sizeof(buf), "%s/%s.edj", THEMEDIR, category);
-   ok = edje_object_file_set(o, buf, group);
-
-   return ok;
-}
-
-/* world tilesets */
-void
-e_nav_world_tileset_add(Evas_Object *obj, Evas_Object *nt)
-{
-   E_Smart_Data *sd;
-
-   SMART_CHECK(obj, ;);
-   sd->tilesets = evas_list_prepend(sd->tilesets, nt);
-   evas_object_smart_member_add(nt, sd->obj);
-   evas_object_clip_set(nt, sd->clip);
-   evas_object_stack_below(nt, sd->clip);
-}
-
 /* internal calls */
 static void
 _e_nav_smart_init(void)
@@ -699,12 +691,8 @@ _e_nav_smart_del(Evas_Object *obj)
 						     sd->world_items);
 	  }
      }
-   while (sd->tilesets)
-     {
-	evas_object_del(sd->tilesets->data);
-	sd->tilesets = evas_list_remove_list(sd->tilesets,
-					     sd->tilesets);
-     }
+
+   e_nav_world_tileset_set(obj, NULL);
 
    free(sd);
 }
@@ -713,7 +701,6 @@ static void
 _e_nav_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
@@ -724,8 +711,8 @@ _e_nav_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    evas_object_move(sd->stacking, sd->x, sd->y);
    evas_object_move(sd->event, sd->x, sd->y);
 
-   for (l = sd->tilesets; l; l = l->next)
-     evas_object_move(l->data, sd->x, sd->y);
+   if (sd->tileset)
+     evas_object_move(sd->tileset, sd->x, sd->y);
    
    _e_nav_update(obj);
 }
@@ -734,7 +721,6 @@ static void
 _e_nav_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
@@ -745,8 +731,8 @@ _e_nav_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    evas_object_resize(sd->stacking, sd->w, sd->h);
    evas_object_resize(sd->event, sd->w, sd->h);
 
-   for (l = sd->tilesets; l; l = l->next)
-     evas_object_resize(l->data, sd->w, sd->h);
+   if (sd->tileset)
+     evas_object_resize(sd->tileset, sd->w, sd->h);
 
    /* this checks pos boundaries and update e_nav */
    _e_nav_pos_set(obj, sd->px, sd->py, 0.0);
@@ -1142,17 +1128,14 @@ static void
 _e_nav_wallpaper_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
    
    sd = evas_object_smart_data_get(obj);
-   for (l = sd->tilesets; l; l = l->next)
-     {
-	Evas_Object *nt = l->data;
+   if (!sd->tileset)
+     return;
 
-	e_nav_tileset_span_set(nt, sd->span);
-	e_nav_tileset_pos_set(nt, sd->px, sd->py, FALSE);
-	e_nav_tileset_update(nt);
-     }
+   e_nav_tileset_span_set(sd->tileset, sd->span);
+   e_nav_tileset_pos_set(sd->tileset, sd->px, sd->py, FALSE);
+   e_nav_tileset_update(sd->tileset);
 }
 
 static int
@@ -1200,7 +1183,7 @@ static void _e_nav_to_offsets(Evas_Object *obj, double lon, double lat, double *
    E_Smart_Data *sd;
    
    sd = evas_object_smart_data_get(obj);
-   if (!sd || !sd->tilesets)
+   if (!sd || !sd->tileset)
      {
 	*x = 0.0;
 	*y = 0.0;
@@ -1208,7 +1191,7 @@ static void _e_nav_to_offsets(Evas_Object *obj, double lon, double lat, double *
 	return;
      }
 
-   e_nav_tileset_to_offsets(sd->tilesets->data, lon, lat, x, y);
+   e_nav_tileset_to_offsets(sd->tileset, lon, lat, x, y);
 }
 
 /* nav world internal calls - move to the end later */
