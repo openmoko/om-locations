@@ -101,9 +101,9 @@ dn_config_file_name_get(Diversity_Nav_Config *cfg)
    if(!cfg) return NULL;
 
    snprintf(cfg_filename, sizeof(cfg_filename),
-                        "%s/.diversity-nav/config/%s.cfg",
+                        "%s/.om-locations/config/%s.cfg",
                         (getenv("HOME") ?  getenv("HOME") : "/tmp"),
-                        "diversity-nav");
+                        "om-locations");
 
    return strdup(cfg_filename);
 }
@@ -191,7 +191,7 @@ dn_config_save(Diversity_Nav_Config *cfg)
      return TRUE;
 
    fd = open(file, O_CREAT | O_WRONLY | O_TRUNC,
-                   S_IRWXU | S_IRGRP | S_IROTH);
+                   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
    if (fd == -1)
      {
