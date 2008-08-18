@@ -23,8 +23,6 @@
 #include "e_ctrl.h"
 #include "e_nav_dbus.h"
 
-#define E_NAV_ZOOM_SPAN(scale) ((int) (M_EARTH_RADIUS * M_PI * 2 / (scale)))
-
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _E_Nav_World_Block E_Nav_World_Block;
@@ -46,7 +44,7 @@ struct _E_Nav_World_Item
       // in longitudinal/latitudinal degrees
       double x, y, w, h;
    } geom;
-   unsigned char scale : 1; // scale item with zoom or not
+   unsigned char scale : 1; // scale item with span or not
 };
 
 struct _E_Smart_Data
@@ -67,21 +65,21 @@ struct _E_Smart_Data
 
    /* current state - display this currently */
    double           px, py;
-   double           zoom; /* meters per pixel */
+   double           span;
    
    /* configured state - the state asked to do */
    struct {
       double           px, py;
-      double           zoom;
+      double           span;
    } conf;
    
    /* needed information for animation */
    struct {
       struct {
 	 double px, py;
-	 double zoom;
+	 double span;
 	 double pos_time;
-	 double zoom_time;
+	 double span_time;
       } start, target;
       unsigned char  mouse_down : 1;
       Ecore_Timer   *momentum_animator;
@@ -92,7 +90,7 @@ struct _E_Smart_Data
       struct {
 	 Evas_Coord    x, y;
 	 double        px, py;
-	 double        zoom;
+	 double        span;
       } start;
       struct {
 	 Evas_Coord    x, y;
@@ -188,7 +186,6 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
    _e_nav_overlay_update(obj);
 }
 
-/* spatial & zoom controls */
 static void
 _e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
 {
@@ -199,10 +196,9 @@ _e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
    
    SMART_CHECK(obj, ;);
 
-   span = E_NAV_ZOOM_SPAN(sd->conf.zoom);
+   span = sd->conf.span;
 
    /* keep the world in the screen */
-   /* XXX zoom? */
    off = (double) sd->w / 2.0 / span;
    if (px - off < 0.0 || off > 0.5)
      px = off;
@@ -292,13 +288,60 @@ e_nav_coord_lat_get(Evas_Object *obj)
    return lat;
 }
 
+void
+e_nav_span_set(Evas_Object *obj, int span, double when)
+{
+   E_Smart_Data *sd;
+   double t;
+
+   SMART_CHECK(obj, ;);
+
+   /* XXX keep the world in the screen? */
+
+   if (span > E_NAV_SPAN_MAX)
+     span = E_NAV_SPAN_MAX;
+   else if (span < E_NAV_SPAN_MIN)
+     span = E_NAV_SPAN_MIN;
+
+   e_ctrl_span_drag_value_set(span);
+
+   if (when == 0.0)
+     {
+	sd->anim.target.span_time = 0.0;
+	sd->anim.start.span_time = 0.0;
+	sd->span = span;
+	sd->conf.span = span;
+	_e_nav_update(obj);
+	return;
+     }
+   t = ecore_time_get();
+   _e_nav_momentum_calc(obj, t);
+   sd->anim.start.span_time = t;
+   sd->anim.start.span = sd->span;
+   sd->anim.target.span = span;
+   sd->anim.target.span_time = sd->anim.start.span_time + when;
+   sd->conf.span = span;
+   if (!sd->anim.momentum_animator)
+     sd->anim.momentum_animator = ecore_animator_add(_e_nav_cb_animator_momentum,
+						 obj);
+}
+
+int
+e_nav_span_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, 0.0;);
+
+   return sd->span;
+}
+
 static void
 _e_nav_move(Evas_Object *obj, char dir)
 {
    E_Smart_Data *sd;
    Evas_List *l;
    int screen_x, screen_y, screen_w, screen_h;
-   int span;
    double xoff, yoff;
 
    sd = evas_object_smart_data_get(obj);
@@ -325,9 +368,8 @@ _e_nav_move(Evas_Object *obj, char dir)
 	 break;
      }
 
-   span = E_NAV_ZOOM_SPAN(sd->zoom);
-   xoff /= span;
-   yoff /= span;
+   xoff /= sd->span;
+   yoff /= sd->span;
 
    for (l = sd->tilesets; l; l = l->next)
      {
@@ -361,13 +403,11 @@ e_nav_move_right(Evas_Object *obj)
    _e_nav_move(obj, 'r');
 }
 
-#define E_NAV_SPAN_ZOOM(span)  ((M_EARTH_RADIUS * M_PI * 2 / (span)))
 void
 e_nav_level_up(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_List *l;
-   double zoom;
    int span, level;
 
    sd = evas_object_smart_data_get(obj);
@@ -378,8 +418,7 @@ e_nav_level_up(Evas_Object *obj)
         level = e_nav_tileset_level_get(nt); 
         e_nav_tileset_level_set(nt, level+1); 
         span = e_nav_tileset_span_get(nt);
-        zoom = E_NAV_SPAN_ZOOM(span);       
-        e_nav_zoom_set(obj, zoom, 0.0);
+        e_nav_span_set(obj, span, 0.0);
      }
 }
 
@@ -388,7 +427,6 @@ e_nav_level_down(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_List *l;
-   double zoom;
    int span, level;
 
    sd = evas_object_smart_data_get(obj);
@@ -399,52 +437,8 @@ e_nav_level_down(Evas_Object *obj)
         level = e_nav_tileset_level_get(nt); 
         e_nav_tileset_level_set(nt, level-1); 
         span = e_nav_tileset_span_get(nt);
-        zoom = E_NAV_SPAN_ZOOM(span);       
-        e_nav_zoom_set(obj, zoom, 0.0);
+        e_nav_span_set(obj, span, 0.0);
      }
-}
-
-void
-e_nav_zoom_set(Evas_Object *obj, double zoom, double when)
-{
-   E_Smart_Data *sd;
-   double t;
-
-   SMART_CHECK(obj, ;);
-
-   if (zoom > E_NAV_ZOOM_MAX) zoom = E_NAV_ZOOM_MAX;
-   else if (zoom < E_NAV_ZOOM_MIN) zoom = E_NAV_ZOOM_MIN;
-
-   e_ctrl_zoom_drag_value_set(zoom);
-
-   if (when == 0.0)
-     {
-	sd->anim.target.zoom_time = 0.0;
-	sd->anim.start.zoom_time = 0.0;
-	sd->zoom = zoom;
-	sd->conf.zoom = zoom;
-	_e_nav_update(obj);
-	return;
-     }
-   t = ecore_time_get();
-   _e_nav_momentum_calc(obj, t);
-   sd->anim.start.zoom_time = t;
-   sd->anim.start.zoom = sd->zoom;
-   sd->anim.target.zoom = zoom;
-   sd->anim.target.zoom_time = sd->anim.start.zoom_time + when;
-   sd->conf.zoom = zoom;
-   if (!sd->anim.momentum_animator)
-     sd->anim.momentum_animator = ecore_animator_add(_e_nav_cb_animator_momentum,
-						 obj);
-}
-
-double
-e_nav_zoom_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0.0;);
-   return sd->zoom;
 }
 
 /* world items */
@@ -670,11 +664,11 @@ _e_nav_smart_add(Evas_Object *obj)
    
    sd->px = 0.0;
    sd->py = 0.0;
-   sd->zoom = E_NAV_ZOOM_MAX;
+   sd->span = 640;
    
    sd->conf.px = sd->px;
    sd->conf.py = sd->py;
-   sd->conf.zoom = sd->zoom;
+   sd->conf.span = sd->span;
 }
 
 static void
@@ -856,8 +850,10 @@ _e_nav_cb_event_mouse_wheel(void *data, Evas *evas, Evas_Object *obj, void *even
    sd = evas_object_smart_data_get(data);
    if (ev->direction == 0)
      {
-	if (ev->z > 0) e_nav_zoom_set(data, sd->conf.zoom * 2.0, 1.0);
-       else e_nav_zoom_set(data, sd->conf.zoom / 2.0, 1.0);
+	if (ev->z > 0)
+	  e_nav_span_set(data, sd->conf.span / 2, 1.0);
+	else
+	  e_nav_span_set(data, sd->conf.span * 2, 1.0);
      }
 }
 
@@ -867,7 +863,6 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
    E_Smart_Data *sd;
    double when = 0.0;
    double px, py;
-   int span;
 
    sd = evas_object_smart_data_get(obj);
 
@@ -877,16 +872,15 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 	sd->moveng.start.y = y;
 	sd->moveng.start.px = sd->px;
 	sd->moveng.start.py = sd->py;
-	sd->moveng.start.zoom = sd->conf.zoom;
+	sd->moveng.start.span = sd->conf.span;
 
 	_e_nav_pos_set(obj, sd->px, sd->py, 0.0);
 
 	return;
      }
    
-   span = E_NAV_ZOOM_SPAN(sd->conf.zoom);
-   px = sd->moveng.start.px + (double) (sd->moveng.start.x - x) / span;
-   py = sd->moveng.start.py + (double) (sd->moveng.start.y - y) / span;
+   px = sd->moveng.start.px + (double) (sd->moveng.start.x - x) / sd->conf.span;
+   py = sd->moveng.start.py + (double) (sd->moveng.start.y - y) / sd->conf.span;
 
    if (action == E_NAV_MOVEENGINE_GO)
      {
@@ -1061,7 +1055,7 @@ _e_nav_overlay_update(Evas_Object *obj)
      snprintf(buf, sizeof(buf), _("%1.2fm"), z);
    /* and set the text that is there to what we snprintf'd into the buffer
     * aboe */
-   e_ctrl_zoom_text_value_set(buf);
+   e_ctrl_span_text_value_set(buf);
    
    lon = sd->lon;
    if (lon >= 0.0) xdir = "E";
@@ -1124,10 +1118,10 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
    else
      done++;
    
-   if (sd->anim.target.zoom_time > sd->anim.start.zoom_time)
+   if (sd->anim.target.span_time > sd->anim.start.span_time)
      {
-	v = (t - sd->anim.start.zoom_time) / 
-	  (sd->anim.target.zoom_time - sd->anim.start.zoom_time);
+	v = (t - sd->anim.start.span_time) / 
+	  (sd->anim.target.span_time - sd->anim.start.span_time);
 	if (v >= 1.0)
 	  {
 	     v = 1.0;
@@ -1135,9 +1129,9 @@ _e_nav_momentum_calc(Evas_Object *obj, double t)
 	  }
 	v = 1.0 - v;
 	v = 1.0 - (v * v * v * v);
-	sd->zoom = 
-	  ((sd->anim.target.zoom - sd->anim.start.zoom) * v) +
-	  sd->anim.start.zoom;
+	sd->span = 
+	  ((sd->anim.target.span - sd->anim.start.span) * v) +
+	  sd->anim.start.span;
      }
    else
      done++;
@@ -1154,11 +1148,8 @@ _e_nav_wallpaper_update(Evas_Object *obj)
    for (l = sd->tilesets; l; l = l->next)
      {
 	Evas_Object *nt = l->data;
-	int span;
 
-	span = E_NAV_ZOOM_SPAN(sd->zoom);
-
-	e_nav_tileset_span_set(nt, span);
+	e_nav_tileset_span_set(nt, sd->span);
 	e_nav_tileset_pos_set(nt, sd->px, sd->py, FALSE);
 	e_nav_tileset_update(nt);
      }
@@ -1179,13 +1170,12 @@ _e_nav_cb_animator_momentum(void *data)
      {
 	sd->anim.target.pos_time = 0.0;
 	sd->anim.start.pos_time = 0.0;
-	sd->anim.target.zoom_time = 0.0;
-	sd->anim.start.zoom_time = 0.0;
+	sd->anim.target.span_time = 0.0;
+	sd->anim.start.span_time = 0.0;
 	sd->anim.momentum_animator = NULL;
 	return 0;
      }
    return 1;
-   
 }
 
 #if 0

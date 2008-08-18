@@ -34,12 +34,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define M_EARTH_RADIUS	(6371.0 * 1000.0)
+
 /* handy defines */
-#define NAV_UNIT_M / ((40000.0 * 1000.0) / 360.0)
-#define NAV_UNIT_KM / (40000.0 / 360.0)
-#define E_NAV_ZOOM_MAX (M_EARTH_RADIUS / 100)
-#define E_NAV_ZOOM_MIN 2
-#define E_NAV_ZOOM_SENSITIVITY 18
+#define E_NAV_SPAN_MAX (256 * (1 << 16))
+#define E_NAV_SPAN_MIN (256 * 4)
+#define E_NAV_SPAN_FROM_METERS(m) ((int) (M_EARTH_RADIUS * M_PI * 2 / m))
 
 /* Etk.h defines _ */
 #ifdef _
@@ -76,8 +76,9 @@ void           *e_nav_world_get();
 void            e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when);
 double          e_nav_coord_lon_get(Evas_Object *obj);
 double          e_nav_coord_lat_get(Evas_Object *obj);
-void            e_nav_zoom_set(Evas_Object *obj, double zoom, double when);
-double          e_nav_zoom_get(Evas_Object *obj);
+void            e_nav_span_set(Evas_Object *obj, int span, double when);
+int             e_nav_span_get(Evas_Object *obj);
+
 void            e_nav_level_up(Evas_Object *obj);
 void            e_nav_level_down(Evas_Object *obj);
 void            e_nav_move_up(Evas_Object *obj);

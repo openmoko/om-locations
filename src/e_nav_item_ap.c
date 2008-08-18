@@ -39,15 +39,12 @@ static void
 _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Evas_Object *nav;
-   double lon, lat, w, h, z;
+   double lon, lat, w, h;
    
    nav = e_nav_world_item_nav_get(src_obj);
    e_nav_world_item_geometry_get(src_obj, &lon, &lat, &w, &h);
    e_nav_coord_set(nav, lon, lat, 0.5);
-   if (w < h) w = h;
-   z = 0.0001;
-   if (w > 0.0) z = w / 200;
-   e_nav_zoom_set(nav, z * 40000 * 1000, 0.5);
+   e_nav_span_set(nav, E_NAV_SPAN_FROM_METERS(400), 0.5);
    e_spiralmenu_deactivate(obj);
 }
 

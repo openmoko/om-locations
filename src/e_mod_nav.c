@@ -458,7 +458,8 @@ void
 _e_mod_nav_init(Evas *evas, const char *theme_name)
 {
    Evas_Object *nt;
-   double lat, lon, scale;
+   double lat, lon;
+   int span;
    double neo_me_lat, neo_me_lon;
 
    if (nav) return;
@@ -549,15 +550,15 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    /* start off at a zoom level and location instantly */
    lat = dn_config_float_get(cfg, "lat");
    lon = dn_config_float_get(cfg, "lon");
-   scale = dn_config_float_get(cfg, "scale");
+   span = dn_config_int_get(cfg, "span");
 
    /* Default is lowest zoom level if cfg file open error */
-   if(scale < E_NAV_ZOOM_MIN) scale = E_NAV_ZOOM_MAX;
+   if (span < E_NAV_SPAN_MIN) span = E_NAV_SPAN_MIN;
 
    neo_me_lat = dn_config_float_get(cfg, "neo_me_lat");
    neo_me_lon = dn_config_float_get(cfg, "neo_me_lon");
 
-   e_nav_zoom_set(nav, scale, 0.0);
+   e_nav_span_set(nav, span, 0.0);
    e_nav_coord_set(nav, neo_me_lon, neo_me_lat, 0.0);
             
    _e_mod_nav_update(evas);
@@ -755,18 +756,19 @@ _e_mod_nav_update(Evas *evas)
 void
 _e_mod_nav_shutdown(void)
 {
-   double lat, lon, scale;
+   double lat, lon;
+   int span;
 
    if (!nav) return;
 
-   /* save lon, lat, scale to config file */
+   /* save lon, lat, span to config file */
    lat = e_nav_coord_lat_get(nav);
    lon = e_nav_coord_lon_get(nav);
-   scale = e_nav_zoom_get(nav);
+   span = e_nav_span_get(nav);
 
    dn_config_float_set(cfg, "lat", lat);
    dn_config_float_set(cfg, "lon", lon);
-   dn_config_float_set(cfg, "scale", scale);
+   dn_config_int_set(cfg, "span", span);
 
    dn_config_save(cfg);
    dn_config_destroy(cfg);

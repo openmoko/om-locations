@@ -34,7 +34,7 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
    nav = e_nav_world_item_nav_get(src_obj);
    e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
    e_nav_coord_set(nav, lon, lat, 0.5);
-   e_nav_zoom_set(nav, 400, 0.5);
+   e_nav_span_set(nav, E_NAV_SPAN_FROM_METERS(400), 0.5);
    e_spiralmenu_deactivate(obj);
 }
 

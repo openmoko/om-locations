@@ -496,26 +496,33 @@ e_ctrl_self_equipment_get(const char *eqp_name)
    return eqp;
 }
 
-static double
-to_zoom(double v)
-{
-   v = (pow(2.0, v * E_NAV_ZOOM_SENSITIVITY) - 1.0)
-      / (1 << E_NAV_ZOOM_SENSITIVITY);
+#define DRAG_SENSITIVITY 18
 
-   return E_NAV_ZOOM_MIN + ((E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN) * v);
+static int
+to_span(double v)
+{
+   v = 1.0 - v;
+   v = (pow(2.0, v * DRAG_SENSITIVITY) - 1.0)
+      / (1 << DRAG_SENSITIVITY);
+
+   return E_NAV_SPAN_MIN + ((E_NAV_SPAN_MAX - E_NAV_SPAN_MIN) * v);
 }
 
 static double
-from_zoom(double z)
+from_span(int span)
 {
-   z = (z - E_NAV_ZOOM_MIN) / (E_NAV_ZOOM_MAX - E_NAV_ZOOM_MIN);
-   if (z < 0.0)
-     z = 0.0;
-   else if (z > 1.0)
-     z = 1.0;
+   double v;
 
-   return log((z * (1 << E_NAV_ZOOM_SENSITIVITY)) + 1)
-		/ M_LOG2 / E_NAV_ZOOM_SENSITIVITY;
+   v = (double) (span - E_NAV_SPAN_MIN) / (E_NAV_SPAN_MAX - E_NAV_SPAN_MIN);
+   if (v < 0.0)
+     v = 0.0;
+   else if (v > 1.0)
+     v = 1.0;
+
+   v = log((v * (1 << DRAG_SENSITIVITY)) + 1)
+      / M_LOG2 / DRAG_SENSITIVITY;
+
+   return 1.0 - v;
 }
 
 /* internal calls */
@@ -572,10 +579,9 @@ _e_ctrl_smart_add(Evas_Object *obj)
    for (i = 0; i < NUM_DRAG_VALUES; i++)
      {
 	int span = 256 * (1 << i); /* XXX 256? */
-	double zoom = M_EARTH_RADIUS * M_PI * 2 / span;
 	double v;
 
-	v = from_zoom(zoom);
+	v = from_span(span);
 
 	sd->drag_values[i] = v;
      }
@@ -683,17 +689,19 @@ _e_ctrl_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 }
 
-void e_ctrl_zoom_drag_value_set(double z) 
+void e_ctrl_span_drag_value_set(int span)
 {
+   double v;
+
    if(!ctrl) return;
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(ctrl);
 
-   z = from_zoom(z);
-   edje_object_part_drag_value_set(sd->map_overlay, "e.dragable.zoom", 0.0, z);
+   v = from_span(span);
+   edje_object_part_drag_value_set(sd->map_overlay, "e.dragable.zoom", 0.0, v);
 }
 
-void e_ctrl_zoom_text_value_set(const char* buf)
+void e_ctrl_span_text_value_set(const char* buf)
 {
    if(!ctrl) return;
    E_Smart_Data *sd;
@@ -725,7 +733,8 @@ _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const
    
    sd = data;
      {
-	double x = 0, y = 0, z;
+	double x = 0, y = 0;
+	int span;
 	int i;
 	
 	edje_object_part_drag_value_get(sd->map_overlay, "e.dragable.zoom", &x, &y);
@@ -749,8 +758,8 @@ _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const
 	     break;
 	  }
 
-	z = to_zoom(y);
-	e_nav_zoom_set(sd->nav, z, 0.0);
+	span = to_span(y);
+	e_nav_span_set(sd->nav, span, 0.0);
      }
 }
 
