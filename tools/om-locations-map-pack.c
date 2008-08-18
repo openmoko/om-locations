@@ -36,7 +36,6 @@
 #include "tileiter.h"
 
 Evas *evas;
-Eet_File *ef;
 char *basedir;
 int verbose;
 
@@ -64,7 +63,7 @@ void get_key(const char *path, char *buf)
 		*p = '\0';
 }
 
-void pack(const char *path)
+static void _eet_pack(Eet_File *ef, const char *path)
 {
 	Evas_Object *im;
 	void *im_data;
@@ -112,7 +111,7 @@ fail:
 	return;
 }
 
-void traverse(const char *base)
+static void _eet_traverse(Eet_File *ef, const char *base)
 {
 	DIR *dir;
 	struct dirent *d;
@@ -140,9 +139,9 @@ void traverse(const char *base)
 		}
 
 		if (S_ISDIR(s.st_mode))
-			traverse(path);
+			_eet_traverse(ef, path);
 		else if (S_ISREG(s.st_mode))
-			pack(path);
+			_eet_pack(ef, path);
 	}
 
 	closedir(dir);
@@ -185,11 +184,28 @@ map_describe(void)
    return edd;
 }
 
-int describe(const char *desc, E_Nav_Map_Desc *md)
+static int _eet_describe(Eet_File *ef, E_Nav_Map_Desc *md)
 {
 	Eet_Data_Descriptor *edd;
-	const char *p;
+	void *data;
+	int s;
 	int ret;
+
+	edd = map_describe();
+
+	//ret = eet_data_write(ef, edd, "description", &md, 0);
+	data = eet_data_descriptor_encode(edd, &md, &s);
+	ret = eet_write(ef, "description", data, s, 0);
+	free(data);
+
+	eet_data_descriptor_free(edd);
+
+	return ret;
+}
+
+static int parse_desc(const char *desc, E_Nav_Map_Desc *md)
+{
+	const char *p;
 
 	p = desc;
 
@@ -273,22 +289,7 @@ int describe(const char *desc, E_Nav_Map_Desc *md)
 	    md->lat < -90.0  || md->lat + md->height > 90.0)
 		return 0;
 
-	edd = map_describe();
-
-	if (1) {
-		void *data;
-		int s;
-
-		data = eet_data_descriptor_encode(edd, md, &s);
-		ret = eet_write(ef, "description", data, s, 0);
-		free(data);
-	} else {
-		ret = eet_data_write(ef, edd, "description", md, 0);
-	}
-
-	eet_data_descriptor_free(edd);
-
-	return ret;
+	return 1;
 }
 
 static int fetch_sched(TileIter *iter);
@@ -413,18 +414,19 @@ void _eet_merge(Eet_File *ef, Eet_File *base)
 
 void usage(const char *prog)
 {
-	printf("%s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] [-f] [-v] <cache-dir> <output>\n", prog);
+	printf("%s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] [-k] [-v] <cache-dir> [<output>]\n", prog);
 }
 
 int main(int argc, char **argv)
 {
 	Ecore_Evas *ee;
 	E_Nav_Map_Desc md;
-	char *map, *basemap = NULL, *desc = NULL;
-	int fetch = 0;
+	Eet_File *ef = NULL;
+	char *map = NULL, *basemap = NULL, *desc = NULL;
+	int skip_fetch = 0;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "b:d:fv")) != -1) {
+	while ((opt = getopt(argc, argv, "b:d:kv")) != -1) {
 		switch (opt) {
 		case 'b':
 			basemap = optarg;
@@ -432,8 +434,8 @@ int main(int argc, char **argv)
 		case 'd':
 			desc = optarg;
 			break;
-		case 'f':
-			fetch = 1;
+		case 'k':
+			skip_fetch = 1;
 			break;
 		case 'v':
 			verbose = 1;
@@ -445,14 +447,16 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (optind + 2 != argc) {
+	if (optind < argc)
+		basedir = argv[optind++];
+	if (optind < argc)
+		map = argv[optind++];
+
+	if (!basedir || optind != argc) {
 		usage(argv[0]);
 
 		return 1;
 	}
-
-	basedir = argv[optind];
-	map = argv[optind + 1];
 
 	if (!ecore_init() || !ecore_evas_init()) {
 		printf("failed to init\n");
@@ -468,50 +472,55 @@ int main(int argc, char **argv)
 	}
 	evas = ecore_evas_get(ee);
 
-	ef = eet_open(map, EET_FILE_MODE_WRITE);
-	if (!ef) {
-		printf("failed to open eet\n");
-
-		return 1;
-	}
-
-	if (desc) {
-		if (!describe(desc, &md)) {
-			printf("failed to describe eet\n");
+	if (map) {
+		ef = eet_open(map, EET_FILE_MODE_WRITE);
+		if (!ef) {
+			printf("failed to open eet\n");
 
 			return 1;
 		}
-		if (fetch && !fetch_tiles(&md, basedir)) {
+	}
+
+	if (desc) {
+		if (!parse_desc(desc, &md)) {
+			printf("failed to parse description\n");
+
+			return 1;
+		}
+
+		if (!skip_fetch && !fetch_tiles(&md, basedir)) {
 			printf("failed to fetch tiles\n");
 
 			return 1;
 		}
-	} else {
-		if (fetch) {
-			printf("ignore fetch flag: no description\n");
-
-			fetch = 0;
-		}
 	}
 
-	if (basemap) {
-		Eet_File *bef;
+	if (ef) {
+		if (basemap) {
+			Eet_File *bef;
 
-		bef = eet_open(basemap, EET_FILE_MODE_READ);
-		if (!bef) {
-			printf("failed to open base eet\n");
+			bef = eet_open(basemap, EET_FILE_MODE_READ);
+			if (!bef) {
+				printf("failed to open base eet\n");
+
+				return 1;
+			}
+
+			_eet_merge(ef, bef);
+
+			eet_close(bef);
+		}
+
+		if (desc && !_eet_describe(ef, &md)) {
+			printf("failed to describe eet\n");
 
 			return 1;
 		}
 
-		_eet_merge(ef, bef);
+		_eet_traverse(ef, basedir);
 
-		eet_close(bef);
+		eet_close(ef);
 	}
-
-	traverse(basedir);
-
-	eet_close(ef);
 
 	ecore_evas_free(ee);
 	ecore_evas_shutdown();
