@@ -6,5 +6,4 @@ desktopdir = $(datadir)/applications
 desktop_DATA = om-locations.desktop
 
 EXTRA_DIST =				\
-	$(desktop_DATA)			\
-	ChangeLog.migration
+	$(desktop_DATA)	
