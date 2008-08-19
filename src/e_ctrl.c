@@ -29,11 +29,6 @@
 
 #define E_NEW(s, n) (s *)calloc(n, sizeof(s))
 
-static Evas_Object *ctrl = NULL;
-static Evas_Object *neo_me = NULL;
-static Ecore_Hash *bardRoster = NULL;
-static Ecore_Hash *objectStore = NULL;
-
 typedef struct _E_Smart_Data E_Smart_Data;
 static void _e_ctrl_cb_signal_drag(void *data, Evas_Object *obj, const char *emission, const char *source);
 static void _e_ctrl_cb_signal_drag_start(void *data, Evas_Object *obj, const char *emission, const char *source);
@@ -41,10 +36,15 @@ static void _e_ctrl_cb_signal_drag_stop(void *data, Evas_Object *obj, const char
 
 struct _E_Smart_Data
 {
+   Evas_Object *nav;
+   Evas_Object *neo_me;
+
+   Ecore_Hash *bardRoster;
+   Ecore_Hash *objectStore;
+
    Evas_Object *obj;      
    Evas_Object *clip;
    Evas_Object *map_overlay;   
-   Evas_Object *nav;
    Tag_List *listview;   
    Evas_Object *panel_buttons;
    Evas_Object *message;
@@ -80,16 +80,32 @@ static Evas_Smart *_e_smart = NULL;
 Evas_Object *
 e_ctrl_add(Evas *e)
 {
+   Evas_Object *obj;
+   E_Smart_Data *sd;
+
    _e_ctrl_smart_init();
-   if(ctrl) return ctrl;
-   ctrl = evas_object_smart_add(e, _e_smart);
-   objectStore = ecore_hash_new(ecore_str_hash, ecore_str_compare);
+   obj = evas_object_smart_add(e, _e_smart);
+   if (!obj) return NULL;
 
-   if(!objectStore)
-     return NULL; 
-   ecore_hash_free_key_cb_set(objectStore, free);
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     {
+	evas_object_del(obj);
+	return NULL;
+     }
 
-   return ctrl;
+   sd->objectStore = ecore_hash_new(ecore_str_hash, ecore_str_compare);
+
+   if(!sd->objectStore)
+     {
+	evas_object_del(obj);
+
+	return NULL; 
+     }
+
+   ecore_hash_free_key_cb_set(sd->objectStore, free);
+
+   return obj;
 }
 
 static void
@@ -134,20 +150,20 @@ _e_nav_tag_sel(void *data, void *data2)
 }
 
 void
-e_ctrl_taglist_tag_set(const char *name, const char *note, void *object)
+e_ctrl_taglist_tag_set(Evas_Object *obj, const char *name, const char *note, void *object)
 {
    E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(ctrl);
+   sd = evas_object_smart_data_get(obj);
    e_nav_taglist_tag_update(sd->listview, name, note, object);
 }
 
 void
-e_ctrl_taglist_tag_add(const char *name, const char *note, time_t timestamp, void *loc_object)
+e_ctrl_taglist_tag_add(Evas_Object *obj, const char *name, const char *note, time_t timestamp, void *loc_object)
 {
    E_Smart_Data *sd;
    Tag_List_Item *item;
 
-   sd = evas_object_smart_data_get(ctrl);
+   sd = evas_object_smart_data_get(obj);
 
    item = E_NEW(Tag_List_Item, 1);
 
@@ -161,60 +177,76 @@ e_ctrl_taglist_tag_add(const char *name, const char *note, time_t timestamp, voi
 
    item->timestamp = timestamp;
    item->func = _e_nav_tag_sel;
-   item->data = ctrl;
+   item->data = obj;
    item->data2 = loc_object;
 
    e_nav_taglist_tag_add(sd->listview, item);
 }
 
 void
-e_ctrl_taglist_tag_delete(void *loc_object)
+e_ctrl_taglist_tag_delete(Evas_Object *obj, void *loc_object)
 {
    E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(ctrl);
+
+   sd = evas_object_smart_data_get(obj);
    e_nav_taglist_tag_remove(sd->listview, loc_object);
 }
 
 int
-e_ctrl_contact_add(const char *id, Neo_Other_Data *data)
+e_ctrl_contact_add(Evas_Object *obj, const char *id, Neo_Other_Data *data)
 {
+   E_Smart_Data *sd;
+
    if(!id) return FALSE;
-   return ecore_hash_set(bardRoster, (void *)strdup(id), (void *)data);
+
+   sd = evas_object_smart_data_get(obj);
+
+   return ecore_hash_set(sd->bardRoster, (void *)strdup(id), (void *)data);
 }
 
 int
-e_ctrl_contact_remove(const char *id)
+e_ctrl_contact_remove(Evas_Object *obj, const char *id)
 {
-   Neo_Other_Data *neod = ecore_hash_remove(bardRoster, (void *)id);
+   E_Smart_Data *sd;
+   Neo_Other_Data *neod;
+
+   sd = evas_object_smart_data_get(obj);
+   neod = ecore_hash_remove(sd->bardRoster, (void *)id);
+
    if (!neod) return FALSE;
    if (neod->bard) diversity_bard_destroy(neod->bard);
    free(neod);
+
    return TRUE;
 }
 
 int
-e_ctrl_contact_update(const char *id, Neo_Other_Data *data)
+e_ctrl_contact_update(Evas_Object *obj, const char *id, Neo_Other_Data *data)
 {
    if(!id || !data) return FALSE;
-   if(!e_ctrl_contact_remove(id)) return FALSE;
-   return e_ctrl_contact_add(id, data);
+   if(!e_ctrl_contact_remove(obj, id)) return FALSE;
+   return e_ctrl_contact_add(obj, id, data);
 }
 
 Neo_Other_Data *
-e_ctrl_contact_get(const char *id)
+e_ctrl_contact_get(Evas_Object *obj, const char *id)
 {
-   return (Neo_Other_Data *)ecore_hash_get(bardRoster, (void *)id);
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+
+   return (Neo_Other_Data *)ecore_hash_get(sd->bardRoster, (void *)id);
 }
 
 Neo_Other_Data *
-e_ctrl_contact_get_by_name(const char *name)
+e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name)
 {
    Ecore_List *cl;
    int lstcount;
    int n;
    Neo_Other_Data *neod;
 
-   cl = e_ctrl_contacts_get();
+   cl = e_ctrl_contacts_get(obj);
    lstcount = ecore_list_count(cl);
    for(n=0; n<lstcount; n++)
      {
@@ -230,14 +262,14 @@ e_ctrl_contact_get_by_name(const char *name)
 }
 
 Neo_Other_Data *
-e_ctrl_contact_get_by_number(const char *number)
+e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number)
 {
    Ecore_List *cl;
    int lstcount;
    int n;
    Neo_Other_Data *neod;
 
-   cl = e_ctrl_contacts_get();
+   cl = e_ctrl_contacts_get(obj);
    lstcount = ecore_list_count(cl);
    for(n=0; n<lstcount; n++)
      {
@@ -253,19 +285,24 @@ e_ctrl_contact_get_by_number(const char *number)
 }
 
 Ecore_List *
-e_ctrl_contacts_get(void)
+e_ctrl_contacts_get(Evas_Object *obj)
 {
+   E_Smart_Data *sd;
    Ecore_List *values;
-   Ecore_List *keys = ecore_hash_keys(bardRoster);
-   int count = ecore_list_count(keys);
+   Ecore_List *keys;
+   int count;
    int n;
+
+   sd = evas_object_smart_data_get(obj);
+   keys = ecore_hash_keys(sd->bardRoster);
+   count = ecore_list_count(keys);
 
    values = ecore_list_new();
    Neo_Other_Data *neod;
    for(n=0; n<count; n++)
      {
         char *key = ecore_list_index_goto(keys, n);
-        neod = (Neo_Other_Data *)ecore_hash_get(bardRoster, (void *)key);
+        neod = (Neo_Other_Data *)ecore_hash_get(sd->bardRoster, (void *)key);
         if(neod)
           {
              ecore_list_append(values, (void *)neod);
@@ -296,13 +333,11 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    double lon, lat, w, h;
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
-   if(!sd) {
+   if(!sd || !sd->neo_me) {
        return;
    }
 
-   if (!neo_me) return;
-
-   e_nav_world_item_geometry_get(neo_me, &lon, &lat, &w, &h);
+   e_nav_world_item_geometry_get(sd->neo_me, &lon, &lat, &w, &h);
    sd->follow = 1;
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
 
@@ -312,7 +347,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    if(evas_object_visible_get(sd->message))
      evas_object_raise(sd->message);
    evas_object_show(sd->panel_buttons);
-   evas_object_raise(neo_me);
+   evas_object_raise(sd->neo_me);
 }
 
 static void
@@ -447,11 +482,11 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    list = edje_object_part_object_get(sd->panel_buttons, "list_button"); 
 
    evas_object_event_callback_add(map, EVAS_CALLBACK_MOUSE_UP,
-				  _e_nav_map_button_cb_mouse_down, ctrl);
+				  _e_nav_map_button_cb_mouse_down, obj);
    evas_object_event_callback_add(refresh, EVAS_CALLBACK_MOUSE_UP,
-				  _e_nav_refresh_button_cb_mouse_down, ctrl);
+				  _e_nav_refresh_button_cb_mouse_down, obj);
    evas_object_event_callback_add(list, EVAS_CALLBACK_MOUSE_UP,
-				  _e_nav_list_button_cb_mouse_down, ctrl);
+				  _e_nav_list_button_cb_mouse_down, obj);
    evas_object_show(sd->panel_buttons);
 
    sd->message = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
@@ -463,33 +498,45 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 }
 
 void
-e_ctrl_nav_set(Evas_Object* obj)
+e_ctrl_nav_set(Evas_Object *obj, Evas_Object *nav)
 {
-   if(!ctrl) return;
    E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(ctrl);
-   sd->nav = obj;
+
+   SMART_CHECK(obj, ;);
+
+   sd->nav = nav;
 }
 
 void
-e_ctrl_neo_me_set(Evas_Object *obj)
+e_ctrl_neo_me_set(Evas_Object *obj, Evas_Object *me)
 {
-  neo_me = obj;
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   sd->neo_me = me;
 }
 
-void *
-e_ctrl_neo_me_get(void)
+Evas_Object *
+e_ctrl_neo_me_get(Evas_Object *obj)
 {
-   return neo_me;
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return sd->neo_me;
 }
 
 Diversity_Equipment *
-e_ctrl_self_equipment_get(const char *eqp_name)
+e_ctrl_self_equipment_get(Evas_Object *obj, const char *eqp_name)
 {
+   E_Smart_Data *sd;
    Diversity_Bard *self;
    Diversity_Equipment *eqp = NULL;
 
-   self = e_nav_world_item_neo_me_bard_get(neo_me); 
+   SMART_CHECK(obj, NULL;);
+
+   self = e_nav_world_item_neo_me_bard_get(sd->neo_me); 
    if (self)
      eqp = diversity_bard_equipment_get(self, eqp_name);
 
@@ -572,9 +619,9 @@ _e_ctrl_smart_add(Evas_Object *obj)
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
    evas_object_smart_data_set(obj, sd);
 
-   bardRoster = ecore_hash_new(ecore_str_hash, ecore_str_compare);
-   if(!bardRoster) return;
-   ecore_hash_free_key_cb_set(bardRoster, free);
+   sd->bardRoster = ecore_hash_new(ecore_str_hash, ecore_str_compare);
+   if(!sd->bardRoster) return;
+   ecore_hash_free_key_cb_set(sd->bardRoster, free);
 
    for (i = 0; i < NUM_DRAG_VALUES; i++)
      {
@@ -596,9 +643,9 @@ _e_ctrl_smart_del(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
-   if(objectStore)
+   if(sd->objectStore)
      {
-        ecore_hash_destroy(objectStore);
+        ecore_hash_destroy(sd->objectStore);
      }
 
    evas_object_del(sd->clip);
@@ -689,40 +736,41 @@ _e_ctrl_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 }
 
-void e_ctrl_span_drag_value_set(int span)
+void e_ctrl_span_drag_value_set(Evas_Object *obj, int span)
 {
+   E_Smart_Data *sd;
    double v;
 
-   if(!ctrl) return;
-   E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(ctrl);
+   SMART_CHECK(obj, ;);
 
    v = from_span(span);
    edje_object_part_drag_value_set(sd->map_overlay, "e.dragable.zoom", 0.0, v);
 }
 
-void e_ctrl_span_text_value_set(const char* buf)
+void e_ctrl_span_text_value_set(Evas_Object *obj, const char* buf)
 {
-   if(!ctrl) return;
    E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(ctrl);
+
+   SMART_CHECK(obj, ;);
+
    edje_object_part_text_set(sd->map_overlay, "e.text.zoom", buf);
 }
 
-void e_ctrl_longitude_set(const char* buf)
+void e_ctrl_longitude_set(Evas_Object *obj, const char* buf)
 {
-   if(!ctrl) return;
    E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(ctrl);
+
+   SMART_CHECK(obj, ;);
+
    edje_object_part_text_set(sd->map_overlay, "e.text.longitude", buf);
 }
 
-void e_ctrl_latitude_set(const char* buf)
+void e_ctrl_latitude_set(Evas_Object *obj, const char* buf)
 {
-   if(!ctrl) return;
    E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(ctrl);
-   if(!ctrl) return;
+
+   SMART_CHECK(obj, ;);
+
    edje_object_part_text_set(sd->map_overlay, "e.text.latitude", buf);
 }
 
@@ -798,12 +846,12 @@ e_ctrl_follow_get(Evas_Object *obj)
 }
 
 void
-e_ctrl_follow_set(int follow)
+e_ctrl_follow_set(Evas_Object *obj, int follow)
 {
    E_Smart_Data *sd;
-   if(!ctrl) return;
-   sd = evas_object_smart_data_get(ctrl);
-   if(!sd) return;
+
+   SMART_CHECK(obj, ;);
+
    sd->follow = follow;
 }
 
@@ -835,20 +883,31 @@ e_ctrl_message_show(Evas_Object *obj)
 }
 
 void
-e_ctrl_object_store_item_add(void *path, void *item)
+e_ctrl_object_store_item_add(Evas_Object *obj, void *path, void *item)
 {
-   ecore_hash_set(objectStore, strdup(path), item);
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   ecore_hash_set(sd->objectStore, strdup(path), item);
 }
 
 Evas_Object *
-e_ctrl_object_store_item_get(const char *obj_path)
+e_ctrl_object_store_item_get(Evas_Object *obj, const char *obj_path)
 {
-   return (Evas_Object *)ecore_hash_get(objectStore, obj_path);
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return (Evas_Object *)ecore_hash_get(sd->objectStore, obj_path);
 }
 
 void
-e_ctrl_object_store_item_remove(const char *obj_path)
+e_ctrl_object_store_item_remove(Evas_Object *obj, const char *obj_path)
 {
-   ecore_hash_remove(objectStore, obj_path);
-}
+   E_Smart_Data *sd;
 
+   SMART_CHECK(obj, ;);
+
+   ecore_hash_remove(sd->objectStore, obj_path);
+}

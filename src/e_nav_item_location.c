@@ -33,6 +33,7 @@
 static char *get_time_diff_string(time_t time_then);
 
 typedef struct _Location_Data Location_Data;
+static Evas_Object *xxx_ctrl;
 
 struct _Location_Data
 {
@@ -83,7 +84,7 @@ location_save(Evas_Object *obj, Evas_Object *src_obj)
         if (locd->note) evas_stringshare_del(locd->note);
         if (note) locd->note = evas_stringshare_add(note);
         else locd->note = NULL;
-        e_ctrl_taglist_tag_set(name, note, src_obj);  
+        e_ctrl_taglist_tag_set(xxx_ctrl, name, note, src_obj);  
         e_nav_world_item_location_name_set(src_obj, name);
      }
    free(description);
@@ -174,9 +175,9 @@ static Diversity_Equipment *
 get_phone_equip()
 {
    Diversity_Equipment *eqp = NULL;
-   eqp = e_ctrl_self_equipment_get("qtopia");
+   eqp = e_ctrl_self_equipment_get(xxx_ctrl, "qtopia");
    if(!eqp)
-     eqp = e_ctrl_self_equipment_get("phonekit");
+     eqp = e_ctrl_self_equipment_get(xxx_ctrl, "phonekit");
 
    return eqp;
 }
@@ -216,11 +217,11 @@ location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
         return;
      }
 
-   neod = e_ctrl_contact_get_by_name(input);
+   neod = e_ctrl_contact_get_by_name(xxx_ctrl, input);
    if(!neod)
      {
         input = trim_leading_space(input);
-        neod = e_ctrl_contact_get_by_number(input);
+        neod = e_ctrl_contact_get_by_number(xxx_ctrl, input);
      }
 
    /* send by contact */
@@ -299,7 +300,7 @@ dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_contact_editor_source_object_set(editor, data);  //  src_object is location item evas object 
    e_contact_editor_input_set(editor, _("To:"), "");
 
-   contacts = e_ctrl_contacts_get(); 
+   contacts = e_ctrl_contacts_get(xxx_ctrl); 
 
    //FIXME: contacts need to be destroyed later.
    
@@ -409,7 +410,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
    if(!obj) return;
 
-   e_ctrl_taglist_tag_delete(obj);   
+   e_ctrl_taglist_tag_delete(xxx_ctrl, obj);   
 
    locd = evas_object_data_get(obj, "nav_world_item_location_data");
    if (!locd) return;
@@ -454,6 +455,10 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    e_nav_world_item_location_lat_set(o, lat);
    e_nav_world_item_location_lon_set(o, lon);
    evas_object_show(o);
+
+   if (!xxx_ctrl)
+     xxx_ctrl = e_nav_world_ctrl_get(nav);
+
    return o;
 }
 
@@ -676,9 +681,9 @@ e_nav_world_item_location_new(Evas_Object *nav, Diversity_Object *obj)
    e_nav_world_item_location_note_set(nwi, description);
    e_nav_world_item_location_timestamp_set(nwi, timep);
 
-   e_ctrl_taglist_tag_add(name, description, timep, nwi); 
+   e_ctrl_taglist_tag_add(xxx_ctrl, name, description, timep, nwi); 
 
-   e_ctrl_object_store_item_add( (void *)strdup(obj_path), (void *)nwi);
+   e_ctrl_object_store_item_add(xxx_ctrl, (void *)strdup(obj_path), (void *)nwi);
    e_nav_world_item_location_title_show(nwi);
    return nwi;
 }

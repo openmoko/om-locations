@@ -143,7 +143,7 @@ viewport_object_added(void *data, DBusMessage *msg)
         int secs = 0;
 	time_t timep;
 
-        if(e_ctrl_object_store_item_get(obj_path))
+        if(e_ctrl_object_store_item_get(ctrl, obj_path))
           {
              printf("item  %s already existed. ignore\n", obj_path);
              return;
@@ -176,8 +176,8 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_location_name_set(nwi, name);
              e_nav_world_item_location_note_set(nwi, description);
              e_nav_world_item_location_timestamp_set(nwi, timep);
-             e_ctrl_taglist_tag_add(name, description, timep, nwi); 
-             e_ctrl_object_store_item_add((void *)(obj_path), (void *)nwi);           
+             e_ctrl_taglist_tag_add(ctrl, name, description, timep, nwi); 
+             e_ctrl_object_store_item_add(ctrl, (void *)(obj_path), (void *)nwi);           
           }
         else if(type==DIVERSITY_OBJECT_TYPE_BARD) 
           {
@@ -200,7 +200,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              if(twitter) neod->twitter = strdup(twitter);
              neod->bard = (Diversity_Bard *) obj;
              printf("Add a bard contact: name:%s, phone:%s, alias:%s, twitter:%s, lon:%f, lat:%f\n", name, phone, alias, twitter, lon, lat);
-             ok = e_ctrl_contact_add(obj_path, neod);
+             ok = e_ctrl_contact_add(ctrl, obj_path, neod);
              if(!ok) printf("there is an error on add bard contact for %s\n", obj_path);
 
              diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
@@ -210,7 +210,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_neo_other_phone_set(nwi, phone);
              e_nav_world_item_neo_other_alias_set(nwi, alias);
              e_nav_world_item_neo_other_twitter_set(nwi, twitter);
-             e_ctrl_object_store_item_add((void *)obj_path, (void *)nwi);           
+             e_ctrl_object_store_item_add(ctrl, (void *)obj_path, (void *)nwi);           
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
                   DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_neo_other_geometry_changed, nwi);
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
@@ -271,12 +271,12 @@ viewport_object_removed(void *data, DBusMessage *msg)
    else 
      {
         printf("object deleted: %s \n", obj_path);
-        if(e_ctrl_contact_get(obj_path))
-          e_ctrl_contact_remove(obj_path);
-        world_item = e_ctrl_object_store_item_get(obj_path);
+        if(e_ctrl_contact_get(ctrl, obj_path))
+          e_ctrl_contact_remove(ctrl, obj_path);
+        world_item = e_ctrl_object_store_item_get(ctrl, obj_path);
         if(world_item) 
           {
-             e_ctrl_object_store_item_remove(obj_path);
+             e_ctrl_object_store_item_remove(ctrl, obj_path);
              e_nav_world_item_delete(nav, world_item);
              evas_object_del(world_item);
           }
@@ -345,7 +345,7 @@ on_neo_other_property_changed(void *data, DBusMessage *msg)
    if(!data) return;
    neo_other_obj = data;
    path = e_nav_world_item_neo_other_path_get(neo_other_obj);
-   neod = e_ctrl_contact_get(path);
+   neod = e_ctrl_contact_get(ctrl, path);
    if (!neod) return;
 
    if(!strcasecmp(name, "fullname"))
@@ -496,11 +496,12 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    if(!ctrl) return;
 
    e_ctrl_theme_source_set(ctrl, THEMEDIR);
-   e_ctrl_nav_set(nav);
+   e_ctrl_nav_set(ctrl, nav);
+   e_nav_world_ctrl_set(nav, ctrl);
 
    _e_mod_neo_me_init();
 
-   e_ctrl_neo_me_set(neo_me);
+   e_ctrl_neo_me_set(ctrl, neo_me);
    evas_object_show(ctrl);
 
 

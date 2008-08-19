@@ -55,21 +55,23 @@
 #define N_(str) (str)
 #endif
 
-/* types */
-typedef struct _E_Nav_Location E_Nav_Location; /* opaque object */
-
 typedef enum _E_Nav_World_Item_Type
 {
    E_NAV_WORLD_ITEM_TYPE_WALLPAPER,
-     E_NAV_WORLD_ITEM_TYPE_ITEM,
-     E_NAV_WORLD_ITEM_TYPE_OVERLAY,
-     E_NAV_WORLD_ITEM_TYPE_LINKED
+   E_NAV_WORLD_ITEM_TYPE_ITEM,
+   E_NAV_WORLD_ITEM_TYPE_OVERLAY,
+   E_NAV_WORLD_ITEM_TYPE_LINKED
 } E_Nav_World_Item_Type;
 
 /* object management */
 Evas_Object    *e_nav_add(Evas *e, void *world);
 void            e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir);
 
+/* ctrl is owned by caller */
+void            e_nav_world_ctrl_set(Evas_Object *obj, Evas_Object *ctrl);
+Evas_Object    *e_nav_world_ctrl_get(Evas_Object *obj);
+
+/* tileset will be added to e_nav */
 void            e_nav_world_tileset_set(Evas_Object *obj, Evas_Object *nt);
 void           *e_nav_world_get();
     

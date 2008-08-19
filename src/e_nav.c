@@ -19,8 +19,8 @@
  */
 
 #include "e_nav.h"
-#include "e_nav_tileset.h"
 #include "e_ctrl.h"
+#include "e_nav_tileset.h"
 #include "e_nav_dbus.h"
 
 /* navigator object */
@@ -57,6 +57,7 @@ struct _E_Smart_Data
    Evas_Object     *stacking;
    Evas_Object     *event;
 
+   Evas_Object     *ctrl;
    Evas_Object     *tileset;
    
    /* the list of items in the world as we have been told by the backend */
@@ -184,6 +185,26 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 
    _e_nav_wallpaper_update(obj);
    _e_nav_overlay_update(obj);
+}
+
+void
+e_nav_world_ctrl_set(Evas_Object *obj, Evas_Object *ctrl)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   sd->ctrl = ctrl;
+}
+
+Evas_Object *
+e_nav_world_ctrl_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return sd->ctrl;
 }
 
 void
@@ -332,7 +353,8 @@ e_nav_span_set(Evas_Object *obj, int span, double when)
    else if (span < E_NAV_SPAN_MIN)
      span = E_NAV_SPAN_MIN;
 
-   e_ctrl_span_drag_value_set(span);
+   if (sd->ctrl)
+     e_ctrl_span_drag_value_set(sd->ctrl, span);
 
    if (when == 0.0)
      {
@@ -873,7 +895,8 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 	/* set `when' to frametime to minimize screen update */
 	when = ecore_animator_frametime_get();
 
-	e_ctrl_follow_set(FALSE);
+	if (sd->ctrl)
+	  e_ctrl_follow_set(sd->ctrl, FALSE);
      }
 
    _e_nav_pos_set(obj, px, py, when);
