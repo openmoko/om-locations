@@ -114,6 +114,7 @@ _e_nav_tag_sel(void *data, void *data2)
    Evas_Object *object;
    Diversity_Tag *tag;
    E_Smart_Data *sd; 
+   double lon, lat;
    int unread;
 
    sd = evas_object_smart_data_get(data);
@@ -123,8 +124,7 @@ _e_nav_tag_sel(void *data, void *data2)
    object = (Evas_Object *)data2;
    tag = e_nav_world_item_location_tag_get(object);
 
-   double lon = e_nav_world_item_location_lon_get(data2);
-   double lat = e_nav_world_item_location_lat_get(data2);
+   e_nav_world_item_geometry_get(data2, &lon, &lat, NULL, NULL);
    unread = e_nav_world_item_location_unread_get(object); 
    int val = 0;
    if(unread && tag)
@@ -140,7 +140,7 @@ _e_nav_tag_sel(void *data, void *data2)
    sd->follow = 0;
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
    evas_object_show(sd->nav);
-   e_nav_world_item_location_title_show(object);
+   e_nav_world_item_location_details_set(object, 1);
    evas_object_show(sd->map_overlay);
    if(evas_object_visible_get(sd->message))
      evas_object_raise(sd->message);

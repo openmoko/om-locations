@@ -20,25 +20,25 @@
 
 #ifndef E_NAV_ITEM_LOCATION_H
 #define E_NAV_ITEM_LOCATION_H
+
 #include "e_nav_dbus.h"
 
 Evas_Object            *e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Object *tag);
+Diversity_Tag          *e_nav_world_item_location_tag_get(Evas_Object *item);
+
 void                    e_nav_world_item_location_name_set(Evas_Object *item, const char *name);
 const char             *e_nav_world_item_location_name_get(Evas_Object *item);
 void                    e_nav_world_item_location_note_set(Evas_Object *item, const char *note);
 const char             *e_nav_world_item_location_note_get(Evas_Object *item);
-void                    e_nav_world_item_location_visible_set(Evas_Object *item, Evas_Bool active);
-Evas_Bool               e_nav_world_item_location_visible_get(Evas_Object *item);
-void                    e_nav_world_item_location_lat_set(Evas_Object *item, double lat);
-double                  e_nav_world_item_location_lat_get(Evas_Object *item);
-void                    e_nav_world_item_location_lon_set(Evas_Object *item, double lon);
-double                  e_nav_world_item_location_lon_get(Evas_Object *item);
 void                    e_nav_world_item_location_timestamp_set(Evas_Object *item, time_t secs);
 int                     e_nav_world_item_location_timestamp_get(Evas_Object *item);
 void                    e_nav_world_item_location_unread_set(Evas_Object *item, uint unread);
 int                     e_nav_world_item_location_unread_get(Evas_Object *item);
-Diversity_Tag          *e_nav_world_item_location_tag_get(Evas_Object *item);
-void                    e_nav_world_item_location_title_show(Evas_Object *obj);
+
+void                    e_nav_world_item_location_visible_set(Evas_Object *item, Evas_Bool active);
+Evas_Bool               e_nav_world_item_location_visible_get(Evas_Object *item);
+void                    e_nav_world_item_location_details_set(Evas_Object *item, Evas_Bool active);
+Evas_Bool               e_nav_world_item_location_details_get(Evas_Object *item);
 
 void                    e_nav_world_item_location_action_new(Evas_Object *obj, double lon, double lat);
 void                    e_nav_world_item_location_action_edit(Evas_Object *item);

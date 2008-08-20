@@ -40,14 +40,15 @@ static Evas_Object *xxx_ctrl;
 
 struct _Location_Data
 {
+   Diversity_Tag          *tag;
+   time_t                  timestamp;
+   uint                    unread;
    const char             *name;
    const char             *note;
+
    unsigned char           visible : 1;
-   double                  lat;
-   double                  lon;
-   time_t                  timestamp;
-   Diversity_Tag          *tag;
-   uint                    unread;
+   unsigned char           details : 1;
+   unsigned char           timestamp_changed : 1;
 };
 
 static const char *
@@ -225,28 +226,18 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
 static void
 _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
-   Evas_Object *location;
+   Evas_Object *item;
    Location_Data *locd;
-   const char *text_part_state;
-   double val_ret;
-   char *time_diff_string;
 
-   location = (Evas_Object *)data;
-   if(!location) return;
-   text_part_state = edje_object_part_state_get(location, "e.text.name", &val_ret);
-   locd = evas_object_data_get(location, "nav_world_item_location_data");
+   item = (Evas_Object *) data;
+   if (!item)
+     return;
 
-   if(!strcmp(text_part_state, "default"))
-     {
-        time_diff_string = get_time_diff_string(locd->timestamp);
-        edje_object_part_text_set(location, "e.text.name2", time_diff_string);
-        free(time_diff_string);
-        edje_object_signal_emit(location, "e,state,active", "e");
-     }
-   else
-     {
-        edje_object_signal_emit(location, "e,state,passive", "e");
-     }
+   locd = evas_object_data_get(item, "nav_world_item_location_data");
+   if (!locd)
+     return;
+
+   e_nav_world_item_location_details_set(item, !locd->details);
 }
 
 static void
@@ -298,8 +289,6 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    evas_object_event_callback_add(o, EVAS_CALLBACK_DEL,
 				  _e_nav_world_item_cb_del, NULL);
    evas_object_data_set(o, "nav_world_item_location_data", locd);
-   e_nav_world_item_location_lat_set(o, lat);
-   e_nav_world_item_location_lon_set(o, lon);
    evas_object_show(o);
 
    if (!xxx_ctrl)
@@ -382,50 +371,6 @@ e_nav_world_item_location_visible_get(Evas_Object *item)
 }
 
 void
-e_nav_world_item_location_lat_set(Evas_Object *item, double lat)
-{
-   Location_Data *locd;
-
-   locd = evas_object_data_get(item, "nav_world_item_location_data");
-   if (!locd) return;
-   if (lat > 90.0) lat=90.0;
-   if (lat < -90.0) lat=-90.0;
-   locd->lat = lat;
-}
-
-double
-e_nav_world_item_location_lat_get(Evas_Object *item)
-{
-   Location_Data *locd;
-
-   locd = evas_object_data_get(item, "nav_world_item_location_data");
-   if (!locd) return 0;
-   return locd->lat;
-}
-
-void
-e_nav_world_item_location_lon_set(Evas_Object *item, double lon)
-{
-   Location_Data *locd;
-
-   locd = evas_object_data_get(item, "nav_world_item_location_data");
-   if (!locd) return;
-   if (lon > 180.0) lon=180.0;
-   if (lon < -180.0) lon=-180.0;
-   locd->lon = lon;
-}
-
-double
-e_nav_world_item_location_lon_get(Evas_Object *item)
-{
-   Location_Data *locd;
-
-   locd = evas_object_data_get(item, "nav_world_item_location_data");
-   if (!locd) return 0;
-   return locd->lon;
-}
-
-void
 e_nav_world_item_location_unread_set(Evas_Object *item, uint unread)
 {
    Location_Data *locd;
@@ -462,7 +407,9 @@ e_nav_world_item_location_timestamp_set(Evas_Object *item, time_t secs)
 
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
+
    locd->timestamp = secs;
+   locd->timestamp_changed = TRUE;
 }
 
 int
@@ -476,24 +423,58 @@ e_nav_world_item_location_timestamp_get(Evas_Object *item)
 }
 
 void
-e_nav_world_item_location_title_show(Evas_Object *location)
+e_nav_world_item_location_details_set(Evas_Object *item, Evas_Bool active)
 {
    Location_Data *locd;
-   const char *text_part_state;
-   double val_ret;
-   char *time_diff_string;
 
-   if(!location) return;
-   text_part_state = edje_object_part_state_get(location, "e.text.name", &val_ret);
-   locd = evas_object_data_get(location, "nav_world_item_location_data");
+   locd = evas_object_data_get(item, "nav_world_item_location_data");
+   if (!locd)
+     return;
 
-   if(!strcmp(text_part_state, "default"))
+   active = !!active;
+
+   if (locd->details != active)
      {
-        time_diff_string = get_time_diff_string(locd->timestamp);
-        edje_object_part_text_set(location, "e.text.name2", time_diff_string);
-        free(time_diff_string);
-        edje_object_signal_emit(location, "e,state,active", "e");
+	locd->details = active;
+
+	if (locd->details)
+	  {
+	     if (locd->timestamp_changed)
+	       {
+		  char *time_str;
+
+		  time_str = get_time_diff_string(locd->timestamp);
+		  edje_object_part_text_set(item, "e.text.name2", time_str);
+		  free(time_str);
+
+		  locd->timestamp_changed = FALSE;
+	       }
+
+	     edje_object_signal_emit(item, "e,state,active", "e");
+	  }
+	else
+	  {
+	     edje_object_signal_emit(item, "e,state,passive", "e");
+	  }
      }
+}
+
+Evas_Bool
+e_nav_world_item_location_details_get(Evas_Object *item)
+{
+   Location_Data *locd;
+
+   locd = evas_object_data_get(item, "nav_world_item_location_data");
+   if (!locd)
+     return FALSE;
+
+   return locd->details;
+}
+
+void
+e_nav_world_item_location_title_show(Evas_Object *item)
+{
+   e_nav_world_item_location_details_set(item, TRUE);
 }
 
 static char *
