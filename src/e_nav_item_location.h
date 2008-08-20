@@ -39,6 +39,9 @@ void                    e_nav_world_item_location_unread_set(Evas_Object *item, 
 int                     e_nav_world_item_location_unread_get(Evas_Object *item);
 Diversity_Tag          *e_nav_world_item_location_tag_get(Evas_Object *item);
 void                    e_nav_world_item_location_title_show(Evas_Object *obj);
-Evas_Object            *e_nav_world_item_location_new(Evas_Object *nav, Diversity_Object *obj);
-    
+
+void                    e_nav_world_item_location_action_new(Evas_Object *obj, double lon, double lat);
+void                    e_nav_world_item_location_action_edit(Evas_Object *item);
+void                    e_nav_world_item_location_action_send(Evas_Object *item);
+
 #endif

@@ -30,6 +30,9 @@
 #include <time.h>
 #include <ctype.h>
 
+#define LOCATION_TITLE_LEN   40
+#define LOCATION_MESSAGE_LEN 80
+
 static char *get_time_diff_string(time_t time_then);
 
 typedef struct _Location_Data Location_Data;
@@ -47,92 +50,49 @@ struct _Location_Data
    uint                    unread;
 };
 
-static void
-alert_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
+static const char *
+form_description(const char *title, const char *message)
 {
-   e_alert_deactivate(obj);
+   static char desc[LOCATION_TITLE_LEN + 1 + LOCATION_MESSAGE_LEN + 1];
+
+   snprintf(desc, sizeof(desc), "%s\n%s", title, message);
+
+   return desc;
 }
 
-static void
-dialog_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
+static int
+location_save(Evas_Object *item, const char *title, const char *msg)
 {
-   e_dialog_deactivate(obj);
-}
-
-static void
-location_save(Evas_Object *obj, Evas_Object *src_obj)
-{
+   const char *desc;
    Location_Data *locd;
-   const char *name, *note;
-   char *description;
-   int result;
 
-   locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
-   if (!locd) return;
-   name = e_dialog_textblock_text_get(obj, _("Edit title"));
-   note = e_dialog_textblock_text_get(obj, _("Edit message"));
-   description = malloc(strlen(name) + 1 + strlen(note) + 1);
-   if (!description) return ;
-   sprintf(description, "%s%c%s", name, '\n', note);
-   result = diversity_tag_prop_set(locd->tag, "description", description);
-   if(result)
+   locd = evas_object_data_get(item, "nav_world_item_location_data");
+   if (!locd)
+     return FALSE;
+
+   desc = form_description(title, msg);
+
+   if (diversity_tag_prop_set(locd->tag, "description", desc))
      {
         if (locd->name) evas_stringshare_del(locd->name);
-        if (name) locd->name = evas_stringshare_add(name);
+        if (title) locd->name = evas_stringshare_add(title);
         else locd->name = NULL;
 
         if (locd->note) evas_stringshare_del(locd->note);
-        if (note) locd->note = evas_stringshare_add(note);
+        if (msg) locd->note = evas_stringshare_add(msg);
         else locd->note = NULL;
-        e_ctrl_taglist_tag_set(xxx_ctrl, name, note, src_obj);  
-        e_nav_world_item_location_name_set(src_obj, name);
+
+        e_ctrl_taglist_tag_set(xxx_ctrl, title, msg, item);
+        e_nav_world_item_location_name_set(item, title);
+
+	return TRUE;
      }
-   free(description);
-}
-
-static void
-dialog_location_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   location_save(obj, src_obj);
-   e_dialog_deactivate(obj);
-}
-
-static void
-alert_location_delete_cancelled(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   e_alert_deactivate(obj);
-}
-
-static void
-alert_location_delete_confirmed(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   Location_Data *locd;
-   int ok;
-
-   locd = evas_object_data_get(src_obj, "nav_world_item_location_data");
-   if (!locd) return;
-   Diversity_World *world = e_nav_world_get();
-   ok = diversity_world_tag_remove(world, locd->tag);
-   if(ok)
+   else
      {
-        locd->tag = NULL;
-     }
-   e_alert_deactivate(obj);
-}
+	printf("failed to edit tag %s\n", title);
 
-static void
-dialog_location_delete(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   Evas_Object *oa = e_alert_add(evas_object_evas_get(obj));
-   e_alert_theme_source_set(oa, THEMEDIR);
-   e_alert_source_object_set(oa, src_obj);
-   e_alert_title_set(oa, _("DELETE"), _("Are you sure?"));
-   e_alert_title_color_set(oa, 255, 0, 0, 255);
-   e_alert_button_add(oa, _("Yes"), alert_location_delete_confirmed, oa);
-   e_alert_button_add(oa, _("No"), alert_location_delete_cancelled, oa);
-   e_dialog_deactivate(obj);
-   evas_object_show(oa);
-   e_alert_activate(oa);
+	return FALSE;
+     }
 }
 
 static int
@@ -153,7 +113,7 @@ is_phone_number(const char *input)
      if(!isdigit(input[i]))
        return FALSE;
 
-   return TRUE;     
+   return TRUE;
 }
 
 static const char *
@@ -182,181 +142,67 @@ get_phone_equip()
    return eqp;
 }
 
-static void
-location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
+static const char *
+location_send(Evas_Object *item, const char *to)
 {
-   Diversity_Equipment *eqp = NULL;
-   Neo_Other_Data *neod = NULL;
-   Evas_Object *alert_dialog;
-   Evas_Object *location_object;
    Location_Data *locd;
+   Diversity_Equipment *eqp;
+   Neo_Other_Data *neod;
+   const char *error = NULL;
 
-   int ok = FALSE;
-   const char *input = e_contact_editor_input_get(obj); 
-   printf("location send\n");
-
-   if(input==NULL)
-     { 
-        e_contact_editor_deactivate(obj);   
-        return;
-     }
-
-   location_object = src_obj;
-   locd = evas_object_data_get(location_object, "nav_world_item_location_data");
-   if (!locd) 
-     {
-        e_contact_editor_deactivate(obj);   
-        return;
-     }
-
+   locd = evas_object_data_get(item, "nav_world_item_location_data");
    eqp = get_phone_equip();
-     
-   if(!eqp) 
+
+   if (!locd || !to || !eqp)
+     return _("Unable to send SMS");
+
+   neod = e_ctrl_contact_get_by_name(xxx_ctrl, to);
+   if (!neod)
      {
-        e_contact_editor_deactivate(obj);   
-        return;
+	to = trim_leading_space(to);
+	neod = e_ctrl_contact_get_by_name(xxx_ctrl, to);
+	if (!neod)
+	  neod = e_ctrl_contact_get_by_number(xxx_ctrl, to);
      }
 
-   neod = e_ctrl_contact_get_by_name(xxx_ctrl, input);
-   if(!neod)
+   if (neod || is_phone_number(to))
      {
-        input = trim_leading_space(input);
-        neod = e_ctrl_contact_get_by_number(xxx_ctrl, input);
+	int ok;
+
+	if (neod)
+	  ok = diversity_sms_tag_share((Diversity_Sms *) eqp,
+		neod->bard, locd->tag);
+	else
+	  ok = diversity_sms_tag_send((Diversity_Sms *) eqp,
+		to, locd->tag);
+
+	if (!ok)
+	  error = _("Send tag failed");
+     }
+   else
+     {
+	error = _("Contact not found");
      }
 
-   /* send by contact */
-   if(neod) 
-     {
-        ok = diversity_sms_tag_share((Diversity_Sms *)eqp, neod->bard, locd->tag);
-        alert_dialog = e_alert_add(evas_object_evas_get(obj));
-        e_alert_theme_source_set(alert_dialog, THEMEDIR);
-        e_alert_source_object_set(alert_dialog, src_obj);     
-        if (ok)
-          {
-             e_alert_title_set(alert_dialog, _("SUCCESS"), _("Tag sent"));
-             e_alert_title_color_set(alert_dialog, 0, 255, 0, 255);
-             e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
-          }
-        else 
-          {
-             e_alert_title_set(alert_dialog, _("ERROR"), _("Send tag failed"));
-             e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-             e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
-          }
-        e_contact_editor_deactivate(obj);   
-        evas_object_show(alert_dialog);
-        e_alert_activate(alert_dialog); 
-        return;
-     }
-
-   /* send by number */   
-   if(is_phone_number(input))
-     {
-        ok = diversity_sms_tag_send((Diversity_Sms *)eqp, input, locd->tag);
-
-        Evas_Object *od = e_alert_add(evas_object_evas_get(obj));
-        e_alert_theme_source_set(od, THEMEDIR);
-        e_alert_source_object_set(od, src_obj);     
-        if(ok)
-          {
-             e_alert_title_set(od, _("SUCCESS"), _("Tag sent"));
-             e_alert_title_color_set(od, 0, 255, 0, 255);
-             e_alert_button_add(od, _("OK"), alert_exit, od);
-          }
-        else
-          {
-             e_alert_title_set(od, _("ERROR"), _("Send tag failed"));
-             e_alert_title_color_set(od, 255, 0, 0, 255);
-             e_alert_button_add(od, _("OK"), alert_exit, od);
-          }
-        e_contact_editor_deactivate(obj);   
-        evas_object_show(od);
-        e_alert_activate(od); 
-        return;
-     }
-
-   /* can't find contact and is not a phone number */
-   alert_dialog = e_alert_add(evas_object_evas_get(obj));
-   e_alert_theme_source_set(alert_dialog, THEMEDIR);
-   e_alert_source_object_set(alert_dialog, src_obj);     
-   e_alert_title_set(alert_dialog, _("ERROR"), _("Contact not found"));
-   e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-   e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
-   e_contact_editor_deactivate(obj);   
-   evas_object_show(alert_dialog);
-   e_alert_activate(alert_dialog); 
-}
-
-static void
-dialog_location_send(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   Evas_Object *editor;
-   Ecore_List *contacts;
-
-   location_save(obj, src_obj); 
-
-   editor = e_contact_editor_add( evas_object_evas_get(obj) );
-   e_contact_editor_theme_source_set(editor, THEMEDIR, location_send, data, NULL, NULL); // data is the location item evas object 
-   e_contact_editor_source_object_set(editor, data);  //  src_object is location item evas object 
-   e_contact_editor_input_set(editor, _("To:"), "");
-
-   contacts = e_ctrl_contacts_get(xxx_ctrl); 
-
-   //FIXME: contacts need to be destroyed later.
-   
-   e_dialog_deactivate(obj);
-   evas_object_show(editor);
-   e_contact_editor_contacts_set(editor, contacts);
-   e_contact_editor_activate(editor);
+   return error;
 }
 
 static void
 _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   Evas_Object *location_object = (Evas_Object*)data;
-   Location_Data *locd;
-   locd = evas_object_data_get(location_object, "nav_world_item_location_data");
-   if (!locd) return;
+   Evas_Object *location_object = (Evas_Object *) data;
 
-   Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
-   e_dialog_theme_source_set(od, THEMEDIR);  
-   e_dialog_source_object_set(od, src_obj);  
-   e_dialog_title_set(od, _("Edit your location"), _("Press the text boxes to edit this location."));
-   const char *title = e_nav_world_item_location_name_get(location_object);
-   e_dialog_textblock_add(od, _("Edit title"), title, 40, 40, obj);
-   const char *message = e_nav_world_item_location_note_get(location_object);
-   e_dialog_textblock_add(od, _("Edit message"), message, 100, 80, obj);
-   e_dialog_button_add(od, _("Save"), dialog_location_save, od);
-   e_dialog_button_add(od, _("Cancel"), dialog_exit, od);
-   e_dialog_button_add(od, _("Delete"), dialog_location_delete, od);
-   
    e_flyingmenu_deactivate(obj);
-   evas_object_show(od);
-   e_dialog_activate(od);
+   e_nav_world_item_location_action_edit(location_object);
 }
 
 static void
 _e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   Evas_Object *location_object = (Evas_Object*)data;
-   Location_Data *locd;
-   locd = evas_object_data_get(location_object, "nav_world_item_location_data");
-   if (!locd) return;
+   Evas_Object *location_object = (Evas_Object *) data;
 
-   Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
-   e_dialog_theme_source_set(od, THEMEDIR);  
-   e_dialog_source_object_set(od, src_obj);  
-   e_dialog_title_set(od, _("Send your location"), _("Send your favorite location to a friend by SMS."));
-   const char *title = e_nav_world_item_location_name_get(location_object);
-   e_dialog_textblock_add(od, _("Edit title"), title, 40, 40, obj);
-   const char *message = e_nav_world_item_location_note_get(location_object);
-   e_dialog_textblock_add(od, _("Edit message"), message, 100, 80, obj);
-   e_dialog_button_add(od, _("Send"), dialog_location_send, data);
-   e_dialog_button_add(od, _("Cancel"), dialog_exit, od);
-   
    e_flyingmenu_deactivate(obj);
-   evas_object_show(od);
-   e_dialog_activate(od);
+   e_nav_world_item_location_action_send(location_object);
 }
 
 static void
@@ -384,20 +230,20 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    const char *text_part_state;
    double val_ret;
    char *time_diff_string;
- 
-   location = (Evas_Object *)data;   
+
+   location = (Evas_Object *)data;
    if(!location) return;
    text_part_state = edje_object_part_state_get(location, "e.text.name", &val_ret);
    locd = evas_object_data_get(location, "nav_world_item_location_data");
 
-   if(!strcmp(text_part_state, "default")) 
+   if(!strcmp(text_part_state, "default"))
      {
         time_diff_string = get_time_diff_string(locd->timestamp);
         edje_object_part_text_set(location, "e.text.name2", time_diff_string);
         free(time_diff_string);
         edje_object_signal_emit(location, "e,state,active", "e");
      }
-   else 
+   else
      {
         edje_object_signal_emit(location, "e,state,passive", "e");
      }
@@ -410,7 +256,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
    if(!obj) return;
 
-   e_ctrl_taglist_tag_delete(xxx_ctrl, obj);   
+   e_ctrl_taglist_tag_delete(xxx_ctrl, obj);
 
    locd = evas_object_data_get(obj, "nav_world_item_location_data");
    if (!locd) return;
@@ -466,7 +312,7 @@ void
 e_nav_world_item_location_name_set(Evas_Object *item, const char *name)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
    if (locd->name) evas_stringshare_del(locd->name);
@@ -474,7 +320,7 @@ e_nav_world_item_location_name_set(Evas_Object *item, const char *name)
    else locd->name = NULL;
    if(!locd->name || !strcmp(locd->name, ""))
      edje_object_part_text_set(item, "e.text.name", _("No Title"));
-   else 
+   else
      edje_object_part_text_set(item, "e.text.name", locd->name);
 }
 
@@ -482,7 +328,7 @@ const char *
 e_nav_world_item_location_name_get(Evas_Object *item)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return NULL;
    return locd->name;
@@ -492,7 +338,7 @@ void
 e_nav_world_item_location_note_set(Evas_Object *item, const char *note)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
    if (locd->note) evas_stringshare_del(locd->note);
@@ -504,7 +350,7 @@ const char *
 e_nav_world_item_location_note_get(Evas_Object *item)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return NULL;
    return locd->note;
@@ -514,7 +360,7 @@ void
 e_nav_world_item_location_visible_set(Evas_Object *item, Evas_Bool visible)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
    if ((visible && locd->visible) || ((!visible) && (!locd->visible))) return;
@@ -529,7 +375,7 @@ Evas_Bool
 e_nav_world_item_location_visible_get(Evas_Object *item)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return 0;
    return locd->visible;
@@ -539,7 +385,7 @@ void
 e_nav_world_item_location_lat_set(Evas_Object *item, double lat)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
    if (lat > 90.0) lat=90.0;
@@ -551,7 +397,7 @@ double
 e_nav_world_item_location_lat_get(Evas_Object *item)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return 0;
    return locd->lat;
@@ -561,7 +407,7 @@ void
 e_nav_world_item_location_lon_set(Evas_Object *item, double lon)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
    if (lon > 180.0) lon=180.0;
@@ -573,7 +419,7 @@ double
 e_nav_world_item_location_lon_get(Evas_Object *item)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return 0;
    return locd->lon;
@@ -583,7 +429,7 @@ void
 e_nav_world_item_location_unread_set(Evas_Object *item, uint unread)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
    locd->unread = unread;
@@ -593,7 +439,7 @@ int
 e_nav_world_item_location_unread_get(Evas_Object *item)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return 0;
    return locd->unread;
@@ -603,7 +449,7 @@ Diversity_Tag *
 e_nav_world_item_location_tag_get(Evas_Object *item)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return 0;
    return locd->tag;
@@ -613,7 +459,7 @@ void
 e_nav_world_item_location_timestamp_set(Evas_Object *item, time_t secs)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
    locd->timestamp = secs;
@@ -623,7 +469,7 @@ int
 e_nav_world_item_location_timestamp_get(Evas_Object *item)
 {
    Location_Data *locd;
-   
+
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return 0;
    return locd->timestamp;
@@ -641,51 +487,13 @@ e_nav_world_item_location_title_show(Evas_Object *location)
    text_part_state = edje_object_part_state_get(location, "e.text.name", &val_ret);
    locd = evas_object_data_get(location, "nav_world_item_location_data");
 
-   if(!strcmp(text_part_state, "default")) 
+   if(!strcmp(text_part_state, "default"))
      {
         time_diff_string = get_time_diff_string(locd->timestamp);
         edje_object_part_text_set(location, "e.text.name2", time_diff_string);
         free(time_diff_string);
         edje_object_signal_emit(location, "e,state,active", "e");
      }
-}
-
-Evas_Object *
-e_nav_world_item_location_new(Evas_Object *nav, Diversity_Object *obj)
-{
-   Evas_Object *nwi;
-   double lon, lat, width, height;
-   char *name = NULL;
-   char *description = NULL;
-   int secs = 0;
-   time_t timep;
-   int unread;
-   const char *obj_path;
-
-   if(!obj) return NULL;
-   obj_path = diversity_dbus_path_get((Diversity_DBus *)obj);
-
-   diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
-   diversity_dbus_property_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &secs);
-   timep = (time_t)secs;
-   nwi = e_nav_world_item_location_add(nav, THEMEDIR,
-               lon, lat, obj);
-   if(!nwi) return NULL;
-   diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
-   diversity_dbus_property_get((Diversity_DBus *) obj,
-         DIVERSITY_DBUS_IFACE_TAG, "Unread", &unread);
-   e_nav_world_item_location_unread_set(nwi, unread);
-
-   name = strsep(&description, "\n");
-   e_nav_world_item_location_name_set(nwi, name);
-   e_nav_world_item_location_note_set(nwi, description);
-   e_nav_world_item_location_timestamp_set(nwi, timep);
-
-   e_ctrl_taglist_tag_add(xxx_ctrl, name, description, timep, nwi); 
-
-   e_ctrl_object_store_item_add(xxx_ctrl, (void *)strdup(obj_path), (void *)nwi);
-   e_nav_world_item_location_title_show(nwi);
-   return nwi;
 }
 
 static char *
@@ -698,14 +506,14 @@ get_time_diff_string(time_t time_then)
    struct tm *now_p, *then_p;
    int age;
 
-   time(&time_now);  
+   time(&time_now);
    now_p = localtime(&time_now);
    memcpy(&now, now_p, sizeof(now));
 
    then_p = localtime(&time_then);
    memcpy(&then, then_p, sizeof(then));
 
-   if(time_then > time_now) 
+   if(time_then > time_now)
      {
         snprintf(time_diff_string, sizeof(time_diff_string),
                  "%s", ctime(&time_then));
@@ -737,12 +545,12 @@ get_time_diff_string(time_t time_then)
 
         return strdup(time_diff_string);
      }
-   else 
+   else
      {
-            today_secs = (now.tm_hour * 60 * 60) + (now.tm_min * 60) + now.tm_sec; 
+            today_secs = (now.tm_hour * 60 * 60) + (now.tm_min * 60) + now.tm_sec;
             time_diff = time_now - time_then;
 
-            if (time_diff >= today_secs) 
+            if (time_diff >= today_secs)
 	      {
 		 age = 1 + (time_diff - today_secs) / 86400;
 		 if (age == 1)
@@ -755,7 +563,7 @@ get_time_diff_string(time_t time_then)
 		      snprintf(time_diff_string, sizeof(time_diff_string),
 			    ngettext("One day ago", "%d days ago", age), age);
 		   }
-		 else 
+		 else
 		   {
 		      age /= 7;
 
@@ -769,9 +577,531 @@ get_time_diff_string(time_t time_then)
 
 		 return strdup(time_diff_string);
 	      }
-            else 
+            else
               {
                  return strdup(_("Today"));
-              } 
+              }
      }
+}
+
+/*********************************************************/
+/*********************************************************/
+enum {
+     ACTION_STATE_INIT,
+     ACTION_STATE_CREATE,
+     ACTION_STATE_EDIT,
+     ACTION_STATE_DELETE,
+     ACTION_STATE_SEND,
+     ACTION_STATE_EDITOR,
+     ACTION_STATE_REPORT,
+     ACTION_STATE_END,
+     N_ACTION_STATES
+};
+
+typedef struct _Action_Data {
+     int state;
+
+     Evas *evas;
+     Evas_Object *obj;
+
+     Evas_Object *dialog;
+     Evas_Object *alert;
+     Evas_Object *editor;
+
+     Diversity_World *world;
+
+     Evas_Object *loc;
+     double lon, lat;
+     char *send_error;
+} Action_Data;
+
+static void action_next(Action_Data *act_data, int state);
+
+static void
+action_to_end(Action_Data *act_data)
+{
+   action_next(act_data, ACTION_STATE_END);
+}
+
+static void
+action_to_editor(Action_Data *act_data)
+{
+   action_next(act_data, ACTION_STATE_EDITOR);
+}
+
+static void
+action_to_delete(Action_Data *act_data)
+{
+   action_next(act_data, ACTION_STATE_DELETE);
+}
+
+static void
+action_finish(Action_Data *act_data)
+{
+   if (act_data->dialog)
+     {
+	e_dialog_activate(act_data->dialog);
+	e_dialog_deactivate(act_data->dialog);
+	act_data->dialog = NULL;
+     }
+
+   if (act_data->alert)
+     {
+	e_alert_activate(act_data->alert);
+	e_alert_deactivate(act_data->alert);
+	act_data->alert = NULL;
+     }
+
+   if (act_data->editor)
+     {
+	e_contact_editor_deactivate(act_data->editor);
+	act_data->editor = NULL;
+     }
+
+   if (act_data->send_error)
+     free(act_data->send_error);
+
+   free(act_data);
+}
+
+static void
+action_create(Action_Data *act_data)
+{
+   const char *title = NULL, *msg;
+   Diversity_Tag *tag = NULL;
+
+   if (act_data->dialog)
+     {
+	const char *desc;
+
+	title = e_dialog_textblock_text_get(act_data->dialog,
+	      _("Edit title"));
+	msg = e_dialog_textblock_text_get(act_data->dialog,
+	      _("Edit message"));
+	desc = form_description(title, msg);
+
+	tag = diversity_world_tag_add(act_data->world,
+	      act_data->lon, act_data->lat, desc);
+     }
+
+   if (!tag)
+     printf("failed to add tag %s\n", title);
+
+   action_next(act_data, ACTION_STATE_END);
+}
+
+static void
+action_save(Action_Data *act_data)
+{
+   const char *title, *msg;
+
+   if (act_data->dialog)
+     {
+	title = e_dialog_textblock_text_get(act_data->dialog,
+	      _("Edit title"));
+	msg = e_dialog_textblock_text_get(act_data->dialog,
+	      _("Edit message"));
+
+	location_save(act_data->loc, title, msg);
+     }
+
+   action_next(act_data, ACTION_STATE_END);
+}
+
+static void
+action_send(Action_Data *act_data)
+{
+   if (act_data->send_error)
+     {
+	free(act_data->send_error);
+	act_data->send_error = NULL;
+     }
+
+   if (act_data->editor)
+     {
+	const char *to, *error;
+
+	to = e_contact_editor_input_get(act_data->editor);
+	error = location_send(act_data->loc, to);
+	if (error)
+	  act_data->send_error = strdup(error);
+     }
+   else
+     {
+	act_data->send_error = strdup(_("No contact selected"));
+     }
+
+   action_next(act_data, ACTION_STATE_REPORT);
+}
+
+static void
+action_delete(Action_Data *act_data)
+{
+   Location_Data *locd;
+
+   locd = evas_object_data_get(act_data->loc, "nav_world_item_location_data");
+   if (locd)
+     {
+	if (diversity_world_tag_remove(act_data->world, locd->tag))
+	  locd->tag = NULL;
+	else
+	  printf("failed to delete tag %s\n", locd->name);
+     }
+
+   action_next(act_data, ACTION_STATE_END);
+}
+
+static void
+action_show_dialog(Action_Data *act_data)
+{
+   Evas_Object *od;
+   const char *title = NULL, *msg = NULL;
+
+   od = act_data->dialog;
+   if (!od)
+     {
+	od = e_dialog_add(act_data->evas);
+	if (!od)
+	  {
+	     action_next(act_data, ACTION_STATE_END);
+
+	     return;
+	  }
+
+	e_dialog_theme_source_set(od, THEMEDIR);
+	e_dialog_source_object_set(od, act_data->obj);
+
+	act_data->dialog = od;
+     }
+
+   switch (act_data->state)
+     {
+      case ACTION_STATE_CREATE:
+	 title = _("Save your location");
+	 msg = _("Save your current location");
+	 break;
+      case ACTION_STATE_EDIT:
+	 title = _("Edit your location");
+	 msg = _("Press the text boxes to edit this location.");
+	 break;
+      case ACTION_STATE_SEND:
+	 title = _("Send your location");
+	 msg = _("Send your favorite location to a friend by SMS.");
+	 break;
+      default:
+	 action_next(act_data, ACTION_STATE_END);
+	 return;
+
+	 break;
+     }
+
+   e_dialog_title_set(act_data->dialog, title, msg);
+
+   if (act_data->loc)
+     {
+	title = e_nav_world_item_location_name_get(act_data->loc);
+	msg = e_nav_world_item_location_note_get(act_data->loc);
+     }
+   else
+     {
+	title = NULL;
+	msg = NULL;
+     }
+
+   e_dialog_textblock_add(act_data->dialog, _("Edit title"), title,
+	 40, LOCATION_TITLE_LEN, NULL);
+   e_dialog_textblock_add(act_data->dialog, _("Edit message"), msg,
+	 100, LOCATION_MESSAGE_LEN, NULL);
+
+   switch (act_data->state)
+     {
+      case ACTION_STATE_CREATE:
+	 e_dialog_button_add(act_data->dialog, _("Save"),
+	       (void *) action_create, act_data);
+	 e_dialog_button_add(act_data->dialog, _("Cancel"),
+	       (void *) action_to_end, act_data);
+	 break;
+      case ACTION_STATE_EDIT:
+	 e_dialog_button_add(act_data->dialog, _("Save"),
+	       (void *) action_save, act_data);
+	 e_dialog_button_add(act_data->dialog, _("Cancel"),
+	       (void *) action_to_end, act_data);
+	 e_dialog_button_add(act_data->dialog, _("Delete"),
+	       (void *) action_to_delete, act_data);
+	 break;
+      case ACTION_STATE_SEND:
+	 e_dialog_button_add(act_data->dialog, _("Send"),
+	       (void *) action_to_editor, act_data);
+	 e_dialog_button_add(act_data->dialog, _("Cancel"),
+	       (void *) action_to_end, act_data);
+	 break;
+     }
+
+   evas_object_show(act_data->dialog);
+   e_dialog_activate(act_data->dialog);
+}
+
+static void
+action_show_editor(Action_Data *act_data)
+{
+   Evas_Object *editor;
+   Ecore_List *contacts;
+
+   if (act_data->dialog && act_data->loc)
+     {
+	const char *title, *msg;
+
+	title = e_dialog_textblock_text_get(act_data->dialog,
+	      _("Edit title"));
+	msg = e_dialog_textblock_text_get(act_data->dialog,
+	      _("Edit message"));
+
+	location_save(act_data->loc, title, msg);
+     }
+
+   editor = act_data->editor;
+   if (!editor)
+     {
+	editor = e_contact_editor_add(act_data->evas);
+	if (!editor)
+	  {
+	     action_next(act_data, ACTION_STATE_END);
+
+	     return;
+	  }
+
+	e_contact_editor_theme_source_set(editor, THEMEDIR,
+	      (void *) action_send, act_data,
+	      (void *) action_to_end, act_data);
+	e_contact_editor_source_object_set(editor, act_data->obj);
+
+	e_contact_editor_input_set(editor, _("To:"), NULL);
+
+	//FIXME: contacts need to be destroyed later.
+	contacts = e_ctrl_contacts_get(xxx_ctrl);
+	e_contact_editor_contacts_set(editor, contacts);
+
+	act_data->editor = editor;
+     }
+
+   evas_object_show(editor);
+   e_contact_editor_activate(editor);
+}
+
+static void
+action_show_alert(Action_Data *act_data)
+{
+   Evas_Object *oa = act_data->alert;
+
+   if (!oa)
+     {
+	oa = e_alert_add(act_data->evas);
+	if (!oa)
+	  {
+	     action_next(act_data, ACTION_STATE_END);
+
+	     return;
+	  }
+
+	e_alert_theme_source_set(oa, THEMEDIR);
+	e_alert_source_object_set(oa, act_data->obj);
+	e_alert_title_color_set(oa, 255, 0, 0, 255);
+
+	act_data->alert = oa;
+     }
+
+   switch (act_data->state)
+     {
+      case ACTION_STATE_DELETE:
+	 e_alert_title_set(oa, _("DELETE"), _("Are you sure?"));
+
+	 e_alert_button_add(oa, _("Yes"),
+	       (void *) action_delete, act_data);
+	 e_alert_button_add(oa, _("No"),
+	       (void *) action_to_end, act_data);
+	 break;
+      case ACTION_STATE_REPORT:
+      default:
+	 if (act_data->send_error)
+	   e_alert_title_set(oa, _("ERROR"), act_data->send_error);
+	 else
+	   e_alert_title_set(oa, _("SUCCESS"), _("Tag sent"));
+
+	 e_alert_button_add(oa, _("OK"),
+	       (void *) action_to_end, act_data);
+	 break;
+     }
+
+   evas_object_show(oa);
+   e_alert_activate(oa);
+}
+
+static int
+action_next_check(Action_Data *act_data, int state)
+{
+   int valid = TRUE;
+
+   switch (act_data->state)
+     {
+      case ACTION_STATE_INIT:
+	 switch (state)
+	   {
+	    case ACTION_STATE_CREATE:
+	    case ACTION_STATE_EDIT:
+	    case ACTION_STATE_SEND:
+	       break;
+	    default:
+	       valid = FALSE;
+	       break;
+	   }
+	 break;
+      case ACTION_STATE_CREATE:
+	 if (state != ACTION_STATE_END)
+	   valid = FALSE;
+	 break;
+      case ACTION_STATE_EDIT:
+	 switch (state)
+	   {
+	    case ACTION_STATE_DELETE:
+	    case ACTION_STATE_END:
+	       break;
+	    default:
+	       valid = FALSE;
+	       break;
+	   }
+	 break;
+      case ACTION_STATE_DELETE:
+	 if (state != ACTION_STATE_END)
+	   valid = FALSE;
+	 break;
+      case ACTION_STATE_SEND:
+	 switch (state)
+	   {
+	    case ACTION_STATE_EDITOR:
+	    case ACTION_STATE_END:
+	       break;
+	    default:
+	       valid = FALSE;
+	       break;
+	   }
+	 break;
+      case ACTION_STATE_EDITOR:
+	 switch (state)
+	   {
+	    case ACTION_STATE_REPORT:
+	    case ACTION_STATE_END:
+	       break;
+	    default:
+	       valid = FALSE;
+	       break;
+	   }
+	 break;
+      case ACTION_STATE_REPORT:
+	 if (state != ACTION_STATE_END)
+	   valid = FALSE;
+	 break;
+      case ACTION_STATE_END:
+      default:
+	 valid = FALSE;
+	 break;
+     }
+
+   return valid;
+}
+
+static void
+action_next(Action_Data *act_data, int state)
+{
+   if (!action_next_check(act_data, state))
+     {
+	printf("action state %d -> %d\n", act_data->state, state);
+	state = ACTION_STATE_END;
+     }
+
+   if (act_data->dialog)
+     evas_object_hide(act_data->dialog);
+   if (act_data->alert)
+     evas_object_hide(act_data->alert);
+   if (act_data->editor)
+     evas_object_hide(act_data->editor);
+
+   act_data->state = state;
+
+   switch (state)
+     {
+      case ACTION_STATE_CREATE:
+      case ACTION_STATE_EDIT:
+      case ACTION_STATE_SEND:
+	 action_show_dialog(act_data);
+	 break;
+      case ACTION_STATE_EDITOR:
+	 action_show_editor(act_data);
+	 break;
+      case ACTION_STATE_DELETE:
+      case ACTION_STATE_REPORT:
+	 action_show_alert(act_data);
+	 break;
+      case ACTION_STATE_END:
+      default:
+	 action_finish(act_data);
+	 break;
+     }
+}
+
+void
+e_nav_world_item_location_action_new(Evas_Object *obj, double lon, double lat)
+{
+   Action_Data *act_data;
+
+   act_data = calloc(sizeof(*act_data), 1);
+   if (!act_data)
+     return;
+
+   act_data->state = ACTION_STATE_INIT;
+   act_data->evas = evas_object_evas_get(obj);
+   act_data->obj = obj;
+   act_data->world = e_nav_world_get();
+
+   act_data->lon = lon;
+   act_data->lat = lat;
+
+   action_next(act_data, ACTION_STATE_CREATE);
+}
+
+void
+e_nav_world_item_location_action_edit(Evas_Object *item)
+{
+   Action_Data *act_data;
+
+   act_data = calloc(sizeof(*act_data), 1);
+   if (!act_data)
+     return;
+
+   act_data->state = ACTION_STATE_INIT;
+   act_data->evas = evas_object_evas_get(item);
+   act_data->obj = item;
+   act_data->world = e_nav_world_get();
+
+   act_data->loc = item;
+
+   action_next(act_data, ACTION_STATE_EDIT);
+}
+
+void
+e_nav_world_item_location_action_send(Evas_Object *item)
+{
+   Action_Data *act_data;
+
+   act_data = calloc(sizeof(*act_data), 1);
+   if (!act_data)
+     return;
+
+   act_data->state = ACTION_STATE_INIT;
+   act_data->evas = evas_object_evas_get(item);
+   act_data->obj = item;
+   act_data->world = e_nav_world_get();
+
+   act_data->loc = item;
+
+   action_next(act_data, ACTION_STATE_SEND);
 }
