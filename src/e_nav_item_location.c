@@ -688,10 +688,10 @@ get_time_diff_string(time_t time_then)
 {
    char time_diff_string[PATH_MAX];
    time_t time_now, time_diff;
-   int days_diff;
    int today_secs;
    struct tm now, then;
    struct tm *now_p, *then_p;
+   int age;
 
    time(&time_now);  
    now_p = localtime(&time_now);
@@ -708,56 +708,62 @@ get_time_diff_string(time_t time_then)
 
    if(now.tm_year != then.tm_year)
      {
-        if(now.tm_year - then.tm_year == 1)
-          snprintf(time_diff_string, sizeof(time_diff_string),
-                   _("Last year"));
+	age = now.tm_year - then.tm_year;
+
+	if (age == 1)
+	  snprintf(time_diff_string, sizeof(time_diff_string),
+		_("Last year"));
         else
-          snprintf(time_diff_string, sizeof(time_diff_string),
-                   _("%d years ago"), now.tm_year - then.tm_year);
+	  snprintf(time_diff_string, sizeof(time_diff_string),
+		ngettext("One year ago", "%d years ago", age), age);
+
         return strdup(time_diff_string);
      }
    else if(now.tm_mon != then.tm_mon)
      {
-        if(now.tm_mon - then.tm_mon == 1)
-          snprintf(time_diff_string, sizeof(time_diff_string),
-                   _("Last month"));
+	age = now.tm_mon - then.tm_mon;
+
+        if (age == 1)
+	  snprintf(time_diff_string, sizeof(time_diff_string),
+		_("Last month"));
         else
-          snprintf(time_diff_string, sizeof(time_diff_string),
-                   _("%d months ago"), now.tm_mon - then.tm_mon);
+	  snprintf(time_diff_string, sizeof(time_diff_string),
+		ngettext("One month ago", "%d months ago", age), age);
+
         return strdup(time_diff_string);
      }
    else 
      {
             today_secs = (now.tm_hour * 60 * 60) + (now.tm_min * 60) + now.tm_sec; 
-            printf("today_secs = %d\n", today_secs);
-            printf("time_now: %d, time_past: %d\n", (int)time_now, (int)time_then);
             time_diff = time_now - time_then;
-            printf("time_diff = %d\n", (int)time_diff);
-            if(time_diff >= today_secs) 
-              {
-                 days_diff = (time_diff - today_secs) / 86400;
-                 if(days_diff == 0)
-                   {
-                      snprintf(time_diff_string, sizeof(time_diff_string),
-                               _("Yesterday"));
-                   }
-                 else if((days_diff + 1) < 7)
-                   {
-                      snprintf(time_diff_string, sizeof(time_diff_string),
-                               _("%d days ago"), days_diff + 1 );
-                   }
-                 else 
-                   {
-                      if(( (days_diff + 1) / 7 ) == 1)
-                        snprintf(time_diff_string, sizeof(time_diff_string),
-                                 _("Last week"));
-                      else
-                        snprintf(time_diff_string, sizeof(time_diff_string),
-                                 _("%d weeks ago"), (days_diff + 1) / 7);
-                   }
 
-                 return strdup(time_diff_string);
-              }
+            if (time_diff >= today_secs) 
+	      {
+		 age = 1 + (time_diff - today_secs) / 86400;
+		 if (age == 1)
+		   {
+		      snprintf(time_diff_string, sizeof(time_diff_string),
+			    _("Yesterday"));
+		   }
+		 else if (age < 7)
+		   {
+		      snprintf(time_diff_string, sizeof(time_diff_string),
+			    ngettext("One day ago", "%d days ago", age), age);
+		   }
+		 else 
+		   {
+		      age /= 7;
+
+		      if (age == 1)
+			snprintf(time_diff_string, sizeof(time_diff_string),
+			      _("Last week"));
+		      else
+			snprintf(time_diff_string, sizeof(time_diff_string),
+			      ngettext("One week ago", "%d weeks ago", age), age);
+		   }
+
+		 return strdup(time_diff_string);
+	      }
             else 
               {
                  return strdup(_("Today"));
