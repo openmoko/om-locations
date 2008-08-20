@@ -727,7 +727,7 @@ _e_mod_neo_me_init()
      }
 
    e_nav_world_item_neo_me_name_set(nwi, _("Me"));
-   show_welcome_message(nwi);
+   e_nav_world_item_neo_me_activate(nwi);
 
    mdata.neo_me = nwi;
 }

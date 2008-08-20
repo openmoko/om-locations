@@ -20,17 +20,20 @@
 
 #ifndef E_NAV_ITEM_NEO_ME_H
 #define E_NAV_ITEM_NEO_ME_H
+
 #include "e_nav_dbus.h"
 
 Evas_Object            *e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Bard *bard);
+Diversity_Bard         *e_nav_world_item_neo_me_bard_get(Evas_Object *item);
+
 void                    e_nav_world_item_neo_me_name_set(Evas_Object *item, const char *name);
 const char             *e_nav_world_item_neo_me_name_get(Evas_Object *item);
-void                    e_nav_world_item_neo_me_visible_set(Evas_Object *item, Evas_Bool active);
-Evas_Bool               e_nav_world_item_neo_me_visible_get(Evas_Object *item);
 void                    e_nav_world_item_neo_me_fixed_set(Evas_Object *item, Evas_Bool fixed);
 Evas_Bool               e_nav_world_item_neo_me_fixed_get(Evas_Object *item);
-Diversity_Bard         *e_nav_world_item_neo_me_bard_get(Evas_Object *item);
-void                    show_welcome_message(Evas_Object *item);
-void                    cosplay(Evas_Object *item, int fixed);
-    
+
+void                    e_nav_world_item_neo_me_visible_set(Evas_Object *item, Evas_Bool active);
+Evas_Bool               e_nav_world_item_neo_me_visible_get(Evas_Object *item);
+
+void                    e_nav_world_item_neo_me_activate(Evas_Object *item);
+
 #endif
