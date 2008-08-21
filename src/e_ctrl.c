@@ -42,11 +42,13 @@ struct _E_Smart_Data
    Ecore_Hash *objectStore;
 
    Evas_Object *obj;      
-   Evas_Object *clip;
-   Evas_Object *map_overlay;   
-   Evas_Object *listview;   
+
+   /* sorted by stack order */
    Evas_Object *panel_buttons;
+   Evas_Object *listview;   
    Evas_Object *message;
+   Evas_Object *map_overlay;   
+   Evas_Object *clip;
 
    int follow;
    Evas_Coord x, y, w, h;
@@ -144,9 +146,7 @@ _e_nav_tag_sel(void *data, Evas_Object *tl, Evas_Object *loc)
 
    evas_object_hide(sd->listview);
    evas_object_show(sd->map_overlay);
-   if(evas_object_visible_get(sd->message))
-     evas_object_raise(sd->message);
-   evas_object_show(sd->panel_buttons);
+
    edje_object_signal_emit(sd->panel_buttons, "JUMP_TO_MAP", "");
 }
 
@@ -305,34 +305,29 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
        printf("sd is NULL\n");
        return;
    }
-   evas_object_hide(sd->nav);
-   evas_object_hide(sd->map_overlay);
    evas_object_show(sd->listview);
-   evas_object_raise(sd->panel_buttons);
-   evas_object_lower(sd->message);
+   evas_object_hide(sd->map_overlay);
+
+   evas_object_hide(sd->nav);
 }
 
 static void   
 _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
-   double lon, lat, w, h;
    E_Smart_Data *sd; 
    sd = evas_object_smart_data_get(data);
    if(!sd || !sd->neo_me) {
        return;
    }
 
-   e_nav_world_item_geometry_get(sd->neo_me, &lon, &lat, &w, &h);
    sd->follow = 1;
-   e_nav_coord_set(sd->nav, lon, lat, 0.0);
+
+   evas_object_show(sd->nav);
 
    evas_object_hide(sd->listview);
-   evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
-   if(evas_object_visible_get(sd->message))
-     evas_object_raise(sd->message);
-   evas_object_show(sd->panel_buttons);
-   e_nav_world_item_raise(sd->neo_me);
+
+   e_nav_world_item_focus(sd->neo_me);
 }
 
 static void
@@ -340,12 +335,11 @@ _e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
 {
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(data);
-   evas_object_hide(sd->listview);
+
    evas_object_show(sd->nav);
+
+   evas_object_hide(sd->listview);
    evas_object_show(sd->map_overlay);
-   if(evas_object_visible_get(sd->message))
-     evas_object_raise(sd->message);
-   evas_object_show(sd->panel_buttons);
 }
 
 static void
@@ -451,6 +445,15 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 				  _e_nav_view_right,
 				  obj);
 
+   sd->message = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
+				      "modules/diversity_nav/message");
+   edje_object_part_text_set(sd->message, "message.text", _("Searching for your location"));
+
+   evas_object_smart_member_add(sd->message, obj);
+   evas_object_move(sd->message, sd->x, sd->y);
+   evas_object_resize(sd->message, sd->w, sd->h);
+   evas_object_clip_set(sd->message, sd->clip);
+
    sd->listview = e_nav_taglist_add(evas_object_evas_get(obj), THEMEDIR);
    e_nav_taglist_callback_add(sd->listview, _e_nav_tag_sel, obj);
    evas_object_smart_member_add(sd->listview, obj);
@@ -463,8 +466,10 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    edje_object_part_text_set(sd->panel_buttons, "refresh_text", _("REFRESH"));
    edje_object_part_text_set(sd->panel_buttons, "map_text", _("MAP"));
    edje_object_part_text_set(sd->panel_buttons, "list_text", _("LIST"));
+   evas_object_smart_member_add(sd->panel_buttons, obj);
    evas_object_move(sd->panel_buttons, sd->x, sd->y);
    evas_object_resize(sd->panel_buttons, sd->w, sd->h);
+   evas_object_clip_set(sd->panel_buttons, sd->clip);
 
    star = edje_object_part_object_get(sd->panel_buttons, "star_button"); 
    map = edje_object_part_object_get(sd->panel_buttons, "map_button"); 
@@ -478,13 +483,6 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_event_callback_add(list, EVAS_CALLBACK_MOUSE_UP,
 				  _e_nav_list_button_cb_mouse_down, obj);
    evas_object_show(sd->panel_buttons);
-
-   sd->message = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
-				      "modules/diversity_nav/message");
-   edje_object_part_text_set(sd->message, "message.text", _("Searching for your location"));
-
-   evas_object_move(sd->message, sd->x, sd->y);
-   evas_object_resize(sd->message, sd->w, sd->h);
 }
 
 void
