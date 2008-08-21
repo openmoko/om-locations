@@ -49,6 +49,7 @@ struct _Location_Data
    unsigned char           visible : 1;
    unsigned char           details : 1;
    unsigned char           timestamp_changed : 1;
+   char                   *timestring;
 };
 
 static const char *
@@ -253,6 +254,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
    if (!locd) return;
    if (locd->name) evas_stringshare_del(locd->name);
    if (locd->note) evas_stringshare_del(locd->note);
+   if (locd->timestring) free(locd->timestring);
 
    edje_object_signal_callback_del(obj, "MENU_ACTIVATE", "e.text.name", cb_menu_activate);
    free(locd);
@@ -422,6 +424,39 @@ e_nav_world_item_location_timestamp_get(Evas_Object *item)
    return locd->timestamp;
 }
 
+const char *
+e_nav_world_item_location_timestring_get(Evas_Object *item)
+{
+   Location_Data *locd;
+
+   locd = evas_object_data_get(item, "nav_world_item_location_data");
+   if (!locd)
+     return NULL;
+
+   if (locd->timestamp_changed)
+     {
+	char *str;
+
+	if (locd->timestring)
+	  free(locd->timestring);
+
+	str = get_time_diff_string(locd->timestamp);
+	if (str)
+	  {
+	     locd->timestring = str;
+	     edje_object_part_text_set(item, "e.text.name2", str);
+	  }
+	else
+	  {
+	     locd->timestring = NULL;
+	  }
+
+	locd->timestamp_changed = FALSE;
+     }
+
+   return locd->timestring;
+}
+
 void
 e_nav_world_item_location_details_set(Evas_Object *item, Evas_Bool active)
 {
@@ -440,15 +475,7 @@ e_nav_world_item_location_details_set(Evas_Object *item, Evas_Bool active)
 	if (locd->details)
 	  {
 	     if (locd->timestamp_changed)
-	       {
-		  char *time_str;
-
-		  time_str = get_time_diff_string(locd->timestamp);
-		  edje_object_part_text_set(item, "e.text.name2", time_str);
-		  free(time_str);
-
-		  locd->timestamp_changed = FALSE;
-	       }
+	       e_nav_world_item_location_timestring_get(item);
 
 	     edje_object_signal_emit(item, "e,state,active", "e");
 	  }
