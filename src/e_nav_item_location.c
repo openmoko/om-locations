@@ -32,6 +32,7 @@
 
 #define LOCATION_TITLE_LEN   40
 #define LOCATION_MESSAGE_LEN 80
+#define LOCATION_DESCRIPTION_LEN (LOCATION_TITLE_LEN + 1 + LOCATION_MESSAGE_LEN)
 
 static char *get_time_diff_string(time_t time_then);
 
@@ -52,27 +53,23 @@ struct _Location_Data
    char                   *timestring;
 };
 
-static const char *
-form_description(const char *title, const char *message)
+static int
+form_description(char *buf, int len, const char *title, const char *message)
 {
-   static char desc[LOCATION_TITLE_LEN + 1 + LOCATION_MESSAGE_LEN + 1];
-
-   snprintf(desc, sizeof(desc), "%s\n%s", title, message);
-
-   return desc;
+   return snprintf(buf, len, "%s\n%s", title, message);
 }
 
 static int
 location_save(Evas_Object *item, const char *title, const char *msg)
 {
-   const char *desc;
    Location_Data *locd;
+   char desc[LOCATION_DESCRIPTION_LEN + 1];
 
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd)
      return FALSE;
 
-   desc = form_description(title, msg);
+   form_description(desc, sizeof(desc), title, msg);
 
    if (diversity_tag_prop_set(locd->tag, "description", desc))
      {
@@ -680,13 +677,13 @@ action_create(Action_Data *act_data)
 
    if (act_data->dialog)
      {
-	const char *desc;
+	char desc[LOCATION_DESCRIPTION_LEN + 1];
 
 	title = e_dialog_textblock_text_get(act_data->dialog,
 	      _("Edit title"));
 	msg = e_dialog_textblock_text_get(act_data->dialog,
 	      _("Edit message"));
-	desc = form_description(title, msg);
+	form_description(desc, sizeof(desc), title, msg);
 
 	tag = diversity_world_tag_add(act_data->world,
 	      act_data->lon, act_data->lat, desc);
