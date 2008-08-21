@@ -20,25 +20,33 @@
 
 #ifndef E_CTRL_H
 #define E_CTRL_H
+
 #include <Ecore.h>
 #include <Evas.h>
-#include <Edje.h>
 #include "e_nav_item_neo_other.h"
 
 Evas_Object        *e_ctrl_add(Evas *e);
 void                e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir);
-
 void                e_ctrl_nav_set(Evas_Object *obj, Evas_Object *nav);
+
 void                e_ctrl_neo_me_set(Evas_Object *obj, Evas_Object *me);
 Evas_Object        *e_ctrl_neo_me_get(Evas_Object *obj);
 Diversity_Equipment *e_ctrl_self_equipment_get(Evas_Object *obj, const char *eqp_name);
-void                e_ctrl_span_drag_value_set(Evas_Object *obj, int span); 
+
+void                e_ctrl_span_drag_value_set(Evas_Object *obj, int span);
 void                e_ctrl_span_text_value_set(Evas_Object *obj, const char* buf);
 void                e_ctrl_longitude_set(Evas_Object *obj, const char* buf);
 void                e_ctrl_latitude_set(Evas_Object *obj, const char* buf);
-void                e_ctrl_taglist_tag_add(Evas_Object *obj, const char *name, const char *note, time_t timestamp, void *loc_object);
-void                e_ctrl_taglist_tag_set(Evas_Object *obj, const char *name, const char *note, void *object);
-void                e_ctrl_taglist_tag_delete(Evas_Object *obj, void *loc_object);
+void                e_ctrl_message_text_set(Evas_Object *obj, const char *msg);
+void                e_ctrl_message_hide(Evas_Object *obj);
+void                e_ctrl_message_show(Evas_Object *obj);
+int                 e_ctrl_follow_get(Evas_Object* obj);
+void                e_ctrl_follow_set(Evas_Object *obj, int follow);
+
+void                e_ctrl_taglist_tag_add(Evas_Object *obj, Evas_Object *loc);
+void                e_ctrl_taglist_tag_set(Evas_Object *obj, Evas_Object *loc);
+void                e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc);
+
 int                 e_ctrl_contact_add(Evas_Object *obj, const char *id, Neo_Other_Data *data);
 int                 e_ctrl_contact_remove(Evas_Object *obj, const char *id);
 int                 e_ctrl_contact_update(Evas_Object *obj, const char *id, Neo_Other_Data *data);
@@ -46,11 +54,7 @@ Neo_Other_Data     *e_ctrl_contact_get(Evas_Object *obj, const char *id);
 Neo_Other_Data     *e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name);
 Neo_Other_Data     *e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number);
 Ecore_List         *e_ctrl_contacts_get(Evas_Object *obj);
-int                 e_ctrl_follow_get(Evas_Object* obj);
-void                e_ctrl_follow_set(Evas_Object *obj, int follow);
-void                e_ctrl_message_text_set(Evas_Object *obj, const char *msg);
-void                e_ctrl_message_hide(Evas_Object *obj);
-void                e_ctrl_message_show(Evas_Object *obj);
+
 void                e_ctrl_object_store_item_add(Evas_Object *obj, void *path, void *item);
 Evas_Object        *e_ctrl_object_store_item_get(Evas_Object *obj, const char *obj_path);
 void                e_ctrl_object_store_item_remove(Evas_Object *obj, const char *obj_path);

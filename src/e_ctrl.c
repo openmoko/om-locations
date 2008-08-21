@@ -109,10 +109,8 @@ e_ctrl_add(Evas *e)
 }
 
 static void
-_e_nav_tag_sel(void *data, void *data2)
+_e_nav_tag_sel(void *data, Tag_List *tl, Evas_Object *loc)
 {
-   Evas_Object *object;
-   Diversity_Tag *tag;
    E_Smart_Data *sd; 
    int unread;
 
@@ -120,23 +118,26 @@ _e_nav_tag_sel(void *data, void *data2)
    if (!sd) 
      return;
     
-   object = (Evas_Object *)data2;
-   tag = e_nav_world_item_location_tag_get(object);
-   unread = e_nav_world_item_location_unread_get(object); 
+   unread = e_nav_world_item_location_unread_get(loc); 
 
-   if (unread && tag)
+   if (unread)
      {
-	int val;
+	Diversity_Tag *tag;
 
 	unread = 0;
-	val = diversity_dbus_property_set((Diversity_DBus *) tag,
-	      DIVERSITY_DBUS_IFACE_TAG, "Unread", DBUS_TYPE_BOOLEAN, &unread);
-	if (val)
-	  e_nav_world_item_location_unread_set(object, 0); 
+
+	tag = e_nav_world_item_location_tag_get(loc);
+	if (tag)
+	  diversity_dbus_property_set((Diversity_DBus *) tag,
+		DIVERSITY_DBUS_IFACE_TAG,
+		"Unread", DBUS_TYPE_BOOLEAN, &unread);
+
+	e_nav_world_item_location_unread_set(loc, 0); 
+	e_nav_taglist_tag_update(sd->listview, loc);
      }
 
-   e_nav_world_item_location_details_set(object, 1);
-   e_nav_world_item_focus(object);
+   e_nav_world_item_location_details_set(loc, 1);
+   e_nav_world_item_focus(loc);
 
    evas_object_show(sd->nav);
 
@@ -151,46 +152,30 @@ _e_nav_tag_sel(void *data, void *data2)
 }
 
 void
-e_ctrl_taglist_tag_set(Evas_Object *obj, const char *name, const char *note, void *object)
+e_ctrl_taglist_tag_set(Evas_Object *obj, Evas_Object *loc)
 {
    E_Smart_Data *sd;
+
    sd = evas_object_smart_data_get(obj);
-   e_nav_taglist_tag_update(sd->listview, name, note, object);
+   e_nav_taglist_tag_update(sd->listview, loc);
 }
 
 void
-e_ctrl_taglist_tag_add(Evas_Object *obj, const char *name, const char *note, time_t timestamp, void *loc_object)
+e_ctrl_taglist_tag_add(Evas_Object *obj, Evas_Object *loc)
 {
    E_Smart_Data *sd;
-   Tag_List_Item *item;
 
    sd = evas_object_smart_data_get(obj);
-
-   item = E_NEW(Tag_List_Item, 1);
-
-   if (name)
-     item->name = strdup(name); 
-   else
-     item->name = strdup("");
-
-   if (note)
-     item->description = strdup(note);
-
-   item->timestamp = timestamp;
-   item->func = _e_nav_tag_sel;
-   item->data = obj;
-   item->data2 = loc_object;
-
-   e_nav_taglist_tag_add(sd->listview, item);
+   e_nav_taglist_tag_add(sd->listview, loc);
 }
 
 void
-e_ctrl_taglist_tag_delete(Evas_Object *obj, void *loc_object)
+e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc)
 {
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(obj);
-   e_nav_taglist_tag_remove(sd->listview, loc_object);
+   e_nav_taglist_tag_remove(sd->listview, loc);
 }
 
 int
@@ -468,6 +453,7 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 				  obj);
 
    sd->listview = e_nav_taglist_new(obj, THEMEDIR);
+   e_nav_taglist_callback_add(sd->listview, _e_nav_tag_sel, obj);
 
    sd->panel_buttons = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/panel");

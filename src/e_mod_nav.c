@@ -169,7 +169,7 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_location_name_set(nwi, name);
              e_nav_world_item_location_note_set(nwi, description);
              e_nav_world_item_location_timestamp_set(nwi, timep);
-             e_ctrl_taglist_tag_add(mdata.ctrl, name, description, timep, nwi); 
+             e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
              e_ctrl_object_store_item_add(mdata.ctrl, (void *)(obj_path), (void *)nwi);           
           }
         else if(type==DIVERSITY_OBJECT_TYPE_BARD) 

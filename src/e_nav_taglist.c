@@ -20,118 +20,48 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <Etk.h>
 #include "e_nav_taglist.h"
 #include "e_nav_item_location.h"
 #include "e_nav_theme.h"
 #include "e_nav.h"
-#include <stdlib.h>
-#include <time.h>
 
-static void _e_taglist_update(Tag_List *sd);
+typedef struct _Tag_List_Callback Tag_List_Callback;
 
-static char *
-get_time_diff_string(time_t time_then)
+struct _Tag_List_Callback
 {
-   char time_diff_string[PATH_MAX];
-   time_t time_now, time_diff;
-   int today_secs;
-   struct tm now, then;
-   struct tm *now_p, *then_p;
-   int age;
+   void (*func)(void *data, Tag_List *tl, Evas_Object *tag);
+   void *data;
+};
 
-   time(&time_now);  
-   now_p = localtime(&time_now);
-   memcpy(&now, now_p, sizeof(now));
+struct _Tag_List
+{
+   Evas_Coord       x, y, w, h;
+   Evas_Object     *frame;
+   Etk_Widget      *embed;
+   Etk_Widget      *tree;
+   Etk_Tree_Col    *col;
 
-   then_p = localtime(&time_then);
-   memcpy(&then, then_p, sizeof(then));
-
-   if(time_then > time_now) 
-     {
-        snprintf(time_diff_string, sizeof(time_diff_string),
-                 "%s", ctime(&time_then));
-     }
-
-   if(now.tm_year != then.tm_year)
-     {
-	age = now.tm_year - then.tm_year;
-
-	if (age == 1)
-	  snprintf(time_diff_string, sizeof(time_diff_string),
-		_("Last year"));
-        else
-	  snprintf(time_diff_string, sizeof(time_diff_string),
-		ngettext("One year ago", "%d years ago", age), age);
-
-        return strdup(time_diff_string);
-     }
-   else if(now.tm_mon != then.tm_mon)
-     {
-	age = now.tm_mon - then.tm_mon;
-
-        if (age == 1)
-	  snprintf(time_diff_string, sizeof(time_diff_string),
-		_("Last month"));
-        else
-	  snprintf(time_diff_string, sizeof(time_diff_string),
-		ngettext("One month ago", "%d months ago", age), age);
-
-        return strdup(time_diff_string);
-     }
-   else 
-     {
-            today_secs = (now.tm_hour * 60 * 60) + (now.tm_min * 60) + now.tm_sec; 
-            time_diff = time_now - time_then;
-
-            if (time_diff >= today_secs) 
-	      {
-		 age = 1 + (time_diff - today_secs) / 86400;
-		 if (age == 1)
-		   {
-		      snprintf(time_diff_string, sizeof(time_diff_string),
-			    _("Yesterday"));
-		   }
-		 else if (age < 7)
-		   {
-		      snprintf(time_diff_string, sizeof(time_diff_string),
-			    ngettext("One day ago", "%d days ago", age), age);
-		   }
-		 else 
-		   {
-		      age /= 7;
-
-		      if (age == 1)
-			snprintf(time_diff_string, sizeof(time_diff_string),
-			      _("Last week"));
-		      else
-			snprintf(time_diff_string, sizeof(time_diff_string),
-			      ngettext("One week ago", "%d weeks ago", age), age);
-		   }
-
-		 return strdup(time_diff_string);
-	      }
-            else 
-              {
-                 return strdup(_("Today"));
-              } 
-     }
-}
+   Evas_List       *callbacks;
+};
 
 static Etk_Bool
-_etk_test_tree_row_clicked_cb(Etk_Object *object, Etk_Tree_Row *row, Etk_Event_Mouse_Up *event, void *data)
+_etk_test_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up *event, void *data)
 {
-   Etk_Tree *tree;
-   char *row_name;
-   Tag_List_Item *ti;
- 
-   if (!(tree = ETK_TREE(object)) || !row || !event)
-      return ETK_TRUE;
+   Tag_List *tl = data;
+   Evas_Object *tag;
+   Evas_List *l;
 
-   etk_tree_row_fields_get(row, etk_tree_nth_col_get(tree, 0), NULL, NULL, &row_name, NULL);
+   tag = etk_tree_row_data_get(row);
 
-   ti = (Tag_List_Item *)etk_tree_row_data_get(row); 
+   for (l = tl->callbacks; l; l = l->next)
+     {
+	Tag_List_Callback *cb = l->data;
 
-   if (ti->func) ti->func(ti->data, ti->data2);
+	cb->func(cb->data, tl, tag);
+     }
+
+   etk_tree_row_unselect(row);
 
    return ETK_TRUE;
 }
@@ -139,26 +69,25 @@ _etk_test_tree_row_clicked_cb(Etk_Object *object, Etk_Tree_Row *row, Etk_Event_M
 static int
 _taglist_sort_compare_cb(Etk_Tree_Col *col, Etk_Tree_Row *row1, Etk_Tree_Row *row2, void *data)
 {
-   Tag_List_Item *item1, *item2;
+   Evas_Object *tag1, *tag2;
+   time_t t1, t2;
 
-   item1 = (Tag_List_Item *)etk_tree_row_data_get(row1); 
-   item2 = (Tag_List_Item *)etk_tree_row_data_get(row2); 
+   tag1 = etk_tree_row_data_get(row1);
+   t1 = e_nav_world_item_location_timestamp_get(tag1);
 
-   if (item1->timestamp > item2->timestamp)
-     return -1;
-   else if (item1->timestamp < item2->timestamp)
-     return 1;
-   else
-     return 0;
+   tag2 = etk_tree_row_data_get(row2);
+   t2 = e_nav_world_item_location_timestamp_get(tag2);
+
+   return (t2 - t1);
 }
 
 Tag_List *
 e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
 {
    Tag_List * tl = (Tag_List *)malloc (sizeof(Tag_List));
-   memset(tl, 0, sizeof(Tag_List)); 
+   memset(tl, 0, sizeof(Tag_List));
 
-   tl->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/taglist"); 
+   tl->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/taglist");
    edje_object_part_text_set(tl->frame, "title", _("View Tags"));
 
    evas_object_smart_member_add(tl->frame, obj);
@@ -173,8 +102,7 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
 
    etk_tree_mode_set(ETK_TREE(tl->tree), ETK_TREE_MODE_LIST);
    etk_tree_multiple_select_set(ETK_TREE(tl->tree), ETK_FALSE);
-   etk_tree_rows_height_set (ETK_TREE(tl->tree), 90);
-   etk_tree_thaw(ETK_TREE(tl->tree));
+   etk_tree_rows_height_set(ETK_TREE(tl->tree), 90);
 
    tl->col = etk_tree_col_new(ETK_TREE(tl->tree), NULL, 455, 0.0);
 
@@ -184,7 +112,7 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
    etk_tree_headers_visible_set(ETK_TREE(tl->tree), 0);
 
    etk_signal_connect_by_code(ETK_TREE_ROW_CLICKED_SIGNAL, ETK_OBJECT(tl->tree),
-      ETK_CALLBACK(_etk_test_tree_row_clicked_cb), NULL);
+      ETK_CALLBACK(_etk_test_tree_row_clicked_cb), tl);
 
    etk_tree_build(ETK_TREE(tl->tree));
 
@@ -201,123 +129,172 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
 }
 
 void
-e_nav_taglist_destroy(Tag_List *obj)
+e_nav_taglist_destroy(Tag_List *tl)
 {
-   if(!obj) return;
-   evas_object_del(obj->frame);
-   obj->frame = NULL;
-   etk_object_destroy(ETK_OBJECT(obj->embed));
-   etk_object_destroy(ETK_OBJECT(obj->tree));
-   etk_object_destroy(ETK_OBJECT(obj->col));
-   free(obj);
+   if (!tl)
+     return;
+
+   evas_object_del(tl->frame);
+   tl->frame = NULL;
+   etk_object_destroy(ETK_OBJECT(tl->embed));
+   etk_object_destroy(ETK_OBJECT(tl->tree));
+   etk_object_destroy(ETK_OBJECT(tl->col));
+   free(tl);
 }
 
 void
-e_nav_taglist_tag_add(Tag_List *obj, Tag_List_Item *item)
+e_nav_taglist_callback_add(Tag_List *tl, void (*func)(void *data, Tag_List *tl, Evas_Object *tag), void *data)
+{
+   Tag_List_Callback *cb;
+
+   cb = malloc(sizeof(*cb));
+   if (!cb)
+     return;
+
+   cb->func = func;
+   cb->data = data;
+
+   tl->callbacks = evas_list_prepend(tl->callbacks, cb);
+}
+
+void
+e_nav_taglist_callback_del(Tag_List *tl, void *func, void *data)
+{
+   Evas_List *l;
+   Tag_List_Callback *cb;
+
+   for (l = tl->callbacks; l; l = l->next)
+     {
+	cb = l->data;
+
+	if (cb->func == func && cb->data == data)
+	  break;
+     }
+
+   if (!l)
+     return;
+
+
+   tl->callbacks = evas_list_remove_list(tl->callbacks, l);
+   free(cb);
+}
+
+static int
+text_style(char *buf, int len, Evas_Object *tag)
+{
+   const char *title, *desc;
+   const char *style;
+   Evas_Bool unread;
+
+   title = e_nav_world_item_location_name_get(tag);
+   if (!title)
+     title = _("No Title");
+
+   unread = e_nav_world_item_location_unread_get(tag);
+
+   if (unread)
+     {
+	style = "glow";
+	desc = _("NEW!");
+     }
+   else
+     {
+	style = "description";
+	desc = e_nav_world_item_location_timestring_get(tag);
+     }
+
+
+   return snprintf(buf, len,
+	 "<title>%s</title><br>"
+	 "<p><%s>%s</%s>",
+	 title,
+	 style, desc, style);
+}
+
+void
+e_nav_taglist_tag_add(Tag_List *tl, Evas_Object *tag)
 {
    Etk_Tree_Row *tree_row;
-   char *time_diff_string;
-   char *buf;
+   char text[1024];
 
-   if(!item) return;
-   if(item->name != NULL && !strcmp(item->name, "") )
+   if (!tag)
+     return;
+
+   text_style(text, sizeof(text), tag);
+   tree_row = etk_tree_row_prepend(ETK_TREE(tl->tree), NULL, tl->col, text, NULL);
+   if (tree_row)
+     etk_tree_row_data_set(tree_row, tag);
+}
+
+static Etk_Tree_Row *
+_etk_tree_row_find_by_data(Etk_Tree *tree, void *data)
+{
+   Etk_Tree_Row *row;
+
+   row = etk_tree_first_row_get(tree);
+   while (row)
      {
-        free(item->name);
-        item->name = strdup(_("No Title"));
+	void *tmp = etk_tree_row_data_get(row);
+
+	if (tmp == data)
+	  break;
+
+	row = etk_tree_row_next_get(row);
      }
 
-   buf = (char *)malloc(strlen(item->name) + 128);
-
-   time_diff_string = get_time_diff_string(item->timestamp);
-
-   sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
-
-   free(time_diff_string);
-   time_diff_string = NULL;
-
-   tree_row = etk_tree_row_prepend(ETK_TREE(obj->tree), NULL, obj->col, buf, NULL );
-   free(buf);
-   buf = NULL;
-   if(tree_row)
-     etk_tree_row_data_set(tree_row, item);
+   return row;
 }
 
 void
-e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *description, void *object)
+e_nav_taglist_tag_update(Tag_List *tl, Evas_Object *tag)
 {
-   Evas_Object *location_obj;
    Etk_Tree_Row *row;
-   Tag_List_Item *item;
-   char *time_diff_string;
-   char *buf;
+   char text[1024];
 
-   if(!obj || !object) return; 
+   if (!tag)
+     return;
 
-   for (row = etk_tree_first_row_get(ETK_TREE(obj->tree)); row; row = etk_tree_row_next_get(row))
-     {
-        item = (Tag_List_Item *)etk_tree_row_data_get(row);
-        location_obj = item->data2;
-        if(location_obj == object)
-          {
-             if(name)
-               {
-                  free(item->name);
-                  item->name = strdup(name);
-               }
-             if(description)
-               {
-                  free(item->description);
-                  item->description = strdup(description);
-               }
-             if(item->name != NULL && !strcmp(item->name, "") )
-	       {
-                  free(item->name);
-                  item->name = strdup(_("No Title"));
-               }
-             buf = (char *)malloc(strlen(item->name) + 128);
-             time_diff_string = get_time_diff_string(item->timestamp);
-               sprintf(buf, "<title>%s</title><br><p><description>%s</description>",
-                       item->name, time_diff_string );
-             
-             free(time_diff_string);
-             time_diff_string = NULL;
-             etk_tree_row_fields_set(row, FALSE, obj->col, buf, NULL);
-             free(buf);
-             buf = NULL;
-          }
-        location_obj = NULL;
-         
-     }
+   row = _etk_tree_row_find_by_data(ETK_TREE(tl->tree), tag);
+   if (!row)
+     return;
+
+   text_style(text, sizeof(text), tag);
+   etk_tree_row_fields_set(row, FALSE, tl->col, text, NULL);
 }
 
 void
-e_nav_taglist_tag_remove(Tag_List *obj, Evas_Object *tag)
+e_nav_taglist_tag_remove(Tag_List *tl, Evas_Object *tag)
 {
-   Evas_Object *location_obj;
    Etk_Tree_Row *row;
-   Tag_List_Item *item;
 
-   if(!obj || !tag) return; 
-
-   for (row = etk_tree_first_row_get(ETK_TREE(obj->tree)); row; row = etk_tree_row_next_get(row))
-     {
-        item = (Tag_List_Item *)etk_tree_row_data_get(row);
-        location_obj = item->data2;
-        if(location_obj == tag)
-          {
-             etk_tree_row_delete(row);
-             break;
-          }
-        location_obj = NULL;
-         
-     }
+   row = _etk_tree_row_find_by_data(ETK_TREE(tl->tree), tag);
+   if (row)
+     etk_tree_row_delete(row);
 }
 
-void 
-e_nav_taglist_clear(Tag_List *obj)
+void
+e_nav_taglist_clear(Tag_List *tl)
 {
-   etk_tree_clear(ETK_TREE(obj->tree));
-   etk_tree_thaw(ETK_TREE(obj->tree));
+   etk_tree_clear(ETK_TREE(tl->tree));
+}
+
+static void
+_e_taglist_update(Tag_List *tl)
+{
+   Evas_Coord screen_x, screen_y, screen_w, screen_h;
+
+   evas_output_viewport_get(evas_object_evas_get(tl->frame),
+	 &screen_x, &screen_y, &screen_w, &screen_h);
+
+   evas_object_move(tl->frame, screen_x, screen_y);
+   evas_object_resize(tl->frame, screen_w, screen_h);
+
+   etk_tree_col_sort(tl->col, TRUE);  // ascendant sort
+
+   evas_object_show(tl->frame);
+   evas_object_raise(tl->frame);
+   etk_widget_show_all(tl->embed);
+   etk_widget_show(tl->tree);
 }
 
 void
@@ -334,56 +311,3 @@ e_nav_taglist_deactivate(Tag_List *tl)
    etk_widget_hide(tl->embed);
    etk_widget_hide(tl->tree);
 }
-
-static void
-_e_taglist_update(Tag_List *tl)
-{
-   Evas_Coord screen_x, screen_y, screen_w, screen_h;
-   Etk_Tree_Row *row;
-   Tag_List_Item *item;
-   char *time_diff_string;
-   char *buf;
-   Evas_Object *location_obj;
-
-   if(tl==NULL) return;
-
-   evas_output_viewport_get(evas_object_evas_get(tl->frame), &screen_x, &screen_y, &screen_w, &screen_h);
-   evas_object_move(tl->frame, screen_x, screen_y);
-   evas_object_resize(tl->frame, screen_w, screen_h);
-
-   etk_tree_col_sort(tl->col, TRUE);  // ascendant sort
-
-   row = etk_tree_first_row_get(ETK_TREE(tl->tree));
-
-   int unread;
-   for (; row; row = etk_tree_row_next_get(row))
-     {
-        item = (Tag_List_Item *)etk_tree_row_data_get(row);
-        buf = (char *)malloc(strlen(item->name) + 128);
-        location_obj = (Evas_Object *)item->data2;
-     
-        unread = e_nav_world_item_location_unread_get(location_obj);
-        if(unread)
-          {
-             sprintf(buf, "<title>%s</title><br><p><glow>%s</glow>", item->name, _("NEW!"));
-          }
-        else 
-          {
-             time_diff_string = get_time_diff_string(item->timestamp);
-             sprintf(buf, "<title>%s</title><br><p><description>%s</description>", item->name, time_diff_string );
-          }
-
-        free(time_diff_string);
-        time_diff_string = NULL;
-        
-        etk_tree_row_fields_set(row, FALSE, tl->col, buf, NULL);
-        free(buf);
-        buf = NULL;
-     }
-
-   evas_object_show(tl->frame);
-   evas_object_raise(tl->frame);
-   etk_widget_show_all(tl->embed);
-   etk_widget_show(tl->tree);
-}
-

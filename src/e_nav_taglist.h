@@ -22,35 +22,24 @@
 
 #ifndef E_NAV_TAGLIST_H
 #define E_NAV_TAGLIST_H
-#include <Etk.h>
+
+#include <Evas.h>
+#include <time.h>
 
 typedef struct _Tag_List Tag_List;
-struct _Tag_List
-{
-   Evas_Coord       x, y, w, h;
-   Evas_Object     *frame;
-   Etk_Widget      *embed;
-   Etk_Widget      *tree;
-   Etk_Tree_Col    *col;
-};
-
-typedef struct _Tag_List_Item Tag_List_Item;
-struct _Tag_List_Item 
-{
-   char *name;
-   char *description;
-   time_t timestamp;
-   void (*func) (void *data, void *data2);
-   void *data, *data2;
-};
 
 Tag_List       *e_nav_taglist_new(Evas_Object *obj, const char *custom_dir);
-void            e_nav_taglist_destroy(Tag_List *obj);
-void            e_nav_taglist_tag_add(Tag_List *obj, Tag_List_Item *item);
-void            e_nav_taglist_tag_remove(Tag_List *obj, Evas_Object *tag);
-void            e_nav_taglist_tag_update(Tag_List *obj, const char *name, const char *description, void *object);
-void            e_nav_taglist_clear(Tag_List *obj);
+void            e_nav_taglist_destroy(Tag_List *tl);
+
+void            e_nav_taglist_callback_add(Tag_List *tl, void (*func)(void *data, Tag_List *tl, Evas_Object *tag), void *data);
+void            e_nav_taglist_callback_del(Tag_List *tl, void *func, void *data);
+
 void            e_nav_taglist_activate(Tag_List *tl);
 void            e_nav_taglist_deactivate(Tag_List *tl);
 
-#endif
+void            e_nav_taglist_tag_add(Tag_List *tl, Evas_Object *tag);
+void            e_nav_taglist_tag_remove(Tag_List *tl, Evas_Object *tag);
+void            e_nav_taglist_tag_update(Tag_List *tl, Evas_Object *tag);
+void            e_nav_taglist_clear(Tag_List *tl);
+
+#endif /* E_NAV_TAGLIST_H */

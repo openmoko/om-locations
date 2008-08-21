@@ -81,7 +81,7 @@ location_save(Evas_Object *item, const char *title, const char *msg)
         if (msg) locd->note = evas_stringshare_add(msg);
         else locd->note = NULL;
 
-        e_ctrl_taglist_tag_set(xxx_ctrl, title, msg, item);
+        e_ctrl_taglist_tag_set(xxx_ctrl, item);
         e_nav_world_item_location_name_set(item, title);
 
 	return TRUE;
