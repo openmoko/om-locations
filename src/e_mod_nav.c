@@ -242,7 +242,7 @@ viewport_object_added(void *data, DBusMessage *msg)
           printf("other kind of object added\n");
 
         if (mdata.neo_me)
-          evas_object_raise(mdata.neo_me);
+	  e_nav_world_item_raise(mdata.neo_me);
      }
 }
 

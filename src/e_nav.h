@@ -101,4 +101,8 @@ Evas_Bool              e_nav_world_item_scale_get(Evas_Object *item);
 void                   e_nav_world_item_update(Evas_Object *item);
 Evas_Object           *e_nav_world_item_nav_get(Evas_Object *item);
 
+void                   e_nav_world_item_lower(Evas_Object *item);
+void                   e_nav_world_item_raise(Evas_Object *item);
+void                   e_nav_world_item_focus(Evas_Object *item);
+
 #endif

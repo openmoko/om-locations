@@ -114,37 +114,38 @@ _e_nav_tag_sel(void *data, void *data2)
    Evas_Object *object;
    Diversity_Tag *tag;
    E_Smart_Data *sd; 
-   double lon, lat;
    int unread;
 
    sd = evas_object_smart_data_get(data);
-   if(!sd) 
+   if (!sd) 
      return;
     
    object = (Evas_Object *)data2;
    tag = e_nav_world_item_location_tag_get(object);
-
-   e_nav_world_item_geometry_get(data2, &lon, &lat, NULL, NULL);
    unread = e_nav_world_item_location_unread_get(object); 
-   int val = 0;
-   if(unread && tag)
+
+   if (unread && tag)
      {
-        unread = 0;
-        val = diversity_dbus_property_set((Diversity_DBus *) tag,
+	int val;
+
+	unread = 0;
+	val = diversity_dbus_property_set((Diversity_DBus *) tag,
 	      DIVERSITY_DBUS_IFACE_TAG, "Unread", DBUS_TYPE_BOOLEAN, &unread);
-        if(val)
-          e_nav_world_item_location_unread_set(object, 0); 
+	if (val)
+	  e_nav_world_item_location_unread_set(object, 0); 
      }
 
-   e_nav_taglist_deactivate(sd->listview);
-   sd->follow = 0;
-   e_nav_coord_set(sd->nav, lon, lat, 0.0);
-   evas_object_show(sd->nav);
    e_nav_world_item_location_details_set(object, 1);
+   e_nav_world_item_focus(object);
+
+   evas_object_show(sd->nav);
+
+   sd->follow = 0;
+
+   e_nav_taglist_deactivate(sd->listview);
    evas_object_show(sd->map_overlay);
    if(evas_object_visible_get(sd->message))
      evas_object_raise(sd->message);
-   evas_object_raise(object);
    evas_object_show(sd->panel_buttons);
    edje_object_signal_emit(sd->panel_buttons, "JUMP_TO_MAP", "");
 }
@@ -347,7 +348,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    if(evas_object_visible_get(sd->message))
      evas_object_raise(sd->message);
    evas_object_show(sd->panel_buttons);
-   evas_object_raise(sd->neo_me);
+   e_nav_world_item_raise(sd->neo_me);
 }
 
 static void

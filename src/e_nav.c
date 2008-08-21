@@ -52,10 +52,11 @@ struct _E_Smart_Data
    Evas_Coord       x, y, w, h;
    Evas_Object     *obj;
    
-   Evas_Object     *underlay;
-   Evas_Object     *clip;
-   Evas_Object     *stacking;
+   /* sorted by stack order */
    Evas_Object     *event;
+   Evas_Object     *stacking;
+   Evas_Object     *clip;
+   Evas_Object     *underlay;
 
    Evas_Object     *ctrl;
    Evas_Object     *tileset;
@@ -611,6 +612,50 @@ e_nav_world_item_nav_get(Evas_Object *item)
    nwi = evas_object_data_get(item, "nav_world_item");
    if (!nwi) return NULL;
    return nwi->obj;
+}
+
+void
+e_nav_world_item_lower(Evas_Object *item)
+{
+   E_Nav_World_Item *nwi;
+   E_Smart_Data *sd;
+
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi || nwi->type != E_NAV_WORLD_ITEM_TYPE_ITEM)
+     return;
+
+   sd = evas_object_smart_data_get(nwi->obj);
+
+   /* should stack above TYPE_WALLPAPER */ 
+   evas_object_stack_above(nwi->item, sd->clip);
+}
+
+void
+e_nav_world_item_raise(Evas_Object *item)
+{
+   E_Nav_World_Item *nwi;
+   E_Smart_Data *sd;
+   
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi || nwi->type != E_NAV_WORLD_ITEM_TYPE_ITEM)
+     return;
+
+   sd = evas_object_smart_data_get(nwi->obj);
+
+   evas_object_stack_below(nwi->item, sd->stacking);
+}
+
+void
+e_nav_world_item_focus(Evas_Object *item)
+{
+   E_Nav_World_Item *nwi;
+
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi || nwi->type != E_NAV_WORLD_ITEM_TYPE_ITEM)
+     return;
+
+   e_nav_world_item_raise(item);
+   e_nav_coord_set(nwi->obj, nwi->geom.x, nwi->geom.y, 0.0);
 }
 
 /* internal calls */
