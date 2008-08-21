@@ -25,7 +25,6 @@
 #include "e_nav_tileset.h"
 #include "e_nav_item_location.h"
 #include "e_nav_item_neo_me.h"
-#include "e_spreadmenu.h"
 
 #define E_NEW(s, n) (s *)calloc(n, sizeof(s))
 

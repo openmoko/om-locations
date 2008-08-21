@@ -23,4 +23,3 @@ src/e_nav_taglist.c
 src/e_nav_theme.c
 src/e_nav_tileset.c
 src/e_spiralmenu.c
-src/e_spreadmenu.c
