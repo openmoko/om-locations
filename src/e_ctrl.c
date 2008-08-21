@@ -44,7 +44,7 @@ struct _E_Smart_Data
    Evas_Object *obj;      
    Evas_Object *clip;
    Evas_Object *map_overlay;   
-   Tag_List *listview;   
+   Evas_Object *listview;   
    Evas_Object *panel_buttons;
    Evas_Object *message;
 
@@ -108,7 +108,7 @@ e_ctrl_add(Evas *e)
 }
 
 static void
-_e_nav_tag_sel(void *data, Tag_List *tl, Evas_Object *loc)
+_e_nav_tag_sel(void *data, Evas_Object *tl, Evas_Object *loc)
 {
    E_Smart_Data *sd; 
    int unread;
@@ -142,7 +142,7 @@ _e_nav_tag_sel(void *data, Tag_List *tl, Evas_Object *loc)
 
    sd->follow = 0;
 
-   e_nav_taglist_deactivate(sd->listview);
+   evas_object_hide(sd->listview);
    evas_object_show(sd->map_overlay);
    if(evas_object_visible_get(sd->message))
      evas_object_raise(sd->message);
@@ -307,7 +307,7 @@ _e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void 
    }
    evas_object_hide(sd->nav);
    evas_object_hide(sd->map_overlay);
-   e_nav_taglist_activate(sd->listview);
+   evas_object_show(sd->listview);
    evas_object_raise(sd->panel_buttons);
    evas_object_lower(sd->message);
 }
@@ -326,7 +326,7 @@ _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    sd->follow = 1;
    e_nav_coord_set(sd->nav, lon, lat, 0.0);
 
-   e_nav_taglist_deactivate(sd->listview);
+   evas_object_hide(sd->listview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
    if(evas_object_visible_get(sd->message))
@@ -340,7 +340,7 @@ _e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
 {
    E_Smart_Data *sd;
    sd = evas_object_smart_data_get(data);
-   e_nav_taglist_deactivate(sd->listview);
+   evas_object_hide(sd->listview);
    evas_object_show(sd->nav);
    evas_object_show(sd->map_overlay);
    if(evas_object_visible_get(sd->message))
@@ -451,8 +451,12 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 				  _e_nav_view_right,
 				  obj);
 
-   sd->listview = e_nav_taglist_new(obj, THEMEDIR);
+   sd->listview = e_nav_taglist_add(evas_object_evas_get(obj), THEMEDIR);
    e_nav_taglist_callback_add(sd->listview, _e_nav_tag_sel, obj);
+   evas_object_smart_member_add(sd->listview, obj);
+   evas_object_move(sd->listview, sd->x, sd->y);
+   evas_object_resize(sd->listview, sd->w, sd->h);
+   evas_object_clip_set(sd->listview, sd->clip);
 
    sd->panel_buttons = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
 				      "modules/diversity_nav/panel");
@@ -655,6 +659,7 @@ _e_ctrl_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    evas_object_move(sd->map_overlay, sd->x, sd->y);
    evas_object_move(sd->panel_buttons, sd->x, sd->y);
    evas_object_move(sd->message, sd->x, sd->y);
+   evas_object_move(sd->listview, sd->x, sd->y);
 }
 
 static void
@@ -670,6 +675,7 @@ _e_ctrl_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    evas_object_resize(sd->map_overlay, sd->w, sd->h);
    evas_object_resize(sd->panel_buttons, sd->w, sd->h);
    evas_object_resize(sd->message, sd->w, sd->h);
+   evas_object_resize(sd->listview, sd->w, sd->h);
 }
 
 static void

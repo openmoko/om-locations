@@ -24,22 +24,15 @@
 #define E_NAV_TAGLIST_H
 
 #include <Evas.h>
-#include <time.h>
 
-typedef struct _Tag_List Tag_List;
+Evas_Object    *e_nav_taglist_add(Evas *e, const char *custom_dir);
 
-Tag_List       *e_nav_taglist_new(Evas_Object *obj, const char *custom_dir);
-void            e_nav_taglist_destroy(Tag_List *tl);
+void            e_nav_taglist_callback_add(Evas_Object *tl, void (*func)(void *data, Evas_Object *tl, Evas_Object *tag), void *data);
+void            e_nav_taglist_callback_del(Evas_Object *tl, void *func, void *data);
 
-void            e_nav_taglist_callback_add(Tag_List *tl, void (*func)(void *data, Tag_List *tl, Evas_Object *tag), void *data);
-void            e_nav_taglist_callback_del(Tag_List *tl, void *func, void *data);
-
-void            e_nav_taglist_activate(Tag_List *tl);
-void            e_nav_taglist_deactivate(Tag_List *tl);
-
-void            e_nav_taglist_tag_add(Tag_List *tl, Evas_Object *tag);
-void            e_nav_taglist_tag_remove(Tag_List *tl, Evas_Object *tag);
-void            e_nav_taglist_tag_update(Tag_List *tl, Evas_Object *tag);
-void            e_nav_taglist_clear(Tag_List *tl);
+void            e_nav_taglist_tag_add(Evas_Object *tl, Evas_Object *tag);
+void            e_nav_taglist_tag_remove(Evas_Object *tl, Evas_Object *tag);
+void            e_nav_taglist_tag_update(Evas_Object *tl, Evas_Object *tag);
+void            e_nav_taglist_clear(Evas_Object *tl);
 
 #endif /* E_NAV_TAGLIST_H */

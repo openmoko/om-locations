@@ -26,17 +26,16 @@
 #include "e_nav_theme.h"
 #include "e_nav.h"
 
+typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _Tag_List_Callback Tag_List_Callback;
 
-struct _Tag_List_Callback
-{
-   void (*func)(void *data, Tag_List *tl, Evas_Object *tag);
-   void *data;
-};
-
-struct _Tag_List
+struct _E_Smart_Data
 {
    Evas_Coord       x, y, w, h;
+   Evas_Object     *obj;
+   Evas_Object     *clip;
+   char            *dir;
+
    Evas_Object     *frame;
    Etk_Widget      *embed;
    Etk_Widget      *tree;
@@ -45,16 +44,43 @@ struct _Tag_List
    Evas_List       *callbacks;
 };
 
-static Etk_Bool
-_etk_test_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up *event, void *data)
+struct _Tag_List_Callback
 {
-   Tag_List *tl = data;
+   void (*func)(void *data, Evas_Object *tl, Evas_Object *tag);
+   void *data;
+};
+
+static void _e_nav_taglist_smart_init(void);
+static void _e_nav_taglist_smart_add(Evas_Object *obj);
+static void _e_nav_taglist_smart_del(Evas_Object *obj);
+static void _e_nav_taglist_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
+static void _e_nav_taglist_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
+static void _e_nav_taglist_smart_show(Evas_Object *obj);
+static void _e_nav_taglist_smart_hide(Evas_Object *obj);
+static void _e_nav_taglist_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
+static void _e_nav_taglist_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
+static void _e_nav_taglist_smart_clip_unset(Evas_Object *obj);
+
+static Evas_Smart *_e_smart = NULL;
+
+#define SMART_CHECK(obj, ret) \
+   sd = evas_object_smart_data_get(obj); \
+   if (!sd) return ret \
+   if (strcmp(evas_object_type_get(obj), "e_nav_taglist")) return ret
+
+static Etk_Bool
+_taglist_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up *event, void *data)
+{
+   Evas_Object *tl = data;
+   E_Smart_Data *sd;
    Evas_Object *tag;
    Evas_List *l;
 
+   SMART_CHECK(tl, ETK_TRUE;);
+
    tag = etk_tree_row_data_get(row);
 
-   for (l = tl->callbacks; l; l = l->next)
+   for (l = sd->callbacks; l; l = l->next)
      {
 	Tag_List_Callback *cb = l->data;
 
@@ -81,71 +107,72 @@ _taglist_sort_compare_cb(Etk_Tree_Col *col, Etk_Tree_Row *row1, Etk_Tree_Row *ro
    return (t2 - t1);
 }
 
-Tag_List *
-e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
+Evas_Object *
+e_nav_taglist_add(Evas *e, const char *custom_dir)
 {
-   Tag_List * tl = (Tag_List *)malloc (sizeof(Tag_List));
-   memset(tl, 0, sizeof(Tag_List));
+   Evas_Object *tl;
+   Evas_Object *embed_obj;
+   E_Smart_Data *sd;
 
-   tl->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/taglist");
-   edje_object_part_text_set(tl->frame, "title", _("View Tags"));
+   _e_nav_taglist_smart_init();
 
-   evas_object_smart_member_add(tl->frame, obj);
+   tl = evas_object_smart_add(e, _e_smart);
+   if (!tl)
+     return NULL;
+   
+   SMART_CHECK(tl, NULL;);
+   
+   if (custom_dir)
+     sd->dir = strdup(custom_dir);
 
-   /*
-    * Setup the etk embed
-    */
-   tl->embed  = etk_embed_new(evas_object_evas_get(obj));
-   tl->tree  = etk_tree_new();
-   etk_scrolled_view_policy_set(etk_tree_scrolled_view_get(ETK_TREE(tl->tree)), ETK_POLICY_HIDE, ETK_POLICY_HIDE);
-   etk_scrolled_view_dragable_set(ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(tl->tree))),ETK_TRUE);
+   sd->frame = e_nav_theme_object_new(e, sd->dir,
+	 "modules/diversity_nav/taglist");
+   edje_object_part_text_set(sd->frame, "title", _("View Tags"));
+   evas_object_smart_member_add(sd->frame, sd->obj);
+   evas_object_move(sd->frame, sd->x, sd->y);
+   evas_object_resize(sd->frame, sd->w, sd->h);
+   evas_object_clip_set(sd->frame, sd->clip);
+   evas_object_show(sd->frame);
 
-   etk_tree_mode_set(ETK_TREE(tl->tree), ETK_TREE_MODE_LIST);
-   etk_tree_multiple_select_set(ETK_TREE(tl->tree), ETK_FALSE);
-   etk_tree_rows_height_set(ETK_TREE(tl->tree), 90);
+   sd->tree = etk_tree_new();
+   etk_tree_headers_visible_set(ETK_TREE(sd->tree), 0);
+   etk_tree_mode_set(ETK_TREE(sd->tree), ETK_TREE_MODE_LIST);
+   etk_tree_multiple_select_set(ETK_TREE(sd->tree), ETK_FALSE);
+   etk_tree_rows_height_set(ETK_TREE(sd->tree), 90);
+   etk_scrolled_view_policy_set(
+	 etk_tree_scrolled_view_get(ETK_TREE(sd->tree)),
+	 ETK_POLICY_HIDE, ETK_POLICY_HIDE);
+   etk_scrolled_view_dragable_set(
+	 ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(sd->tree))),
+	 ETK_TRUE);
 
-   tl->col = etk_tree_col_new(ETK_TREE(tl->tree), NULL, 455, 0.0);
+   etk_signal_connect_by_code(ETK_TREE_ROW_CLICKED_SIGNAL, ETK_OBJECT(sd->tree),
+      ETK_CALLBACK(_taglist_tree_row_clicked_cb), tl);
 
-   etk_tree_col_model_add(tl->col, etk_tree_model_text_new());
-   etk_tree_col_sort_set(tl->col, _taglist_sort_compare_cb, NULL);
+   sd->col = etk_tree_col_new(ETK_TREE(sd->tree), NULL, 455, 0.0);
+   etk_tree_col_model_add(sd->col, etk_tree_model_text_new());
+   etk_tree_col_sort_set(sd->col, _taglist_sort_compare_cb, NULL);
+   etk_tree_col_sort(sd->col, TRUE);
 
-   etk_tree_headers_visible_set(ETK_TREE(tl->tree), 0);
+   etk_tree_build(ETK_TREE(sd->tree));
 
-   etk_signal_connect_by_code(ETK_TREE_ROW_CLICKED_SIGNAL, ETK_OBJECT(tl->tree),
-      ETK_CALLBACK(_etk_test_tree_row_clicked_cb), tl);
+   sd->embed = etk_embed_new(e);
+   etk_container_add(ETK_CONTAINER(sd->embed), sd->tree);
+   etk_widget_show_all(ETK_WIDGET(sd->embed));
 
-   etk_tree_build(ETK_TREE(tl->tree));
-
-   etk_container_add(ETK_CONTAINER(tl->embed), tl->tree);
-   etk_widget_show_all(ETK_WIDGET(tl->embed));
-   etk_widget_show_all(ETK_WIDGET(tl->tree));
-
-   /*
-    * swallow it into the edje
-    */
-   edje_object_part_swallow(tl->frame, "swallow", etk_embed_object_get(ETK_EMBED(tl->embed)));
+   embed_obj = etk_embed_object_get(ETK_EMBED(sd->embed));
+   edje_object_part_swallow(sd->frame, "swallow", embed_obj);
 
    return tl;
 }
 
 void
-e_nav_taglist_destroy(Tag_List *tl)
+e_nav_taglist_callback_add(Evas_Object *tl, void (*func)(void *data, Evas_Object *tl, Evas_Object *tag), void *data)
 {
-   if (!tl)
-     return;
-
-   evas_object_del(tl->frame);
-   tl->frame = NULL;
-   etk_object_destroy(ETK_OBJECT(tl->embed));
-   etk_object_destroy(ETK_OBJECT(tl->tree));
-   etk_object_destroy(ETK_OBJECT(tl->col));
-   free(tl);
-}
-
-void
-e_nav_taglist_callback_add(Tag_List *tl, void (*func)(void *data, Tag_List *tl, Evas_Object *tag), void *data)
-{
+   E_Smart_Data *sd;
    Tag_List_Callback *cb;
+
+   SMART_CHECK(tl, ;);
 
    cb = malloc(sizeof(*cb));
    if (!cb)
@@ -154,16 +181,19 @@ e_nav_taglist_callback_add(Tag_List *tl, void (*func)(void *data, Tag_List *tl, 
    cb->func = func;
    cb->data = data;
 
-   tl->callbacks = evas_list_prepend(tl->callbacks, cb);
+   sd->callbacks = evas_list_prepend(sd->callbacks, cb);
 }
 
 void
-e_nav_taglist_callback_del(Tag_List *tl, void *func, void *data)
+e_nav_taglist_callback_del(Evas_Object *tl, void *func, void *data)
 {
-   Evas_List *l;
+   E_Smart_Data *sd;
    Tag_List_Callback *cb;
+   Evas_List *l;
 
-   for (l = tl->callbacks; l; l = l->next)
+   SMART_CHECK(tl, ;);
+
+   for (l = sd->callbacks; l; l = l->next)
      {
 	cb = l->data;
 
@@ -174,8 +204,7 @@ e_nav_taglist_callback_del(Tag_List *tl, void *func, void *data)
    if (!l)
      return;
 
-
-   tl->callbacks = evas_list_remove_list(tl->callbacks, l);
+   sd->callbacks = evas_list_remove_list(sd->callbacks, l);
    free(cb);
 }
 
@@ -212,18 +241,24 @@ text_style(char *buf, int len, Evas_Object *tag)
 }
 
 void
-e_nav_taglist_tag_add(Tag_List *tl, Evas_Object *tag)
+e_nav_taglist_tag_add(Evas_Object *tl, Evas_Object *tag)
 {
+   E_Smart_Data *sd;
    Etk_Tree_Row *tree_row;
    char text[1024];
+
+   SMART_CHECK(tl, ;);
 
    if (!tag)
      return;
 
    text_style(text, sizeof(text), tag);
-   tree_row = etk_tree_row_prepend(ETK_TREE(tl->tree), NULL, tl->col, text, NULL);
+   tree_row = etk_tree_row_prepend(ETK_TREE(sd->tree), NULL, sd->col, text, NULL);
    if (tree_row)
-     etk_tree_row_data_set(tree_row, tag);
+     {
+	etk_tree_row_data_set(tree_row, tag);
+	etk_tree_col_sort(sd->col, TRUE);
+     }
 }
 
 static Etk_Tree_Row *
@@ -246,68 +281,209 @@ _etk_tree_row_find_by_data(Etk_Tree *tree, void *data)
 }
 
 void
-e_nav_taglist_tag_update(Tag_List *tl, Evas_Object *tag)
+e_nav_taglist_tag_update(Evas_Object *tl, Evas_Object *tag)
 {
+   E_Smart_Data *sd;
    Etk_Tree_Row *row;
    char text[1024];
+
+   SMART_CHECK(tl, ;);
 
    if (!tag)
      return;
 
-   row = _etk_tree_row_find_by_data(ETK_TREE(tl->tree), tag);
+   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), tag);
    if (!row)
      return;
 
    text_style(text, sizeof(text), tag);
-   etk_tree_row_fields_set(row, FALSE, tl->col, text, NULL);
+   etk_tree_row_fields_set(row, FALSE, sd->col, text, NULL);
+
+   etk_tree_col_sort(sd->col, TRUE);
 }
 
 void
-e_nav_taglist_tag_remove(Tag_List *tl, Evas_Object *tag)
+e_nav_taglist_tag_remove(Evas_Object *tl, Evas_Object *tag)
 {
+   E_Smart_Data *sd;
    Etk_Tree_Row *row;
 
-   row = _etk_tree_row_find_by_data(ETK_TREE(tl->tree), tag);
+   SMART_CHECK(tl, ;);
+
+   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), tag);
    if (row)
      etk_tree_row_delete(row);
 }
 
 void
-e_nav_taglist_clear(Tag_List *tl)
+e_nav_taglist_clear(Evas_Object *tl)
 {
-   etk_tree_clear(ETK_TREE(tl->tree));
+   E_Smart_Data *sd;
+
+   SMART_CHECK(tl, ;);
+
+   etk_tree_clear(ETK_TREE(sd->tree));
+}
+
+/* internal calls */
+static void
+_e_nav_taglist_smart_init(void)
+{
+   if (!_e_smart)
+     {
+	static const Evas_Smart_Class sc =
+	  {
+	     "e_nav_taglist",
+	     EVAS_SMART_CLASS_VERSION,
+	     _e_nav_taglist_smart_add,
+	     _e_nav_taglist_smart_del,
+	     _e_nav_taglist_smart_move,
+	     _e_nav_taglist_smart_resize,
+	     _e_nav_taglist_smart_show,
+	     _e_nav_taglist_smart_hide,
+	     _e_nav_taglist_smart_color_set,
+	     _e_nav_taglist_smart_clip_set,
+	     _e_nav_taglist_smart_clip_unset,
+
+	     NULL /* data */
+	  };
+
+
+	_e_smart = evas_smart_class_new(&sc);
+     }
 }
 
 static void
-_e_taglist_update(Tag_List *tl)
+_e_nav_taglist_smart_add(Evas_Object *obj)
 {
-   Evas_Coord screen_x, screen_y, screen_w, screen_h;
+   E_Smart_Data *sd;
 
-   evas_output_viewport_get(evas_object_evas_get(tl->frame),
-	 &screen_x, &screen_y, &screen_w, &screen_h);
+   sd = calloc(1, sizeof(E_Smart_Data));
+   if (!sd)
+     return;
 
-   evas_object_move(tl->frame, screen_x, screen_y);
-   evas_object_resize(tl->frame, screen_w, screen_h);
+   sd->obj = obj;
 
-   etk_tree_col_sort(tl->col, TRUE);  // ascendant sort
+   sd->x = 0;
+   sd->y = 0;
+   sd->w = 0;
+   sd->h = 0;
 
-   evas_object_show(tl->frame);
-   evas_object_raise(tl->frame);
-   etk_widget_show_all(tl->embed);
-   etk_widget_show(tl->tree);
+   sd->clip = evas_object_rectangle_add(evas_object_evas_get(obj));
+   evas_object_smart_member_add(sd->clip, obj);
+   evas_object_move(sd->clip, sd->x, sd->y);
+   evas_object_resize(sd->clip, sd->w, sd->h);
+   evas_object_color_set(sd->clip, 255, 255, 255, 255);
+
+   evas_object_smart_data_set(obj, sd);
 }
 
-void
-e_nav_taglist_activate(Tag_List *tl)
+static void
+_e_nav_taglist_smart_del(Evas_Object *obj)
 {
-   etk_tree_unselect_all(ETK_TREE(tl->tree));
-   _e_taglist_update(tl);
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     return;
+
+   if (sd->dir)
+     free(sd->dir);
+
+   evas_object_del(sd->clip);
+   evas_object_del(sd->frame);
+
+   free(sd);
 }
 
-void
-e_nav_taglist_deactivate(Tag_List *tl)
+static void
+_e_nav_taglist_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
-   evas_object_hide(tl->frame);
-   etk_widget_hide(tl->embed);
-   etk_widget_hide(tl->tree);
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     return;
+
+   sd->x = x;
+   sd->y = y;
+
+   evas_object_move(sd->clip, sd->x, sd->y);
+   evas_object_move(sd->frame, sd->x, sd->y);
+}
+
+static void
+_e_nav_taglist_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     return;
+
+   sd->w = w;
+   sd->h = h;
+
+   evas_object_resize(sd->clip, sd->w, sd->h);
+   evas_object_resize(sd->frame, sd->w, sd->h);
+}
+
+static void
+_e_nav_taglist_smart_show(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     return;
+
+   evas_object_show(sd->clip);
+}
+
+static void
+_e_nav_taglist_smart_hide(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     return;
+
+   evas_object_hide(sd->clip);
+}
+
+static void
+_e_nav_taglist_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     return;
+
+   evas_object_color_set(sd->clip, r, g, b, a);
+}
+
+static void
+_e_nav_taglist_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     return;
+
+   evas_object_clip_set(sd->clip, clip);
+}
+
+static void
+_e_nav_taglist_smart_clip_unset(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd)
+     return;
+
+   evas_object_clip_unset(sd->clip);
 }
