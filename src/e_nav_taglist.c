@@ -68,6 +68,21 @@ static Evas_Smart *_e_smart = NULL;
    if (!sd) return ret \
    if (strcmp(evas_object_type_get(obj), "e_nav_taglist")) return ret
 
+static void
+_taglist_hide_cb(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   E_Smart_Data *sd;
+   Etk_Tree_Row *row;
+
+   sd = evas_object_smart_data_get(data);
+   if (!sd)
+     return;
+
+   row = etk_tree_selected_row_get(ETK_TREE(sd->tree));
+   if (row)
+     etk_tree_row_unselect(row);
+}
+
 static Etk_Bool
 _taglist_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up *event, void *data)
 {
@@ -86,8 +101,6 @@ _taglist_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_
 
 	cb->func(cb->data, tl, tag);
      }
-
-   etk_tree_row_unselect(row);
 
    return ETK_TRUE;
 }
@@ -119,9 +132,9 @@ e_nav_taglist_add(Evas *e, const char *custom_dir)
    tl = evas_object_smart_add(e, _e_smart);
    if (!tl)
      return NULL;
-   
+
    SMART_CHECK(tl, NULL;);
-   
+
    if (custom_dir)
      sd->dir = strdup(custom_dir);
 
@@ -133,6 +146,9 @@ e_nav_taglist_add(Evas *e, const char *custom_dir)
    evas_object_resize(sd->frame, sd->w, sd->h);
    evas_object_clip_set(sd->frame, sd->clip);
    evas_object_show(sd->frame);
+
+   evas_object_event_callback_add(sd->obj, EVAS_CALLBACK_HIDE,
+	 _taglist_hide_cb, tl);
 
    sd->tree = etk_tree_new();
    etk_tree_headers_visible_set(ETK_TREE(sd->tree), 0);
