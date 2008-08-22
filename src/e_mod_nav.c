@@ -63,55 +63,6 @@ static int turn_on_gps();
 static int _e_nav_cb_timer_pos_search_pause(void *data);
 static int handle_gps(void *data);
 
-static Evas_Object *
-osm_tileset_add(Evas_Object *nav)
-{
-   Diversity_Equipment *eqp = NULL;
-   E_DBus_Proxy *proxy = NULL;
-   Evas_Object *nt = NULL;
-
-   if (mdata.world)
-     {
-	mdata.self = diversity_world_get_self(mdata.world);
-	if (mdata.self)
-	  eqp = diversity_bard_equipment_get(mdata.self, "osm");
-        else
-          {
-             return NULL;
-          }
-     }
-
-
-   if (eqp)
-     proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_ATLAS);
-
-   if (proxy)
-     {
-	char *path;
-
-	if (e_dbus_proxy_simple_call(proxy, "GetPath",
-				     NULL,
-				     DBUS_TYPE_INVALID,
-				     DBUS_TYPE_STRING, &path,
-				     DBUS_TYPE_INVALID))
-	  {
-	     nt = e_nav_tileset_add(nav,
-		   E_NAV_TILESET_FORMAT_OSM, path);
-	     e_nav_tileset_proxy_set(nt, proxy);
-	     e_nav_tileset_monitor_add(nt, path);
-
-	     free(path);
-	  }
-	else
-	  e_dbus_proxy_destroy(proxy);
-     }
-
-   if (!nt)
-     nt = e_nav_tileset_add(nav, E_NAV_TILESET_FORMAT_OSM, NULL);
-
-   return nt;
-}
-
 static void
 viewport_object_added(void *data, DBusMessage *msg)
 {
@@ -443,122 +394,6 @@ on_property_changed(void *data, DBusMessage *msg)
      }
 }
 
-void
-_e_mod_nav_init(Evas *evas, const char *theme_name)
-{
-   Evas_Object *nt;
-   double lat, lon;
-   int span;
-   double neo_me_lat, neo_me_lon;
-
-   if (mdata.nav) return;
-   mdata.cfg = dn_config_new();
-   e_nav_theme_init(theme_name);
-
-   e_nav_dbus_init();
-   mdata.world = diversity_world_new();
-
-   mdata.nav = e_nav_add(evas);
-   e_nav_theme_source_set(mdata.nav, THEMEDIR);
-   e_nav_world_set(mdata.nav, mdata.world);
-
-   nt = osm_tileset_add(mdata.nav);
-   if (nt)
-     {
-	e_nav_tileset_monitor_add(nt, MAPSDIR);
-
-	/* known places where maps are stored */
-	e_nav_tileset_monitor_add(nt, "/usr/share/om-maps");
-	e_nav_tileset_monitor_add(nt, "/usr/local/share/om-maps");
-	e_nav_tileset_monitor_add(nt, "/media/card/om-maps");
-	e_nav_tileset_monitor_add(nt, "/usr/share/diversity-nav/maps");
-     }
-   else 
-     {
-        _e_mod_nav_shutdown();
-        ecore_main_loop_quit();
-        return;
-     } 
-
-   evas_object_show(nt);
-
-   mdata.ctrl = e_ctrl_add(evas);
-   if(!mdata.ctrl) return;
-
-   e_ctrl_theme_source_set(mdata.ctrl, THEMEDIR);
-   e_ctrl_nav_set(mdata.ctrl, mdata.nav);
-   e_nav_world_ctrl_set(mdata.nav, mdata.ctrl);
-
-   _e_mod_neo_me_init();
-
-   evas_object_show(mdata.ctrl);
-
-   if(mdata.world) 
-     {
-	mdata.worldview =
-	   diversity_world_viewport_add(mdata.world, -180, -90, 180, 90); 
-	diversity_dbus_signal_connect((Diversity_DBus *) mdata.worldview, 
-                                      DIVERSITY_DBUS_IFACE_VIEWPORT, 
-                                      "ObjectAdded", 
-                                      viewport_object_added,
-                                      NULL); 
-        diversity_dbus_signal_connect((Diversity_DBus *) mdata.worldview, 
-                                      DIVERSITY_DBUS_IFACE_VIEWPORT, 
-                                      "ObjectRemoved", 
-                                      viewport_object_removed,
-                                      NULL); 
-	diversity_viewport_start(mdata.worldview);
-     }
-
-     {
-	Diversity_Equipment *eqp = NULL;
-	const char *dev;
-
-	if (mdata.self)
-	  eqp = diversity_bard_equipment_get(mdata.self, "nmea");
-
-	if (eqp) {
-	     dev = "/dev/ttySAC1:9600";
-	     diversity_equipment_config_set(eqp, "device-path",
-		   DBUS_TYPE_STRING, &dev);
-	     /*
-	     dev = "/tmp/nmea.log";
-	     diversity_equipment_config_set(eqp, "log",
-		   DBUS_TYPE_STRING, &dev);
-		   */
-	}
-
-	diversity_dbus_signal_connect((Diversity_DBus *) mdata.self,
-	      DIVERSITY_DBUS_IFACE_OBJECT,
-	      "GeometryChanged", on_geometry_changed, NULL);
-	diversity_dbus_signal_connect((Diversity_DBus *) mdata.self,
-	      DIVERSITY_DBUS_IFACE_OBJECT,
-	      "PropertyChanged", on_property_changed, NULL);
-     }
-
-   /* start off at a zoom level and location instantly */
-   lat = dn_config_float_get(mdata.cfg, "lat");
-   lon = dn_config_float_get(mdata.cfg, "lon");
-   span = dn_config_int_get(mdata.cfg, "span");
-
-   /* Default is lowest zoom level if cfg file open error */
-   if (span < E_NAV_SPAN_MIN) span = E_NAV_SPAN_MIN;
-
-   e_nav_world_item_geometry_get(mdata.neo_me, &neo_me_lon, &neo_me_lat, NULL, NULL);
-
-   e_nav_span_set(mdata.nav, span, 0.0);
-   e_nav_coord_set(mdata.nav, neo_me_lon, neo_me_lat, 0.0);
-            
-   _e_mod_nav_update(evas);
-   evas_object_show(mdata.nav);
-   evas_object_show(mdata.ctrl);
-
-   Ecore_Timer * show_alert_timer;
-   show_alert_timer = ecore_timer_add(2.0,
-                            handle_gps,
-                            NULL);
-}
-
 static int 
 handle_gps(void *data)
 {
@@ -698,6 +533,52 @@ _e_nav_cb_timer_pos_search_pause(void *data)
    return 0;
 }
 
+static Evas_Object *
+osm_tileset_add(Evas_Object *nav)
+{
+   Diversity_Equipment *eqp;
+   E_DBus_Proxy *proxy;
+   Evas_Object *nt = NULL;
+   char *path;
+
+   eqp = diversity_bard_equipment_get(mdata.self, "osm");
+   if (!eqp)
+     return NULL;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) eqp, DIVERSITY_DBUS_IFACE_ATLAS);
+   if (proxy)
+     proxy = e_dbus_proxy_new_from_proxy(proxy, NULL, NULL);
+
+   if (!proxy)
+     {
+	diversity_equipment_destroy(eqp);
+
+	return NULL;
+     }
+
+   if (e_dbus_proxy_simple_call(proxy, "GetPath",
+	    NULL,
+	    DBUS_TYPE_INVALID,
+	    DBUS_TYPE_STRING, &path,
+	    DBUS_TYPE_INVALID))
+     {
+	nt = e_nav_tileset_add(nav,
+	      E_NAV_TILESET_FORMAT_OSM, path);
+	e_nav_tileset_proxy_set(nt, proxy);
+	e_nav_tileset_monitor_add(nt, path);
+
+	free(path);
+     }
+   else
+     {
+	e_dbus_proxy_destroy(proxy);
+     }
+
+   diversity_equipment_destroy(eqp);
+
+   return nt;
+}
+
 /* 
  * Create neo_me evas object on map 
  */
@@ -730,6 +611,165 @@ _e_mod_neo_me_init()
    mdata.neo_me = nwi;
 }
 
+static void
+_e_mod_nav_dbus_shutdown(void)
+{
+   if (mdata.worldview)
+     {
+	diversity_viewport_destroy(mdata.worldview);
+
+	mdata.worldview = NULL;
+     }
+   if (mdata.self)
+     {
+	diversity_bard_destroy(mdata.self);
+
+	mdata.self = NULL;
+     }
+   if (mdata.world)
+     {
+	diversity_world_snapshot(mdata.world);
+	diversity_world_destroy(mdata.world);
+
+	mdata.world = NULL;
+     }
+
+   e_nav_dbus_shutdown();
+}
+
+static int
+_e_mod_nav_dbus_init(void)
+{
+   Diversity_Equipment *eqp;
+
+   if (!e_nav_dbus_init())
+     return 0;
+
+   mdata.world = diversity_world_new();
+   if (!mdata.world)
+     goto fail;
+
+   mdata.self = diversity_world_get_self(mdata.world);
+   if (!mdata.self)
+     goto fail;
+
+   mdata.worldview =
+      diversity_world_viewport_add(mdata.world, -180.0, -90.0, 180.0, 90.0); 
+   if (!mdata.worldview)
+     goto fail;
+
+   diversity_dbus_signal_connect((Diversity_DBus *) mdata.worldview, 
+	 DIVERSITY_DBUS_IFACE_VIEWPORT, 
+	 "ObjectAdded", 
+	 viewport_object_added,
+	 NULL); 
+   diversity_dbus_signal_connect((Diversity_DBus *) mdata.worldview, 
+	 DIVERSITY_DBUS_IFACE_VIEWPORT, 
+	 "ObjectRemoved", 
+	 viewport_object_removed,
+	 NULL); 
+
+   eqp = diversity_bard_equipment_get(mdata.self, "nmea");
+   if (eqp)
+     {
+	const char *dev;
+
+	dev = "/dev/ttySAC1:9600";
+	if (diversity_equipment_config_set(eqp, "device-path",
+		 DBUS_TYPE_STRING, &dev))
+	  {
+	     dev = "/tmp/nmea.log";
+	     diversity_equipment_config_set(eqp, "log",
+		   DBUS_TYPE_STRING, &dev);
+
+	     diversity_dbus_signal_connect((Diversity_DBus *) mdata.self,
+		   DIVERSITY_DBUS_IFACE_OBJECT,
+		   "GeometryChanged", on_geometry_changed, NULL);
+	     diversity_dbus_signal_connect((Diversity_DBus *) mdata.self,
+		   DIVERSITY_DBUS_IFACE_OBJECT,
+		   "PropertyChanged", on_property_changed, NULL);
+	  }
+
+	diversity_equipment_destroy(eqp);
+     }
+
+   diversity_viewport_start(mdata.worldview);
+
+   return 1;
+
+fail:
+   _e_mod_nav_dbus_shutdown();
+
+   return 0;
+}
+
+void
+_e_mod_nav_init(Evas *evas, const char *theme_name)
+{
+   double lon, lat;
+   int span;
+
+   if (mdata.nav)
+     return;
+
+   e_nav_theme_init(theme_name);
+
+   mdata.nav = e_nav_add(evas);
+   if (!mdata.nav)
+     return;
+
+   e_nav_theme_source_set(mdata.nav, THEMEDIR);
+
+   mdata.ctrl = e_ctrl_add(evas);
+   if (!mdata.ctrl)
+     return;
+
+   e_ctrl_theme_source_set(mdata.ctrl, THEMEDIR);
+
+   e_ctrl_nav_set(mdata.ctrl, mdata.nav);
+   e_nav_world_ctrl_set(mdata.nav, mdata.ctrl);
+
+   mdata.cfg = dn_config_new();
+
+   lon = dn_config_float_get(mdata.cfg, "lon");
+   lat = dn_config_float_get(mdata.cfg, "lat");
+
+   span = dn_config_int_get(mdata.cfg, "span");
+   if (span < E_NAV_SPAN_MIN)
+     span = E_NAV_SPAN_MIN;
+
+   if (_e_mod_nav_dbus_init())
+     {
+	Evas_Object *nt;
+
+	e_nav_world_set(mdata.nav, mdata.world);
+	_e_mod_neo_me_init();
+
+	nt = osm_tileset_add(mdata.nav);
+	if (nt)
+	  {
+	     e_nav_tileset_monitor_add(nt, MAPSDIR);
+
+	     /* known places where maps are stored */
+	     e_nav_tileset_monitor_add(nt, "/usr/share/om-maps");
+	     e_nav_tileset_monitor_add(nt, "/usr/local/share/om-maps");
+	     e_nav_tileset_monitor_add(nt, "/media/card/om-maps");
+	     e_nav_tileset_monitor_add(nt, "/usr/share/diversity-nav/maps");
+
+	     evas_object_show(nt);
+	  }
+
+	e_nav_world_item_geometry_get(mdata.neo_me, &lon, &lat, NULL, NULL);
+     }
+
+   e_nav_coord_set(mdata.nav, lon, lat, 0.0);
+   e_nav_span_set(mdata.nav, span, 0.0);
+
+   _e_mod_nav_update(evas);
+
+   ecore_timer_add(2.0, handle_gps, NULL);
+}
+
 void
 _e_mod_nav_update(Evas *evas)
 {
@@ -748,18 +788,18 @@ _e_mod_nav_update(Evas *evas)
 void
 _e_mod_nav_shutdown(void)
 {
-   double lat, lon;
+   double lon, lat;
    int span;
 
-   if (!mdata.nav) return;
+   if (!mdata.nav)
+     return;
 
-   /* save lon, lat, span to config file */
-   lat = e_nav_coord_lat_get(mdata.nav);
    lon = e_nav_coord_lon_get(mdata.nav);
+   lat = e_nav_coord_lat_get(mdata.nav);
    span = e_nav_span_get(mdata.nav);
 
-   dn_config_float_set(mdata.cfg, "lat", lat);
    dn_config_float_set(mdata.cfg, "lon", lon);
+   dn_config_float_set(mdata.cfg, "lat", lat);
    dn_config_int_set(mdata.cfg, "span", span);
 
    e_nav_world_item_geometry_get(mdata.neo_me, &lon, &lat, NULL, NULL);
@@ -769,19 +809,10 @@ _e_mod_nav_shutdown(void)
    dn_config_save(mdata.cfg);
    dn_config_destroy(mdata.cfg);
 
-   if (mdata.world)
-     {
-	if (mdata.self)
-	  {
-	     diversity_bard_destroy(mdata.self);
-	     mdata.self = NULL;
-	  }
-	diversity_world_snapshot(mdata.world);
-	diversity_world_destroy(mdata.world);
-	mdata.world = NULL;
-     }
-
    evas_object_del(mdata.nav);
    mdata.nav = NULL;
-   e_nav_dbus_shutdown();
+
+   /* FIXME dbus should be able to be shutdown earlier */
+   //evas_object_del(mdata.ctrl);
+   _e_mod_nav_dbus_shutdown();
 }
