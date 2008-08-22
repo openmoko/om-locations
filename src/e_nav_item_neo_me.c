@@ -41,12 +41,14 @@ struct _Neo_Me_Data
 static void
 location_save_dialog_show(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
+   Evas_Object *nav;
    double lon, lat;
 
    e_flyingmenu_deactivate(obj);
 
+   nav = e_nav_world_item_nav_get(src_obj);
    e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
-   e_nav_world_item_location_action_new(src_obj, lon, lat);
+   e_nav_world_item_location_action_new(nav, lon, lat);
 }
 
 static void

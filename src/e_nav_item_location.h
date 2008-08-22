@@ -41,7 +41,7 @@ Evas_Bool               e_nav_world_item_location_visible_get(Evas_Object *item)
 void                    e_nav_world_item_location_details_set(Evas_Object *item, Evas_Bool active);
 Evas_Bool               e_nav_world_item_location_details_get(Evas_Object *item);
 
-void                    e_nav_world_item_location_action_new(Evas_Object *obj, double lon, double lat);
+void                    e_nav_world_item_location_action_new(Evas_Object *nav, double lon, double lat);
 void                    e_nav_world_item_location_action_edit(Evas_Object *item);
 void                    e_nav_world_item_location_action_send(Evas_Object *item);
 

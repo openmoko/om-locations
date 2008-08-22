@@ -64,8 +64,11 @@ typedef enum _E_Nav_World_Item_Type
 } E_Nav_World_Item_Type;
 
 /* object management */
-Evas_Object    *e_nav_add(Evas *e, void *world);
+Evas_Object    *e_nav_add(Evas *e);
 void            e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir);
+
+void            e_nav_world_set(Evas_Object *obj, void *world);
+void           *e_nav_world_get(Evas_Object *obj);
 
 void            e_nav_world_neo_me_set(Evas_Object *obj, Evas_Object *me);
 Evas_Object    *e_nav_world_neo_me_get(Evas_Object *obj);
@@ -76,7 +79,6 @@ Evas_Object    *e_nav_world_ctrl_get(Evas_Object *obj);
 
 /* tileset will be added to e_nav */
 void            e_nav_world_tileset_set(Evas_Object *obj, Evas_Object *nt);
-void           *e_nav_world_get();
     
 /* spatial & zoom controls */
 void            e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when);

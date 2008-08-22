@@ -1063,19 +1063,37 @@ action_next(Action_Data *act_data, int state)
      }
 }
 
-void
-e_nav_world_item_location_action_new(Evas_Object *obj, double lon, double lat)
+static Action_Data *
+action_new(Evas_Object *nav)
 {
    Action_Data *act_data;
 
    act_data = calloc(sizeof(*act_data), 1);
    if (!act_data)
-     return;
+     return NULL;
 
    act_data->state = ACTION_STATE_INIT;
-   act_data->evas = evas_object_evas_get(obj);
-   act_data->obj = obj;
-   act_data->world = e_nav_world_get();
+   act_data->evas = evas_object_evas_get(nav);
+   act_data->obj = nav;
+   act_data->world = e_nav_world_get(nav);
+   if (!act_data->world)
+     {
+	free(act_data);
+
+	return NULL;
+     }
+
+   return act_data;
+}
+
+void
+e_nav_world_item_location_action_new(Evas_Object *nav, double lon, double lat)
+{
+   Action_Data *act_data;
+
+   act_data = action_new(nav);
+   if (!act_data)
+     return;
 
    act_data->lon = lon;
    act_data->lat = lat;
@@ -1088,14 +1106,9 @@ e_nav_world_item_location_action_edit(Evas_Object *item)
 {
    Action_Data *act_data;
 
-   act_data = calloc(sizeof(*act_data), 1);
+   act_data = action_new(e_nav_world_item_nav_get(item));
    if (!act_data)
      return;
-
-   act_data->state = ACTION_STATE_INIT;
-   act_data->evas = evas_object_evas_get(item);
-   act_data->obj = item;
-   act_data->world = e_nav_world_get();
 
    act_data->loc = item;
 
@@ -1107,14 +1120,9 @@ e_nav_world_item_location_action_send(Evas_Object *item)
 {
    Action_Data *act_data;
 
-   act_data = calloc(sizeof(*act_data), 1);
+   act_data = action_new(e_nav_world_item_nav_get(item));
    if (!act_data)
      return;
-
-   act_data->state = ACTION_STATE_INIT;
-   act_data->evas = evas_object_evas_get(item);
-   act_data->obj = item;
-   act_data->world = e_nav_world_get();
 
    act_data->loc = item;
 

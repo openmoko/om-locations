@@ -458,8 +458,9 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    e_nav_dbus_init();
    mdata.world = diversity_world_new();
 
-   mdata.nav = e_nav_add(evas, mdata.world);
+   mdata.nav = e_nav_add(evas);
    e_nav_theme_source_set(mdata.nav, THEMEDIR);
+   e_nav_world_set(mdata.nav, mdata.world);
 
    nt = osm_tileset_add(mdata.nav);
    if (nt)

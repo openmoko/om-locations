@@ -52,6 +52,8 @@ struct _E_Smart_Data
    Evas_Coord       x, y, w, h;
    Evas_Object     *obj;
    
+   Diversity_World *world;
+
    /* sorted by stack order */
    Evas_Object     *event;
    Evas_Object     *stacking;
@@ -143,20 +145,12 @@ static Evas_Smart *_e_smart = NULL;
    if (!sd) return ret \
    if (strcmp(evas_object_type_get(obj), "e_nav")) return ret
 
-static Diversity_World *world = NULL;
-
 Evas_Object *
-e_nav_add(Evas *e, void *div_world)
+e_nav_add(Evas *e)
 {
    _e_nav_smart_init();
-   world = (Diversity_World*)div_world; 
-   return evas_object_smart_add(e, _e_smart);
-}
 
-void *
-e_nav_world_get()
-{
-   return world;
+   return evas_object_smart_add(e, _e_smart);
 }
 
 void
@@ -187,6 +181,26 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 
    _e_nav_wallpaper_update(obj);
    _e_nav_overlay_update(obj);
+}
+
+void
+e_nav_world_set(Evas_Object *obj, void *world)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   sd->world = world;
+}
+
+void *
+e_nav_world_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return sd->world;
 }
 
 void
