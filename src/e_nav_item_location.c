@@ -21,6 +21,7 @@
 #include "e_nav.h"
 #include "e_nav_theme.h"
 #include "e_nav_item_location.h"
+#include "e_nav_item_neo_me.h"
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
 #include "widgets/e_nav_alert.h"
@@ -131,12 +132,21 @@ trim_leading_space(const char *str)
 }
 
 static Diversity_Equipment *
-get_phone_equip()
+get_phone_equip(Evas_Object *nav)
 {
-   Diversity_Equipment *eqp = NULL;
-   eqp = e_ctrl_self_equipment_get(xxx_ctrl, "qtopia");
-   if(!eqp)
-     eqp = e_ctrl_self_equipment_get(xxx_ctrl, "phonekit");
+   Diversity_Equipment *eqp;
+   Evas_Object *neo_me;
+
+   if (!nav)
+     return NULL;
+
+   neo_me = e_nav_world_neo_me_get(nav);
+   if (!neo_me)
+     return NULL;
+
+   eqp = e_nav_world_item_neo_me_equipment_get(neo_me, "qtopia");
+   if (!eqp)
+     eqp = e_nav_world_item_neo_me_equipment_get(neo_me, "phonekit");
 
    return eqp;
 }
@@ -150,7 +160,7 @@ location_send(Evas_Object *item, const char *to)
    const char *error = NULL;
 
    locd = evas_object_data_get(item, "nav_world_item_location_data");
-   eqp = get_phone_equip();
+   eqp = get_phone_equip(e_nav_world_item_nav_get(item));
 
    if (!locd || !to || !eqp)
      return _("Unable to send SMS");

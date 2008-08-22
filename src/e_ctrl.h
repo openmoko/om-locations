@@ -29,10 +29,6 @@ Evas_Object        *e_ctrl_add(Evas *e);
 void                e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir);
 void                e_ctrl_nav_set(Evas_Object *obj, Evas_Object *nav);
 
-void                e_ctrl_neo_me_set(Evas_Object *obj, Evas_Object *me);
-Evas_Object        *e_ctrl_neo_me_get(Evas_Object *obj);
-Diversity_Equipment *e_ctrl_self_equipment_get(Evas_Object *obj, const char *eqp_name);
-
 void                e_ctrl_span_drag_value_set(Evas_Object *obj, int span);
 void                e_ctrl_span_text_value_set(Evas_Object *obj, const char* buf);
 void                e_ctrl_longitude_set(Evas_Object *obj, const char* buf);

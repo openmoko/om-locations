@@ -63,6 +63,7 @@ struct _E_Smart_Data
    
    /* the list of items in the world as we have been told by the backend */
    Evas_List       *world_items;
+   Evas_Object     *neo_me;
    
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
@@ -186,6 +187,26 @@ e_nav_theme_source_set(Evas_Object *obj, const char *custom_dir)
 
    _e_nav_wallpaper_update(obj);
    _e_nav_overlay_update(obj);
+}
+
+void
+e_nav_world_neo_me_set(Evas_Object *obj, Evas_Object *me)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   sd->neo_me = me;
+}
+
+Evas_Object *
+e_nav_world_neo_me_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return sd->neo_me;
 }
 
 void

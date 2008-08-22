@@ -490,10 +490,7 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 
    _e_mod_neo_me_init();
 
-   e_ctrl_neo_me_set(mdata.ctrl, mdata.neo_me);
    evas_object_show(mdata.ctrl);
-
-
 
    if(mdata.world) 
      {

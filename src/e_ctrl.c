@@ -24,7 +24,6 @@
 #include "e_ctrl.h"
 #include "e_nav_tileset.h"
 #include "e_nav_item_location.h"
-#include "e_nav_item_neo_me.h"
 
 #define E_NEW(s, n) (s *)calloc(n, sizeof(s))
 
@@ -36,7 +35,6 @@ static void _e_ctrl_cb_signal_drag_stop(void *data, Evas_Object *obj, const char
 struct _E_Smart_Data
 {
    Evas_Object *nav;
-   Evas_Object *neo_me;
 
    Ecore_Hash *bardRoster;
    Ecore_Hash *objectStore;
@@ -315,19 +313,22 @@ static void
 _e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_Smart_Data *sd; 
+   Evas_Object *neo_me;
+
    sd = evas_object_smart_data_get(data);
-   if(!sd || !sd->neo_me) {
-       return;
-   }
+   if (!sd)
+     return;
 
    sd->follow = 1;
+
+   neo_me = e_nav_world_neo_me_get(sd->nav);
+   if (neo_me)
+     e_nav_world_item_focus(neo_me);
 
    evas_object_show(sd->nav);
 
    evas_object_hide(sd->listview);
    evas_object_show(sd->map_overlay);
-
-   e_nav_world_item_focus(sd->neo_me);
 }
 
 static void
@@ -493,42 +494,6 @@ e_ctrl_nav_set(Evas_Object *obj, Evas_Object *nav)
    SMART_CHECK(obj, ;);
 
    sd->nav = nav;
-}
-
-void
-e_ctrl_neo_me_set(Evas_Object *obj, Evas_Object *me)
-{
-   E_Smart_Data *sd;
-
-   SMART_CHECK(obj, ;);
-
-   sd->neo_me = me;
-}
-
-Evas_Object *
-e_ctrl_neo_me_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-
-   SMART_CHECK(obj, NULL;);
-
-   return sd->neo_me;
-}
-
-Diversity_Equipment *
-e_ctrl_self_equipment_get(Evas_Object *obj, const char *eqp_name)
-{
-   E_Smart_Data *sd;
-   Diversity_Bard *self;
-   Diversity_Equipment *eqp = NULL;
-
-   SMART_CHECK(obj, NULL;);
-
-   self = e_nav_world_item_neo_me_bard_get(sd->neo_me); 
-   if (self)
-     eqp = diversity_bard_equipment_get(self, eqp_name);
-
-   return eqp;
 }
 
 #define DRAG_SENSITIVITY 18

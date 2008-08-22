@@ -91,6 +91,9 @@ e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon,
    e_nav_world_item_geometry_set(o, lon, lat, w, h);
    e_nav_world_item_scale_set(o, 0);
    e_nav_world_item_update(o);
+
+   e_nav_world_neo_me_set(nav, o);
+
    evas_object_event_callback_add(o, EVAS_CALLBACK_DEL,
 				  _e_nav_world_item_cb_del, NULL);
    evas_object_data_set(o, "nav_world_item_neo_me_data", neod);
@@ -194,4 +197,20 @@ e_nav_world_item_neo_me_bard_get(Evas_Object *item)
    neod = evas_object_data_get(item, "nav_world_item_neo_me_data");
    if (!neod) return 0;
    return neod->self;
+}
+
+Diversity_Equipment *
+e_nav_world_item_neo_me_equipment_get(Evas_Object *item, const char *eqp_name)
+{
+   Neo_Me_Data *neod;
+   Diversity_Equipment *eqp = NULL;
+
+   neod = evas_object_data_get(item, "nav_world_item_neo_me_data");
+   if (!neod)
+     return NULL;
+
+   if (neod->self)
+     eqp = diversity_bard_equipment_get(neod->self, eqp_name);
+
+   return eqp;
 }

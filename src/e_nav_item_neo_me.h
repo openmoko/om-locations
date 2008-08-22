@@ -25,6 +25,7 @@
 
 Evas_Object            *e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Bard *bard);
 Diversity_Bard         *e_nav_world_item_neo_me_bard_get(Evas_Object *item);
+Diversity_Equipment    *e_nav_world_item_neo_me_equipment_get(Evas_Object *item, const char *eqp_name);
 
 void                    e_nav_world_item_neo_me_name_set(Evas_Object *item, const char *name);
 const char             *e_nav_world_item_neo_me_name_get(Evas_Object *item);
