@@ -46,8 +46,8 @@ extern "C" {
    EAPI void e_dbus_proxy_destroy(E_DBus_Proxy *proxy);
 
    EAPI E_DBus_Proxy *e_dbus_proxy_new_from_proxy(E_DBus_Proxy *proxy,
-                                                  const char *interface,
-                                                  const char *path);
+                                                  const char *path,
+                                                  const char *interface);
 
    EAPI void e_dbus_proxy_set_interface(E_DBus_Proxy *proxy,
                                         const char *interface);

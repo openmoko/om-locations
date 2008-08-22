@@ -246,15 +246,15 @@ e_dbus_proxy_new_for_name(E_DBus_Connection *connection, const char *name, const
 }
 
 EAPI E_DBus_Proxy *
-e_dbus_proxy_new_from_proxy(E_DBus_Proxy *proxy, const char *interface, const char *path)
+e_dbus_proxy_new_from_proxy(E_DBus_Proxy *proxy, const char *path, const char *interface)
 {
-  if (!interface)
-    interface = proxy->interface;
   if (!path)
     path = proxy->path;
+  if (!interface)
+    interface = proxy->interface;
 
   return e_dbus_proxy_new(proxy->manager->e_connection,
-                proxy->name, interface, path);
+                proxy->name, path, interface);
 }
 
 EAPI void
