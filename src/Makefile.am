@@ -28,6 +28,7 @@ noinst_HEADERS =		\
 	e_nav_item_link.h	\
 	e_nav_item_location.h	\
 	e_nav_dbus.h		\
+	e_nav_tree_model.h	\
 	e_ctrl.h		\
 	e_nav_misc.h
 
@@ -48,6 +49,7 @@ om_locations_SOURCES =		\
 	e_nav_item_link.c	\
 	e_nav_item_location.c	\
 	e_nav_dbus.c		\
+	e_nav_tree_model.c	\
 	e_ctrl.c		\
 	e_nav_misc.c
 

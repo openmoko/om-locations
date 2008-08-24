@@ -25,6 +25,7 @@
 #include "e_nav_item_location.h"
 #include "e_nav_theme.h"
 #include "e_nav.h"
+#include "e_nav_tree_model.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _Tag_List_Callback Tag_List_Callback;
@@ -166,7 +167,7 @@ e_nav_taglist_add(Evas *e, const char *custom_dir)
       ETK_CALLBACK(_taglist_tree_row_clicked_cb), tl);
 
    sd->col = etk_tree_col_new(ETK_TREE(sd->tree), NULL, 455, 0.0);
-   etk_tree_col_model_add(sd->col, etk_tree_model_text_new());
+   etk_tree_col_model_add(sd->col, e_nav_tree_model_tag_new());
    etk_tree_col_sort_set(sd->col, _taglist_sort_compare_cb, NULL);
    etk_tree_col_sort(sd->col, TRUE);
 
@@ -224,52 +225,18 @@ e_nav_taglist_callback_del(Evas_Object *tl, void *func, void *data)
    free(cb);
 }
 
-static int
-text_style(char *buf, int len, Evas_Object *tag)
-{
-   const char *title, *desc;
-   const char *style;
-   Evas_Bool unread;
-
-   title = e_nav_world_item_location_name_get(tag);
-   if (!title)
-     title = _("No Title");
-
-   unread = e_nav_world_item_location_unread_get(tag);
-
-   if (unread)
-     {
-	style = "glow";
-	desc = _("NEW!");
-     }
-   else
-     {
-	style = "description";
-	desc = e_nav_world_item_location_timestring_get(tag);
-     }
-
-
-   return snprintf(buf, len,
-	 "<title>%s</title><br>"
-	 "<p><%s>%s</%s>",
-	 title,
-	 style, desc, style);
-}
-
 void
 e_nav_taglist_tag_add(Evas_Object *tl, Evas_Object *tag)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *tree_row;
-   char text[1024];
 
    SMART_CHECK(tl, ;);
 
    if (!tag)
      return;
 
-   text_style(text, sizeof(text), tag);
-   tree_row = etk_tree_row_prepend(ETK_TREE(sd->tree), NULL, sd->col, text, NULL);
+   tree_row = etk_tree_row_prepend(ETK_TREE(sd->tree), NULL, sd->col, tag, NULL);
    if (tree_row)
      {
 	etk_tree_row_data_set(tree_row, tag);
@@ -301,7 +268,6 @@ e_nav_taglist_tag_update(Evas_Object *tl, Evas_Object *tag)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *row;
-   char text[1024];
 
    SMART_CHECK(tl, ;);
 
@@ -312,9 +278,7 @@ e_nav_taglist_tag_update(Evas_Object *tl, Evas_Object *tag)
    if (!row)
      return;
 
-   text_style(text, sizeof(text), tag);
-   etk_tree_row_fields_set(row, FALSE, sd->col, text, NULL);
-
+   etk_tree_row_fields_set(row, FALSE, sd->col, tag, NULL);
    etk_tree_col_sort(sd->col, TRUE);
 }
 
