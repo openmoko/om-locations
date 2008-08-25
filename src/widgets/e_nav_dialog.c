@@ -412,6 +412,9 @@ e_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
         sd->title_object = o;
         edje_object_part_text_set(sd->title_object, "title", title);
         edje_object_part_text_set(sd->title_object, "message", message);
+
+        evas_object_smart_member_add(sd->title_object, obj);
+        evas_object_clip_set(sd->title_object, sd->clip);
      }
 }
 
