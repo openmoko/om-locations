@@ -132,7 +132,12 @@ e_nav_world_item_neo_other_add(Evas_Object *nav, const char *theme_dir, double l
    evas_object_event_callback_add(o, EVAS_CALLBACK_DEL,
 				  _e_nav_world_item_cb_del, NULL);
    evas_object_data_set(o, "nav_world_item_neo_other_data", neod);
+
+   /* do not show or have e_nav manage it */
+   /* XXX then how come we need it? */
    //evas_object_show(o);
+   e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_LINKED);
+
    return o;
 }
 
