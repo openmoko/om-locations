@@ -518,27 +518,33 @@ e_contact_editor_input_get(Evas_Object *obj)
 }
 
 void 
-e_contact_editor_contacts_set(Evas_Object *obj, Ecore_List *list)
+e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
 {
    E_Smart_Data *sd;
-   SMART_CHECK(obj, ;);
    Contact_List_Item *item;
-   Neo_Other_Data *neod;
+   Evas_List *l;
 
-   ecore_list_first_goto(list);
-   while ((neod = ecore_list_current(list)))
+   SMART_CHECK(obj, ;);
+
+   for (l = contacts; l; l = l->next)
      {
-        if(!neod) continue;
-        item = E_NEW(Contact_List_Item, 1);
-        if (neod->name)
-          item->name = strdup(neod->name); 
-        if (neod->phone)
-          item->description = strdup(neod->phone); 
+	Evas_Object *bard = l->data;
+
+	item = E_NEW(Contact_List_Item, 1);
+	item->name = (char *)
+	   e_nav_world_item_neo_other_name_get(bard);
+	if (item->name)
+	  item->name = strdup(item->name);
+
+	item->description = (char *)
+	   e_nav_world_item_neo_other_phone_get(bard);
+	if (item->description)
+	  item->description = strdup(item->description);
+
         item->func = _e_nav_contact_sel;
         item->data = obj;
         item->data2 = item->name;
         e_nav_contact_list_item_add(sd->contact_list, item);
-        ecore_list_next(list);
      }
 }
 

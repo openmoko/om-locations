@@ -43,13 +43,12 @@ void                e_ctrl_taglist_tag_add(Evas_Object *obj, Evas_Object *loc);
 void                e_ctrl_taglist_tag_set(Evas_Object *obj, Evas_Object *loc);
 void                e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc);
 
-int                 e_ctrl_contact_add(Evas_Object *obj, const char *id, Neo_Other_Data *data);
-int                 e_ctrl_contact_remove(Evas_Object *obj, const char *id);
-int                 e_ctrl_contact_update(Evas_Object *obj, const char *id, Neo_Other_Data *data);
-Neo_Other_Data     *e_ctrl_contact_get(Evas_Object *obj, const char *id);
-Neo_Other_Data     *e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name);
-Neo_Other_Data     *e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number);
-Ecore_List         *e_ctrl_contacts_get(Evas_Object *obj);
+void                e_ctrl_contact_add(Evas_Object *obj, Evas_Object *bard);
+void                e_ctrl_contact_delete(Evas_Object *obj, Evas_Object *bard);
+Evas_Object        *e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name);
+Evas_Object        *e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number);
+/* the list is owned by e_ctrl */
+Evas_List          *e_ctrl_contact_list(Evas_Object *obj);
 
 void                e_ctrl_object_store_item_add(Evas_Object *obj, void *path, void *item);
 Evas_Object        *e_ctrl_object_store_item_get(Evas_Object *obj, const char *obj_path);

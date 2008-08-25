@@ -67,7 +67,6 @@ static void
 viewport_object_added(void *data, DBusMessage *msg)
 {
    const char *obj_path;
-   int ok;
    DBusError error;
    dbus_error_init(&error);
    if (!dbus_message_get_args(msg, &error,
@@ -130,22 +129,11 @@ viewport_object_added(void *data, DBusMessage *msg)
              char *alias = NULL;
              char *twitter = NULL;
              int accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;
-             Neo_Other_Data *neod;
 
              diversity_bard_prop_get((Diversity_Bard *) obj, "fullname", &name); 
              diversity_bard_prop_get((Diversity_Bard *) obj, "phone", &phone); 
              diversity_bard_prop_get((Diversity_Bard *) obj, "alias", &alias); 
              diversity_bard_prop_get((Diversity_Bard *) obj, "twitter", &twitter); 
-             neod = calloc(1, sizeof(Neo_Other_Data));
-             if (!neod) return;
-             if(name) neod->name = strdup(name);
-             if(phone) neod->phone = strdup(phone);
-             if(alias) neod->alias = strdup(alias);
-             if(twitter) neod->twitter = strdup(twitter);
-             neod->bard = (Diversity_Bard *) obj;
-             printf("Add a bard contact: name:%s, phone:%s, alias:%s, twitter:%s, lon:%f, lat:%f\n", name, phone, alias, twitter, lon, lat);
-             ok = e_ctrl_contact_add(mdata.ctrl, obj_path, neod);
-             if(!ok) printf("there is an error on add bard contact for %s\n", obj_path);
 
              diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
 
@@ -155,6 +143,10 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_nav_world_item_neo_other_alias_set(nwi, alias);
              e_nav_world_item_neo_other_twitter_set(nwi, twitter);
              e_ctrl_object_store_item_add(mdata.ctrl, (void *)obj_path, (void *)nwi);           
+
+             printf("Add a bard contact: name:%s, phone:%s, alias:%s, twitter:%s, lon:%f, lat:%f\n", name, phone, alias, twitter, lon, lat);
+             e_ctrl_contact_add(mdata.ctrl, nwi);
+
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
                   DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_neo_other_geometry_changed, nwi);
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
@@ -215,11 +207,12 @@ viewport_object_removed(void *data, DBusMessage *msg)
    else 
      {
         printf("object deleted: %s \n", obj_path);
-        if(e_ctrl_contact_get(mdata.ctrl, obj_path))
-          e_ctrl_contact_remove(mdata.ctrl, obj_path);
         world_item = e_ctrl_object_store_item_get(mdata.ctrl, obj_path);
         if(world_item) 
           {
+	     /* item type? */
+	     e_ctrl_contact_delete(mdata.ctrl, world_item);
+
              e_ctrl_object_store_item_remove(mdata.ctrl, obj_path);
              e_nav_world_item_delete(mdata.nav, world_item);
              evas_object_del(world_item);
@@ -267,8 +260,6 @@ on_neo_other_property_changed(void *data, DBusMessage *msg)
    void *name;
    void *value;
    int type;
-   Neo_Other_Data *neod; 
-   const char *path;
 
    /* Parse the dbus signal message, get property name and value */
    if (!dbus_message_iter_init(msg, &args))
@@ -288,34 +279,15 @@ on_neo_other_property_changed(void *data, DBusMessage *msg)
 
    if(!data) return;
    neo_other_obj = data;
-   path = e_nav_world_item_neo_other_path_get(neo_other_obj);
-   neod = e_ctrl_contact_get(mdata.ctrl, path);
-   if (!neod) return;
 
    if(!strcasecmp(name, "fullname"))
-     {
-        e_nav_world_item_neo_other_name_set(neo_other_obj, value);
-        if(neod->name) free((char *)neod->name);
-        neod->name = strdup(value);
-     }
+     e_nav_world_item_neo_other_name_set(neo_other_obj, value);
    if(!strcasecmp(name, "phone"))
-     {
-        e_nav_world_item_neo_other_phone_set(neo_other_obj, value);
-        if(neod->phone) free((char *)neod->phone);
-        neod->phone = strdup(value);
-     }
+     e_nav_world_item_neo_other_phone_set(neo_other_obj, value);
    if(!strcasecmp(name, "alias"))
-     {
-        e_nav_world_item_neo_other_alias_set(neo_other_obj, value);
-        if(neod->alias) free((char *)neod->alias);
-        neod->alias = strdup(value);
-     }
+     e_nav_world_item_neo_other_alias_set(neo_other_obj, value);
    if(!strcasecmp(name, "twitter"))
-     {
-        e_nav_world_item_neo_other_twitter_set(neo_other_obj, value);
-        if(neod->twitter) free((char *)neod->twitter);
-        neod->twitter = strdup(value);
-     }
+     e_nav_world_item_neo_other_twitter_set(neo_other_obj, value);
 }
 
 /* 

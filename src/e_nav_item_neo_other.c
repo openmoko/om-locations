@@ -23,6 +23,18 @@
 #include "e_nav_item_neo_other.h"
 #include "e_spiralmenu.h"
 
+typedef struct _Neo_Other_Data Neo_Other_Data;
+
+struct _Neo_Other_Data
+{
+   const char             *name;
+   const char             *phone;
+   const char             *alias;
+   const char             *twitter;
+   int                     accuracy;
+   Diversity_Bard         *bard;
+};
+
 
 /* FIXME: real menu callbacks */
 static void

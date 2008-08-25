@@ -36,7 +36,7 @@ struct _E_Smart_Data
 {
    Evas_Object *nav;
 
-   Ecore_Hash *bardRoster;
+   Evas_List  *contacts;
    Ecore_Hash *objectStore;
 
    Evas_Object *obj;      
@@ -173,125 +173,6 @@ e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc)
 
    sd = evas_object_smart_data_get(obj);
    e_nav_taglist_tag_remove(sd->listview, loc);
-}
-
-int
-e_ctrl_contact_add(Evas_Object *obj, const char *id, Neo_Other_Data *data)
-{
-   E_Smart_Data *sd;
-
-   if(!id) return FALSE;
-
-   sd = evas_object_smart_data_get(obj);
-
-   return ecore_hash_set(sd->bardRoster, (void *)strdup(id), (void *)data);
-}
-
-int
-e_ctrl_contact_remove(Evas_Object *obj, const char *id)
-{
-   E_Smart_Data *sd;
-   Neo_Other_Data *neod;
-
-   sd = evas_object_smart_data_get(obj);
-   neod = ecore_hash_remove(sd->bardRoster, (void *)id);
-
-   if (!neod) return FALSE;
-   if (neod->bard) diversity_bard_destroy(neod->bard);
-   free(neod);
-
-   return TRUE;
-}
-
-int
-e_ctrl_contact_update(Evas_Object *obj, const char *id, Neo_Other_Data *data)
-{
-   if(!id || !data) return FALSE;
-   if(!e_ctrl_contact_remove(obj, id)) return FALSE;
-   return e_ctrl_contact_add(obj, id, data);
-}
-
-Neo_Other_Data *
-e_ctrl_contact_get(Evas_Object *obj, const char *id)
-{
-   E_Smart_Data *sd;
-
-   sd = evas_object_smart_data_get(obj);
-
-   return (Neo_Other_Data *)ecore_hash_get(sd->bardRoster, (void *)id);
-}
-
-Neo_Other_Data *
-e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name)
-{
-   Ecore_List *cl;
-   int lstcount;
-   int n;
-   Neo_Other_Data *neod;
-
-   cl = e_ctrl_contacts_get(obj);
-   lstcount = ecore_list_count(cl);
-   for(n=0; n<lstcount; n++)
-     {
-        neod =  ecore_list_index_goto(cl, n);
-        if(neod && !strcmp(neod->name, name))
-          {
-             ecore_list_destroy(cl);
-             return neod;
-          }
-     }
-   ecore_list_destroy(cl);
-   return NULL;
-}
-
-Neo_Other_Data *
-e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number)
-{
-   Ecore_List *cl;
-   int lstcount;
-   int n;
-   Neo_Other_Data *neod;
-
-   cl = e_ctrl_contacts_get(obj);
-   lstcount = ecore_list_count(cl);
-   for(n=0; n<lstcount; n++)
-     {
-        neod =  ecore_list_index_goto(cl, n);
-        if(neod && !strcmp(neod->phone, number))
-          {
-             ecore_list_destroy(cl);
-             return neod;
-          }
-     }
-   ecore_list_destroy(cl);
-   return NULL;
-}
-
-Ecore_List *
-e_ctrl_contacts_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   Ecore_List *values;
-   Ecore_List *keys;
-   int count;
-   int n;
-
-   sd = evas_object_smart_data_get(obj);
-   keys = ecore_hash_keys(sd->bardRoster);
-   count = ecore_list_count(keys);
-
-   values = ecore_list_new();
-   Neo_Other_Data *neod;
-   for(n=0; n<count; n++)
-     {
-        char *key = ecore_list_index_goto(keys, n);
-        neod = (Neo_Other_Data *)ecore_hash_get(sd->bardRoster, (void *)key);
-        if(neod)
-          {
-             ecore_list_append(values, (void *)neod);
-          }
-     }
-   return values;
 }
 
 static void   
@@ -572,10 +453,6 @@ _e_ctrl_smart_add(Evas_Object *obj)
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
    evas_object_smart_data_set(obj, sd);
 
-   sd->bardRoster = ecore_hash_new(ecore_str_hash, ecore_str_compare);
-   if(!sd->bardRoster) return;
-   ecore_hash_free_key_cb_set(sd->bardRoster, free);
-
    for (i = 0; i < NUM_DRAG_VALUES; i++)
      {
 	int span = 256 * (1 << i); /* XXX 256? */
@@ -600,6 +477,9 @@ _e_ctrl_smart_del(Evas_Object *obj)
      {
         ecore_hash_destroy(sd->objectStore);
      }
+
+   while (sd->contacts)
+     sd->contacts = evas_list_remove_list(sd->contacts, sd->contacts);
 
    evas_object_del(sd->clip);
    evas_object_del(sd->map_overlay);
@@ -835,6 +715,76 @@ e_ctrl_message_show(Evas_Object *obj)
    SMART_CHECK(obj, ;);
    if(!sd) return;
    evas_object_show(sd->message);
+}
+
+void
+e_ctrl_contact_add(Evas_Object *obj, Evas_Object *bard)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   sd->contacts = evas_list_prepend(sd->contacts, bard);
+}
+
+void
+e_ctrl_contact_delete(Evas_Object *obj, Evas_Object *bard)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   sd->contacts = evas_list_remove(sd->contacts, bard);
+}
+
+Evas_Object *
+e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+
+   SMART_CHECK(obj, NULL;);
+
+   for (l = sd->contacts; l; l = l->next)
+     {
+	Evas_Object *bard = l->data;
+	const char *n = e_nav_world_item_neo_other_name_get(bard);
+
+	if (n && name && n[0] == name[0] && strcmp(n, name) == 0)
+	  return bard;
+     }
+
+   return NULL;
+}
+
+Evas_Object *
+e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+
+   SMART_CHECK(obj, NULL;);
+
+   for (l = sd->contacts; l; l = l->next)
+     {
+	Evas_Object *bard = l->data;
+	const char *p = e_nav_world_item_neo_other_phone_get(bard);
+
+	if (p && number && p[0] == number[0] && strcmp(p, number) == 0)
+	  return bard;
+     }
+
+   return NULL;
+}
+
+Evas_List *
+e_ctrl_contact_list(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return sd->contacts;
 }
 
 void

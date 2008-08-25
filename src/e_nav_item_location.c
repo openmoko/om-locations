@@ -156,7 +156,7 @@ location_send(Evas_Object *item, const char *to)
 {
    Location_Data *locd;
    Diversity_Equipment *eqp;
-   Neo_Other_Data *neod;
+   Evas_Object *bard;
    const char *error = NULL;
 
    locd = evas_object_data_get(item, "nav_world_item_location_data");
@@ -165,22 +165,23 @@ location_send(Evas_Object *item, const char *to)
    if (!locd || !to || !eqp)
      return _("Unable to send SMS");
 
-   neod = e_ctrl_contact_get_by_name(xxx_ctrl, to);
-   if (!neod)
+   bard = e_ctrl_contact_get_by_name(xxx_ctrl, to);
+   if (!bard)
      {
 	to = trim_leading_space(to);
-	neod = e_ctrl_contact_get_by_name(xxx_ctrl, to);
-	if (!neod)
-	  neod = e_ctrl_contact_get_by_number(xxx_ctrl, to);
+	bard = e_ctrl_contact_get_by_name(xxx_ctrl, to);
+	if (!bard)
+	  bard = e_ctrl_contact_get_by_number(xxx_ctrl, to);
      }
 
-   if (neod || is_phone_number(to))
+   if (bard || is_phone_number(to))
      {
 	int ok;
 
-	if (neod)
+	if (bard)
 	  ok = diversity_sms_tag_share((Diversity_Sms *) eqp,
-		neod->bard, locd->tag);
+		e_nav_world_item_neo_other_bard_get(bard),
+		locd->tag);
 	else
 	  ok = diversity_sms_tag_send((Diversity_Sms *) eqp,
 		to, locd->tag);
@@ -860,7 +861,6 @@ static void
 action_show_editor(Action_Data *act_data)
 {
    Evas_Object *editor;
-   Ecore_List *contacts;
 
    if (act_data->dialog && act_data->loc)
      {
@@ -877,6 +877,8 @@ action_show_editor(Action_Data *act_data)
    editor = act_data->editor;
    if (!editor)
      {
+	Evas_List *contacts;
+
 	editor = e_contact_editor_add(act_data->evas);
 	if (!editor)
 	  {
@@ -892,8 +894,7 @@ action_show_editor(Action_Data *act_data)
 
 	e_contact_editor_input_set(editor, _("To:"), NULL);
 
-	//FIXME: contacts need to be destroyed later.
-	contacts = e_ctrl_contacts_get(xxx_ctrl);
+	contacts = e_ctrl_contact_list(xxx_ctrl);
 	e_contact_editor_contacts_set(editor, contacts);
 
 	act_data->editor = editor;
