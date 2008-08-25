@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include "e_nav_taglist.h"
+#include "widgets/e_nav_list.h"
 #include "e_nav.h"    
 #include "e_nav_theme.h"
 #include "e_ctrl.h"
@@ -132,7 +132,7 @@ _e_nav_tag_sel(void *data, Evas_Object *tl, Evas_Object *loc)
 		"Unread", DBUS_TYPE_BOOLEAN, &unread);
 
 	e_nav_world_item_location_unread_set(loc, 0); 
-	e_nav_taglist_tag_update(sd->listview, loc);
+	e_nav_list_object_update(sd->listview, loc);
      }
 
    e_nav_world_item_location_details_set(loc, 1);
@@ -148,13 +148,24 @@ _e_nav_tag_sel(void *data, Evas_Object *tl, Evas_Object *loc)
    edje_object_signal_emit(sd->panel_buttons, "JUMP_TO_MAP", "");
 }
 
+static int
+_e_nav_tag_sort(void *data, Evas_Object *tag1, Evas_Object *tag2)
+{
+   time_t t1, t2;
+
+   t1 = e_nav_world_item_location_timestamp_get(tag1);
+   t2 = e_nav_world_item_location_timestamp_get(tag2);
+
+   return (t2 - t1);
+}
+
 void
 e_ctrl_taglist_tag_set(Evas_Object *obj, Evas_Object *loc)
 {
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(obj);
-   e_nav_taglist_tag_update(sd->listview, loc);
+   e_nav_list_object_update(sd->listview, loc);
 }
 
 void
@@ -163,7 +174,7 @@ e_ctrl_taglist_tag_add(Evas_Object *obj, Evas_Object *loc)
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(obj);
-   e_nav_taglist_tag_add(sd->listview, loc);
+   e_nav_list_object_add(sd->listview, loc);
 }
 
 void
@@ -172,7 +183,7 @@ e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc)
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(obj);
-   e_nav_taglist_tag_remove(sd->listview, loc);
+   e_nav_list_object_remove(sd->listview, loc);
 }
 
 static void   
@@ -336,8 +347,10 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_resize(sd->message, sd->w, sd->h);
    evas_object_clip_set(sd->message, sd->clip);
 
-   sd->listview = e_nav_taglist_add(evas_object_evas_get(obj), THEMEDIR);
-   e_nav_taglist_callback_add(sd->listview, _e_nav_tag_sel, obj);
+   sd->listview = e_nav_list_add(evas_object_evas_get(obj), E_NAV_LIST_TYPE_TAG, THEMEDIR);
+   e_nav_list_title_set(sd->listview, _("View Tags"));
+   e_nav_list_sort_set(sd->listview, _e_nav_tag_sort, obj);
+   e_nav_list_callback_add(sd->listview, _e_nav_tag_sel, obj);
    evas_object_smart_member_add(sd->listview, obj);
    evas_object_move(sd->listview, sd->x, sd->y);
    evas_object_resize(sd->listview, sd->w, sd->h);

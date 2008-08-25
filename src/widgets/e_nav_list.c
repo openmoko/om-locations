@@ -1,4 +1,4 @@
-/* e_nav_taglist.c -
+/* e_nav_list.c -
  *
  * Copyright 2008 OpenMoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
@@ -21,11 +21,10 @@
  */
 
 #include <Etk.h>
-#include "e_nav_taglist.h"
-#include "e_nav_item_location.h"
-#include "e_nav_theme.h"
-#include "e_nav.h"
+#include "e_nav_list.h"
 #include "e_nav_tree_model.h"
+#include "../e_nav_theme.h"
+#include "../e_nav.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _Tag_List_Callback Tag_List_Callback;
@@ -36,6 +35,7 @@ struct _E_Smart_Data
    Evas_Object     *obj;
    Evas_Object     *clip;
    char            *dir;
+   int              type;
 
    Evas_Object     *frame;
    Etk_Widget      *embed;
@@ -43,34 +43,58 @@ struct _E_Smart_Data
    Etk_Tree_Col    *col;
 
    Evas_List       *callbacks;
+
+   int            (*sort_cb)(void *data, Evas_Object *obj1, Evas_Object *obj2);
+   void            *sort_data;
+
+   void           (*button_cb)(void *data, Evas_Object *li);
+   void            *button_data;
+
 };
 
 struct _Tag_List_Callback
 {
-   void (*func)(void *data, Evas_Object *tl, Evas_Object *tag);
+   void (*func)(void *data, Evas_Object *li, Evas_Object *obj);
    void *data;
 };
 
-static void _e_nav_taglist_smart_init(void);
-static void _e_nav_taglist_smart_add(Evas_Object *obj);
-static void _e_nav_taglist_smart_del(Evas_Object *obj);
-static void _e_nav_taglist_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
-static void _e_nav_taglist_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
-static void _e_nav_taglist_smart_show(Evas_Object *obj);
-static void _e_nav_taglist_smart_hide(Evas_Object *obj);
-static void _e_nav_taglist_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
-static void _e_nav_taglist_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
-static void _e_nav_taglist_smart_clip_unset(Evas_Object *obj);
+static void _e_nav_list_smart_init(void);
+static void _e_nav_list_smart_add(Evas_Object *obj);
+static void _e_nav_list_smart_del(Evas_Object *obj);
+static void _e_nav_list_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
+static void _e_nav_list_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
+static void _e_nav_list_smart_show(Evas_Object *obj);
+static void _e_nav_list_smart_hide(Evas_Object *obj);
+static void _e_nav_list_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
+static void _e_nav_list_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
+static void _e_nav_list_smart_clip_unset(Evas_Object *obj);
 
 static Evas_Smart *_e_smart = NULL;
 
 #define SMART_CHECK(obj, ret) \
    sd = evas_object_smart_data_get(obj); \
    if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_nav_taglist")) return ret
+   if (strcmp(evas_object_type_get(obj), "e_nav_list")) return ret
+
+static int
+_list_compare(Etk_Tree_Col *col, Etk_Tree_Row *row1, Etk_Tree_Row *row2, void *data)
+{
+   E_Smart_Data *sd = data;
+   Evas_Object *obj1, *obj2;
+
+   obj1 = etk_tree_row_data_get(row1);
+   if (!row1 || !obj1)
+     return 1;
+
+   obj2 = etk_tree_row_data_get(row2);
+   if (!row2 || !obj2)
+     return -1;
+
+   return sd->sort_cb(sd->sort_data, obj1, obj2);
+}
 
 static void
-_taglist_hide_cb(void *data, Evas *evas, Evas_Object *obj, void *event)
+_list_hide_cb(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *row;
@@ -85,71 +109,70 @@ _taglist_hide_cb(void *data, Evas *evas, Evas_Object *obj, void *event)
 }
 
 static Etk_Bool
-_taglist_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up *event, void *data)
+_list_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up *event, void *data)
 {
-   Evas_Object *tl = data;
+   Evas_Object *li = data;
    E_Smart_Data *sd;
-   Evas_Object *tag;
+   Evas_Object *obj;
    Evas_List *l;
 
-   SMART_CHECK(tl, ETK_TRUE;);
+   SMART_CHECK(li, ETK_TRUE;);
 
-   tag = etk_tree_row_data_get(row);
+   obj = etk_tree_row_data_get(row);
 
    for (l = sd->callbacks; l; l = l->next)
      {
 	Tag_List_Callback *cb = l->data;
 
-	cb->func(cb->data, tl, tag);
+	cb->func(cb->data, li, obj);
      }
 
    return ETK_TRUE;
 }
 
-static int
-_taglist_sort_compare_cb(Etk_Tree_Col *col, Etk_Tree_Row *row1, Etk_Tree_Row *row2, void *data)
+static void
+_list_clicked_cb(void *data, Evas_Object *obj, const char *emission, const char *source)
 {
-   Evas_Object *tag1, *tag2;
-   time_t t1, t2;
+   E_Smart_Data *sd = data;
 
-   tag1 = etk_tree_row_data_get(row1);
-   t1 = e_nav_world_item_location_timestamp_get(tag1);
-
-   tag2 = etk_tree_row_data_get(row2);
-   t2 = e_nav_world_item_location_timestamp_get(tag2);
-
-   return (t2 - t1);
+   if (sd->button_cb)
+     sd->button_cb(sd->button_data, sd->obj);
 }
 
 Evas_Object *
-e_nav_taglist_add(Evas *e, const char *custom_dir)
+e_nav_list_add(Evas *e, int type, const char *custom_dir)
 {
-   Evas_Object *tl;
+   Evas_Object *li;
    Evas_Object *embed_obj;
    E_Smart_Data *sd;
+   Etk_Tree_Model *model;
 
-   _e_nav_taglist_smart_init();
+   _e_nav_list_smart_init();
 
-   tl = evas_object_smart_add(e, _e_smart);
-   if (!tl)
+   li = evas_object_smart_add(e, _e_smart);
+   if (!li)
      return NULL;
 
-   SMART_CHECK(tl, NULL;);
+   SMART_CHECK(li, NULL;);
 
    if (custom_dir)
      sd->dir = strdup(custom_dir);
 
+   sd->type = type;
+
    sd->frame = e_nav_theme_object_new(e, sd->dir,
-	 "modules/diversity_nav/taglist");
-   edje_object_part_text_set(sd->frame, "title", _("View Tags"));
+	 "modules/diversity_nav/list");
    evas_object_smart_member_add(sd->frame, sd->obj);
    evas_object_move(sd->frame, sd->x, sd->y);
    evas_object_resize(sd->frame, sd->w, sd->h);
    evas_object_clip_set(sd->frame, sd->clip);
    evas_object_show(sd->frame);
 
+   edje_object_signal_callback_add(sd->frame,
+	 "mouse,clicked,*", "button.text", _list_clicked_cb, sd);
+
    evas_object_event_callback_add(sd->obj, EVAS_CALLBACK_HIDE,
-	 _taglist_hide_cb, tl);
+	 _list_hide_cb, li);
 
    sd->tree = etk_tree_new();
    etk_tree_headers_visible_set(ETK_TREE(sd->tree), 0);
@@ -164,12 +187,21 @@ e_nav_taglist_add(Evas *e, const char *custom_dir)
 	 ETK_TRUE);
 
    etk_signal_connect_by_code(ETK_TREE_ROW_CLICKED_SIGNAL, ETK_OBJECT(sd->tree),
-      ETK_CALLBACK(_taglist_tree_row_clicked_cb), tl);
+      ETK_CALLBACK(_list_tree_row_clicked_cb), li);
 
    sd->col = etk_tree_col_new(ETK_TREE(sd->tree), NULL, 455, 0.0);
-   etk_tree_col_model_add(sd->col, e_nav_tree_model_tag_new());
-   etk_tree_col_sort_set(sd->col, _taglist_sort_compare_cb, NULL);
-   etk_tree_col_sort(sd->col, TRUE);
+   switch (type)
+     {
+      case E_NAV_LIST_TYPE_AP:
+      case E_NAV_LIST_TYPE_BARD:
+	 model = e_nav_tree_model_bard_new();
+	 break;
+      case E_NAV_LIST_TYPE_TAG:
+      default:
+	 model = e_nav_tree_model_tag_new();
+	 break;
+     }
+   etk_tree_col_model_add(sd->col, model);
 
    etk_tree_build(ETK_TREE(sd->tree));
 
@@ -180,16 +212,77 @@ e_nav_taglist_add(Evas *e, const char *custom_dir)
    embed_obj = etk_embed_object_get(ETK_EMBED(sd->embed));
    edje_object_part_swallow(sd->frame, "swallow", embed_obj);
 
-   return tl;
+   return li;
 }
 
 void
-e_nav_taglist_callback_add(Evas_Object *tl, void (*func)(void *data, Evas_Object *tl, Evas_Object *tag), void *data)
+e_nav_list_title_set(Evas_Object *li, const char *title)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+   edje_object_part_text_set(sd->frame, "title", title);
+}
+
+void
+e_nav_list_sort_set(Evas_Object *li, int (*func)(void *data, Evas_Object *li, Evas_Object *obj), void *data)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+
+   sd->sort_cb = func;
+   sd->sort_data = data;
+
+   if (sd->sort_cb)
+     {
+	etk_tree_col_sort_set(sd->col, _list_compare, sd);
+	etk_tree_col_sort(sd->col, TRUE);
+     }
+   else
+     {
+	etk_tree_col_sort_set(sd->col, NULL, NULL);
+     }
+}
+
+void
+e_nav_list_button_add(Evas_Object *li, const char *label, void (*func)(void *data, Evas_Object *li), void *data)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+
+   edje_object_part_text_set(sd->frame, "button.text", label);
+
+   sd->button_cb = func;
+   sd->button_data = data;
+
+   edje_object_signal_emit(sd->frame, "e,state,active", "e");
+}
+
+void
+e_nav_list_button_remove(Evas_Object *li, void (*func)(void *data, Evas_Object *li), void *data)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+
+   if (sd->button_cb != func || sd->button_data != data)
+     return;
+
+   sd->button_cb = NULL;
+   sd->button_data = NULL;
+
+   edje_object_signal_emit(sd->frame, "e,state,passive", "e");
+}
+
+void
+e_nav_list_callback_add(Evas_Object *li, void (*func)(void *data, Evas_Object *li, Evas_Object *obj), void *data)
 {
    E_Smart_Data *sd;
    Tag_List_Callback *cb;
 
-   SMART_CHECK(tl, ;);
+   SMART_CHECK(li, ;);
 
    cb = malloc(sizeof(*cb));
    if (!cb)
@@ -202,13 +295,13 @@ e_nav_taglist_callback_add(Evas_Object *tl, void (*func)(void *data, Evas_Object
 }
 
 void
-e_nav_taglist_callback_del(Evas_Object *tl, void *func, void *data)
+e_nav_list_callback_del(Evas_Object *li, void *func, void *data)
 {
    E_Smart_Data *sd;
    Tag_List_Callback *cb;
    Evas_List *l;
 
-   SMART_CHECK(tl, ;);
+   SMART_CHECK(li, ;);
 
    for (l = sd->callbacks; l; l = l->next)
      {
@@ -226,20 +319,20 @@ e_nav_taglist_callback_del(Evas_Object *tl, void *func, void *data)
 }
 
 void
-e_nav_taglist_tag_add(Evas_Object *tl, Evas_Object *tag)
+e_nav_list_object_add(Evas_Object *li, Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *tree_row;
 
-   SMART_CHECK(tl, ;);
+   SMART_CHECK(li, ;);
 
-   if (!tag)
+   if (!obj)
      return;
 
-   tree_row = etk_tree_row_prepend(ETK_TREE(sd->tree), NULL, sd->col, tag, NULL);
+   tree_row = etk_tree_row_prepend(ETK_TREE(sd->tree), NULL, sd->col, obj, NULL);
    if (tree_row)
      {
-	etk_tree_row_data_set(tree_row, tag);
+	etk_tree_row_data_set(tree_row, obj);
 	etk_tree_col_sort(sd->col, TRUE);
      }
 }
@@ -264,66 +357,66 @@ _etk_tree_row_find_by_data(Etk_Tree *tree, void *data)
 }
 
 void
-e_nav_taglist_tag_update(Evas_Object *tl, Evas_Object *tag)
+e_nav_list_object_update(Evas_Object *li, Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *row;
 
-   SMART_CHECK(tl, ;);
+   SMART_CHECK(li, ;);
 
-   if (!tag)
+   if (!obj)
      return;
 
-   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), tag);
+   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), obj);
    if (!row)
      return;
 
-   etk_tree_row_fields_set(row, FALSE, sd->col, tag, NULL);
+   etk_tree_row_fields_set(row, FALSE, sd->col, obj, NULL);
    etk_tree_col_sort(sd->col, TRUE);
 }
 
 void
-e_nav_taglist_tag_remove(Evas_Object *tl, Evas_Object *tag)
+e_nav_list_object_remove(Evas_Object *li, Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *row;
 
-   SMART_CHECK(tl, ;);
+   SMART_CHECK(li, ;);
 
-   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), tag);
+   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), obj);
    if (row)
      etk_tree_row_delete(row);
 }
 
 void
-e_nav_taglist_clear(Evas_Object *tl)
+e_nav_list_clear(Evas_Object *li)
 {
    E_Smart_Data *sd;
 
-   SMART_CHECK(tl, ;);
+   SMART_CHECK(li, ;);
 
    etk_tree_clear(ETK_TREE(sd->tree));
 }
 
 /* internal calls */
 static void
-_e_nav_taglist_smart_init(void)
+_e_nav_list_smart_init(void)
 {
    if (!_e_smart)
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "e_nav_taglist",
+	     "e_nav_list",
 	     EVAS_SMART_CLASS_VERSION,
-	     _e_nav_taglist_smart_add,
-	     _e_nav_taglist_smart_del,
-	     _e_nav_taglist_smart_move,
-	     _e_nav_taglist_smart_resize,
-	     _e_nav_taglist_smart_show,
-	     _e_nav_taglist_smart_hide,
-	     _e_nav_taglist_smart_color_set,
-	     _e_nav_taglist_smart_clip_set,
-	     _e_nav_taglist_smart_clip_unset,
+	     _e_nav_list_smart_add,
+	     _e_nav_list_smart_del,
+	     _e_nav_list_smart_move,
+	     _e_nav_list_smart_resize,
+	     _e_nav_list_smart_show,
+	     _e_nav_list_smart_hide,
+	     _e_nav_list_smart_color_set,
+	     _e_nav_list_smart_clip_set,
+	     _e_nav_list_smart_clip_unset,
 
 	     NULL /* data */
 	  };
@@ -334,7 +427,7 @@ _e_nav_taglist_smart_init(void)
 }
 
 static void
-_e_nav_taglist_smart_add(Evas_Object *obj)
+_e_nav_list_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
 
@@ -359,7 +452,7 @@ _e_nav_taglist_smart_add(Evas_Object *obj)
 }
 
 static void
-_e_nav_taglist_smart_del(Evas_Object *obj)
+_e_nav_list_smart_del(Evas_Object *obj)
 {
    E_Smart_Data *sd;
 
@@ -377,7 +470,7 @@ _e_nav_taglist_smart_del(Evas_Object *obj)
 }
 
 static void
-_e_nav_taglist_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
+_e_nav_list_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
 
@@ -393,7 +486,7 @@ _e_nav_taglist_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 }
 
 static void
-_e_nav_taglist_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
+_e_nav_list_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    E_Smart_Data *sd;
 
@@ -409,7 +502,7 @@ _e_nav_taglist_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 }
 
 static void
-_e_nav_taglist_smart_show(Evas_Object *obj)
+_e_nav_list_smart_show(Evas_Object *obj)
 {
    E_Smart_Data *sd;
 
@@ -421,7 +514,7 @@ _e_nav_taglist_smart_show(Evas_Object *obj)
 }
 
 static void
-_e_nav_taglist_smart_hide(Evas_Object *obj)
+_e_nav_list_smart_hide(Evas_Object *obj)
 {
    E_Smart_Data *sd;
 
@@ -433,7 +526,7 @@ _e_nav_taglist_smart_hide(Evas_Object *obj)
 }
 
 static void
-_e_nav_taglist_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
+_e_nav_list_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 {
    E_Smart_Data *sd;
 
@@ -445,7 +538,7 @@ _e_nav_taglist_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 }
 
 static void
-_e_nav_taglist_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
+_e_nav_list_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 {
    E_Smart_Data *sd;
 
@@ -457,7 +550,7 @@ _e_nav_taglist_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 }
 
 static void
-_e_nav_taglist_smart_clip_unset(Evas_Object *obj)
+_e_nav_list_smart_clip_unset(Evas_Object *obj)
 {
    E_Smart_Data *sd;
 

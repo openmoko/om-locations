@@ -21,14 +21,12 @@ noinst_HEADERS =		\
 	e_spiralmenu.h		\
 	e_flyingmenu.h		\
 	e_nav_tileset.h		\
-	e_nav_taglist.h		\
 	e_nav_item_ap.h		\
 	e_nav_item_neo_me.h	\
 	e_nav_item_neo_other.h	\
 	e_nav_item_link.h	\
 	e_nav_item_location.h	\
 	e_nav_dbus.h		\
-	e_nav_tree_model.h	\
 	e_ctrl.h		\
 	e_nav_misc.h
 
@@ -42,14 +40,12 @@ om_locations_SOURCES =		\
 	e_spiralmenu.c		\
 	e_flyingmenu.c		\
 	e_nav_tileset.c		\
-	e_nav_taglist.c		\
 	e_nav_item_ap.c		\
 	e_nav_item_neo_me.c	\
 	e_nav_item_neo_other.c	\
 	e_nav_item_link.c	\
 	e_nav_item_location.c	\
 	e_nav_dbus.c		\
-	e_nav_tree_model.c	\
 	e_ctrl.c		\
 	e_nav_misc.c
 

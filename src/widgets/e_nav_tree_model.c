@@ -25,11 +25,13 @@
 #include <Edje.h>
 
 #include "e_nav_tree_model.h"
-#include "e_nav_item_location.h"
-#include "e_nav.h"
+#include "../e_nav_item_location.h"
+#include "../e_nav_item_neo_other.h"
+#include "../e_nav.h"
 
 typedef struct _Object_Data Object_Data;
 typedef struct _Tag_Data Tag_Data;
+typedef struct _Bard_Data Bard_Data;
 
 struct _Object_Data
 {
@@ -38,6 +40,12 @@ struct _Object_Data
 };
 
 struct _Tag_Data
+{
+   Object_Data data;
+   int w, h;
+};
+
+struct _Bard_Data
 {
    Object_Data data;
    int w, h;
@@ -78,6 +86,74 @@ _object_cell_data_get(Etk_Tree_Model *model, void *cell_data, va_list *args)
    obj = va_arg(*args, Evas_Object **);
    if (obj)
      *obj = odata->obj;
+}
+
+static void
+_bard_objects_create(Etk_Tree_Model *model, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL], Evas *evas)
+{
+   Evas_Object *cell;
+
+   if (!evas)
+     return;
+
+   cell = edje_object_add(evas);
+
+   etk_theme_edje_object_set_from_parent(cell, "text", ETK_WIDGET(model->tree));
+   evas_object_pass_events_set(cell, 1);
+
+   cell_objects[0] = cell;
+}
+
+static void
+_bard_update(Evas_Object *bard, Bard_Data *bdata)
+{
+   char text[1024];
+
+   if (!bdata->data.changed &&
+	 evas_object_data_get(bard, "e_nav_bard") == bdata)
+     return;
+
+   snprintf(text, sizeof(text),
+	 "<b><font_size=48>%s</></b>",
+	 e_nav_world_item_neo_other_name_get(bdata->data.obj));
+
+   edje_object_part_text_set(bard, "etk.text.label", text);
+   edje_object_size_min_calc(bard, &bdata->w, &bdata->h);
+
+   evas_object_data_set(bard, "e_nav_bard", bdata);
+   bdata->data.changed = 0;
+}
+
+static Etk_Bool
+_bard_render(Etk_Tree_Model *model, Etk_Tree_Row *row, Etk_Geometry geometry, void *cell_data, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL], Evas *evas)
+{
+   Bard_Data *bdata = cell_data;
+   Evas_Object * cell = cell_objects[0];
+
+   if (!bdata || !cell)
+     return ETK_FALSE;
+
+   _bard_update(cell, bdata);
+
+   evas_object_move(cell, geometry.x, geometry.y + ((geometry.h - bdata->h) / 2));
+   evas_object_resize(cell, geometry.w, geometry.h);
+   evas_object_show(cell);
+
+   return ETK_FALSE;
+}
+
+static int
+_bard_width_get(Etk_Tree_Model *model, void *cell_data, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL])
+{
+   Bard_Data *bdata = cell_data;
+   Evas_Object * cell = cell_objects[0];
+
+   if (!cell)
+      return 0;
+
+   _bard_update(cell, bdata);
+
+   return bdata->w;
 }
 
 static void
@@ -176,6 +252,26 @@ _tag_width_get(Etk_Tree_Model *model, void *cell_data, Evas_Object *cell_objects
    _tag_update(cell, tdata);
 
    return tdata->w;
+}
+
+Etk_Tree_Model *e_nav_tree_model_bard_new(void)
+{
+   Etk_Tree_Model *model;
+
+   model = calloc(1, sizeof(Etk_Tree_Model));
+   if (!model)
+     return NULL;
+
+   model->cell_data_size = sizeof(Bard_Data);
+   model->cell_data_free = _object_cell_data_free;
+   model->cell_data_set = _object_cell_data_set;
+   model->cell_data_get = _object_cell_data_get;
+   model->objects_create = _bard_objects_create;
+   model->render = _bard_render;
+   model->width_get = _bard_width_get;
+   model->cache_remove = NULL;
+
+   return model;
 }
 
 Etk_Tree_Model *e_nav_tree_model_tag_new(void)

@@ -23,6 +23,7 @@
 
 #include "etk_tree.h"
 
+Etk_Tree_Model *e_nav_tree_model_bard_new(void);
 Etk_Tree_Model *e_nav_tree_model_tag_new(void);
 
 #endif /* E_NAV_TREE_MODEL_H */
