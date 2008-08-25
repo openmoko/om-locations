@@ -411,7 +411,7 @@ _e_contact_editor_smart_del(Evas_Object *obj)
    if(sd->bg_object) evas_object_del(sd->bg_object);
    if(sd->left_button)  evas_object_del(sd->left_button);
    if(sd->right_button) evas_object_del(sd->right_button);
-
+   if(sd->contact_list) evas_object_del(sd->contact_list);
    evas_object_del(sd->clip);
    evas_object_del(sd->event);
 }

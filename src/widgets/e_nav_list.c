@@ -466,6 +466,8 @@ _e_nav_list_smart_del(Evas_Object *obj)
    evas_object_del(sd->clip);
    evas_object_del(sd->frame);
 
+   etk_object_destroy(ETK_OBJECT(sd->embed));
+
    free(sd);
 }
 
