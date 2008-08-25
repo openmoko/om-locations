@@ -22,7 +22,7 @@
 
 #include <Etk.h>
 #include "e_nav_contact_editor.h"
-#include "e_nav_contact_list.h"
+#include "e_nav_list.h"
 #include "e_nav_dialog.h"
 #include "../e_nav.h"
 #include "../e_nav_theme.h"
@@ -79,7 +79,7 @@ struct _E_Smart_Data
    Evas_Object     *clip;
 
    Embed_Canvas    *embed;
-   Contact_List    *contact_list;
+   Evas_Object     *contact_list;
 
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
@@ -132,25 +132,40 @@ contact_editor_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
 }
 
 static void
-_e_nav_contact_sel(void *data, void *data2)
+_e_nav_contact_cancel(void *data, Evas_Object *li)
 {
-   E_Smart_Data *sd; 
-   Evas_Object *obj;
-   char *contact_name;
+   evas_object_hide(li);
+   e_misc_keyboard_launch();
+}
 
-   obj = data;
-   if(!obj) return;
+static void
+_e_nav_contact_sel(void *data, Evas_Object *li, Evas_Object *bard)
+{
+   E_Smart_Data *sd = data;
+   const char *name;
 
-   sd = evas_object_smart_data_get(obj);
-   if(!sd) 
-     return;
-
-   contact_name = (char *)(data2);
-   etk_entry_text_set(ETK_ENTRY(sd->embed->entry), contact_name);
+   name = e_nav_world_item_neo_other_name_get(bard);
+   etk_entry_text_set(ETK_ENTRY(sd->embed->entry), name);
    etk_widget_focus(sd->embed->entry);
 
-   e_nav_contact_list_deactivate(sd->contact_list);
-   _e_contact_editor_update(obj);
+   evas_object_hide(sd->contact_list);
+   _e_contact_editor_update(sd->obj);
+}
+
+static int
+_e_nav_contact_sort(void *data, Evas_Object *bard1, Evas_Object *bard2)
+{
+   const char *p1, *p2;
+
+   p1 = e_nav_world_item_neo_other_name_get(bard1);
+   if (!p1)
+     return -1;
+
+   p2 = e_nav_world_item_neo_other_name_get(bard2);
+   if (!p2)
+     return 1;
+
+   return strcmp(p1, p2);
 }
 
 static void
@@ -161,7 +176,7 @@ _e_nav_contact_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, vo
    
    if(!sd->contact_list) return;
    e_misc_keyboard_hide();
-   e_nav_contact_list_activate(sd->contact_list);
+   evas_object_show(sd->contact_list);
 }
 
 static void
@@ -275,7 +290,15 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
    evas_object_event_callback_add(contact_button, EVAS_CALLBACK_MOUSE_UP,
 				  _e_nav_contact_button_cb_mouse_down, obj);
 
-   sd->contact_list = e_nav_contact_list_new(obj, THEMEDIR);
+   sd->contact_list = e_nav_list_add(evas_object_evas_get(obj),
+	 E_NAV_LIST_TYPE_BARD, THEMEDIR);
+   e_nav_list_title_set(sd->contact_list, _("Select a contact"));
+   e_nav_list_sort_set(sd->contact_list, _e_nav_contact_sort, NULL);
+   e_nav_list_button_add(sd->contact_list, _("Cancel"), _e_nav_contact_cancel, NULL);
+   e_nav_list_callback_add(sd->contact_list, _e_nav_contact_sel, sd);
+
+   evas_object_smart_member_add(sd->contact_list, obj);
+   evas_object_clip_set(sd->contact_list, sd->clip);
 }
 
 void
@@ -521,30 +544,17 @@ void
 e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
 {
    E_Smart_Data *sd;
-   Contact_List_Item *item;
    Evas_List *l;
 
    SMART_CHECK(obj, ;);
+
+   e_nav_list_clear(sd->contact_list);
 
    for (l = contacts; l; l = l->next)
      {
 	Evas_Object *bard = l->data;
 
-	item = E_NEW(Contact_List_Item, 1);
-	item->name = (char *)
-	   e_nav_world_item_neo_other_name_get(bard);
-	if (item->name)
-	  item->name = strdup(item->name);
-
-	item->description = (char *)
-	   e_nav_world_item_neo_other_phone_get(bard);
-	if (item->description)
-	  item->description = strdup(item->description);
-
-        item->func = _e_nav_contact_sel;
-        item->data = obj;
-        item->data2 = item->name;
-        e_nav_contact_list_item_add(sd->contact_list, item);
+	e_nav_list_object_add(sd->contact_list, bard);
      }
 }
 
@@ -562,7 +572,8 @@ _e_contact_editor_update(Evas_Object *obj)
    evas_object_move(sd->bg_object, screen_x, screen_y);
    evas_object_resize(sd->bg_object, screen_w, 10000);
 
-   e_nav_contact_list_coord_set(sd->contact_list, screen_x, screen_y, screen_w, screen_h);
+   evas_object_move(sd->contact_list, screen_x, screen_y);
+   evas_object_resize(sd->contact_list, screen_w, screen_h);
 
    evas_object_show(sd->bg_object);
    if(sd->left_button)
@@ -586,4 +597,3 @@ _e_contact_editor_update(Evas_Object *obj)
    etk_widget_show(sd->embed->entry);
    etk_widget_focus(sd->embed->entry);
 }
-
