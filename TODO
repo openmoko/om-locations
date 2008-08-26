@@ -1,5 +1,4 @@
 * show information when a tile is not available (error, downloading, etc.)
 * rename diversity/diversity_nav to om-locations
 * make Locations work as a map viewer when there is no dbus
-* make contact_list and taglist same widget, using custom model
 * clean up the code
