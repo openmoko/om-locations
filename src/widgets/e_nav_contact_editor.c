@@ -29,7 +29,6 @@
 #include "../e_nav_misc.h"
 #include "../e_ctrl.h"
 
-#define E_NEW(s, n) (s *)calloc(n, sizeof(s))
 typedef struct _E_Smart_Data E_Smart_Data;
 
 struct _E_Smart_Data
@@ -81,8 +80,10 @@ e_contact_editor_add(Evas *e)
 static void
 _e_nav_contact_cancel(void *data, Evas_Object *li)
 {
-   evas_object_hide(li);
-   e_misc_keyboard_launch();
+   E_Smart_Data *sd = data;
+
+   evas_object_hide(sd->contact_list);
+   etk_widget_focus(sd->entry);
 }
 
 static void
@@ -93,9 +94,9 @@ _e_nav_contact_sel(void *data, Evas_Object *li, Evas_Object *bard)
 
    name = e_nav_world_item_neo_other_name_get(bard);
    etk_entry_text_set(ETK_ENTRY(sd->entry), name);
-   etk_widget_focus(sd->entry);
 
    evas_object_hide(sd->contact_list);
+   etk_widget_focus(sd->entry);
 }
 
 static int
@@ -125,14 +126,13 @@ _e_button_cb_mouse_clicked(void *data, Evas_Object *obj, const char *emission, c
      return;
    p++;
 
+   etk_widget_unfocus(sd->entry);
+
    switch (*p)
      {
       case 'b':
 	 if (sd->contact_list)
-	   {
-	      e_misc_keyboard_hide();
-	      evas_object_show(sd->contact_list);
-	   }
+	   evas_object_show(sd->contact_list);
 	 break;
       case 'l':
 	 if (sd->button_left)
@@ -201,7 +201,7 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
 	 E_NAV_LIST_TYPE_BARD, THEMEDIR);
    e_nav_list_title_set(sd->contact_list, _("Select a contact"));
    e_nav_list_sort_set(sd->contact_list, _e_nav_contact_sort, NULL);
-   e_nav_list_button_add(sd->contact_list, _("Cancel"), _e_nav_contact_cancel, NULL);
+   e_nav_list_button_add(sd->contact_list, _("Cancel"), _e_nav_contact_cancel, sd);
    e_nav_list_callback_add(sd->contact_list, _e_nav_contact_sel, sd);
 
    evas_object_smart_member_add(sd->contact_list, obj);
@@ -211,18 +211,28 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
 void
 e_contact_editor_activate(Evas_Object *obj)
 {
+   E_Smart_Data *sd;
    Evas_Coord x, y, w, h;
+
+   SMART_CHECK(obj, ;);
 
    evas_output_viewport_get(evas_object_evas_get(obj), &x, &y, &w, &h);
    evas_object_move(obj, x, y);
    evas_object_resize(obj, w, h);
    evas_object_show(obj);
+
+   etk_widget_focus(sd->entry);
 }
 
 void
 e_contact_editor_deactivate(Evas_Object *obj)
 {
-   e_misc_keyboard_hide();
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   etk_widget_unfocus(sd->entry);
+
    evas_object_del(obj);
 }
 
