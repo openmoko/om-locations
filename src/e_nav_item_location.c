@@ -890,7 +890,6 @@ action_show_editor(Action_Data *act_data)
 	e_contact_editor_theme_source_set(editor, THEMEDIR,
 	      (void *) action_send, act_data,
 	      (void *) action_to_end, act_data);
-	e_contact_editor_source_object_set(editor, act_data->obj);
 
 	e_contact_editor_input_set(editor, _("To:"), NULL);
 

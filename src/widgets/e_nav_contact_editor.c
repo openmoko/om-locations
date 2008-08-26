@@ -30,59 +30,27 @@
 #include "../e_ctrl.h"
 
 #define E_NEW(s, n) (s *)calloc(n, sizeof(s))
-typedef struct _E_Button_Item E_Button_Item;
 typedef struct _E_Smart_Data E_Smart_Data;
-typedef struct _Embed_Canvas Embed_Canvas;
-
-typedef enum _E_Nav_Movengine_Action
-{
-   E_NAV_MOVEENGINE_START,
-   E_NAV_MOVEENGINE_STOP,
-   E_NAV_MOVEENGINE_GO
-} E_Nav_Movengine_Action;
-
-struct mouse_status {
-   int pressed;
-   int s_x, s_y;
-   int x, y;
-   int pre_offset_x;
-   int pre_offset_y;
-};
-
-struct _E_Button_Item
-{
-   Evas_Object     *obj;
-   Evas_Object     *item_obj;
-   Evas_Coord       sz;
-   void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj);
-   void            *data;
-};
-
-struct _Embed_Canvas
-{
-   Evas_Object     *frame;
-   Etk_Widget      *embed;
-   Etk_Widget      *vbox;
-   Etk_Widget      *entry;
-};
 
 struct _E_Smart_Data
 {
    Evas_Coord       x, y, w, h;
+   char            *dir;
    Evas_Object     *obj;
-   void            *src_obj;          
-   Evas_Object     *bg_object;
-   Evas_Object     *left_button;
-   Evas_Object     *right_button;
-
-   Evas_Object     *event;
    Evas_Object     *clip;
 
-   Embed_Canvas    *embed;
+   Evas_Object     *frame;
+
+   Etk_Widget      *embed;
+   Etk_Widget      *entry;
+
    Evas_Object     *contact_list;
 
-   /* directory to find theme .edj files from the module - if there is one */
-   const char      *dir;
+   void           (*button_left)(void *data, Evas_Object *obj);
+   void            *button_left_data;
+
+   void           (*button_right)(void *data, Evas_Object *obj);
+   void            *button_right_data;
 };
 
 static void _e_contact_editor_smart_init(void);
@@ -95,8 +63,6 @@ static void _e_contact_editor_smart_hide(Evas_Object *obj);
 static void _e_contact_editor_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
 static void _e_contact_editor_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_contact_editor_smart_clip_unset(Evas_Object *obj);
-
-static void _e_contact_editor_update(Evas_Object *obj);
 
 static Evas_Smart *_e_smart = NULL;
 
@@ -113,25 +79,6 @@ e_contact_editor_add(Evas *e)
 }
 
 static void
-contact_editor_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   e_contact_editor_deactivate(obj);
-}
-
-static void
-contact_editor_save(void *data, Evas_Object *obj, Evas_Object *src_obj)
-{
-   Evas_Object *object = (Evas_Object*)obj;
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(object, ;);
-
-   const char *text = etk_entry_text_get(ETK_ENTRY(sd->embed->entry));
-   e_dialog_textblock_text_set(sd->src_obj, text);
-   e_contact_editor_deactivate(obj);
-}
-
-static void
 _e_nav_contact_cancel(void *data, Evas_Object *li)
 {
    evas_object_hide(li);
@@ -145,11 +92,10 @@ _e_nav_contact_sel(void *data, Evas_Object *li, Evas_Object *bard)
    const char *name;
 
    name = e_nav_world_item_neo_other_name_get(bard);
-   etk_entry_text_set(ETK_ENTRY(sd->embed->entry), name);
-   etk_widget_focus(sd->embed->entry);
+   etk_entry_text_set(ETK_ENTRY(sd->entry), name);
+   etk_widget_focus(sd->entry);
 
    evas_object_hide(sd->contact_list);
-   _e_contact_editor_update(sd->obj);
 }
 
 static int
@@ -169,38 +115,45 @@ _e_nav_contact_sort(void *data, Evas_Object *bard1, Evas_Object *bard2)
 }
 
 static void
-_e_nav_contact_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_button_cb_mouse_clicked(void *data, Evas_Object *obj, const char *emission, const char *source)
 {
-   E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(data);
-   
-   if(!sd->contact_list) return;
-   e_misc_keyboard_hide();
-   evas_object_show(sd->contact_list);
+   E_Smart_Data *sd = data;
+   char *p;
+
+   p = strchr(source, '.');
+   if (!p)
+     return;
+   p++;
+
+   switch (*p)
+     {
+      case 'b':
+	 if (sd->contact_list)
+	   {
+	      e_misc_keyboard_hide();
+	      evas_object_show(sd->contact_list);
+	   }
+	 break;
+      case 'l':
+	 if (sd->button_left)
+	   sd->button_left(sd->button_left_data, sd->obj);
+	 break;
+      case 'r':
+      default:
+	 if (sd->button_right)
+	   sd->button_right(sd->button_right_data, sd->obj);
+	 break;
+     }
 }
 
-static void
-_e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
-{       
-   E_Button_Item *bi;
-   E_Smart_Data *sd;
-     
-   bi = data;
-   if (!bi) return;
-   sd = evas_object_smart_data_get(bi->obj);
-   if (!sd) return;
-   if (!sd->src_obj) return;
-   if (bi->func) bi->func(bi->data, bi->obj, sd->src_obj);   
-}
-
-static Etk_Bool 
+static Etk_Bool
 _editor_focused_cb(Etk_Object *object, Etk_Event_Key_Down *event, void *data)
 {
    e_misc_keyboard_launch();
    return TRUE;
 }
 
-static Etk_Bool 
+static Etk_Bool
 _editor_unfocused_cb(Etk_Object *object, Etk_Event_Key_Down *event, void *data)
 {
    e_misc_keyboard_hide();
@@ -208,87 +161,41 @@ _editor_unfocused_cb(Etk_Object *object, Etk_Event_Key_Down *event, void *data)
 }
 
 void
-e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data2)
+e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj), void *data2)
 {
    E_Smart_Data *sd;
+
    SMART_CHECK(obj, ;);
-   char theme_file[PATH_MAX];
 
-   snprintf(theme_file, PATH_MAX, "%s/%s.edj", THEMEDIR, e_nav_theme_name_get());
-   
-   sd->dir = custom_dir;
-   sd->bg_object = evas_object_rectangle_add(evas_object_evas_get(obj)); 
-   evas_object_smart_member_add(sd->bg_object, obj);
-   evas_object_move(sd->bg_object, sd->x, sd->y);
-   evas_object_resize(sd->bg_object, sd->w, sd->h);
-   evas_object_color_set(sd->bg_object, 0, 0, 0, 255);
-   evas_object_clip_set(sd->bg_object, sd->clip);
-   evas_object_repeat_events_set(sd->bg_object, 1);
-   evas_object_show(sd->bg_object);
+   if (custom_dir)
+     sd->dir = strdup(custom_dir);
 
-   E_Button_Item *bi, *bi2;
-   bi = calloc(1, sizeof(E_Button_Item));
-   bi->obj = obj;
-   if(!positive_func) bi->func = contact_editor_save;
-   else bi->func = positive_func;
-   bi->data = data1;
-   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_left_28");
-   evas_object_smart_member_add(bi->item_obj, obj);
-   evas_object_clip_set(bi->item_obj, sd->clip);
-   evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,
-                                  _e_button_cb_mouse_up, bi);
-   edje_object_part_text_set(bi->item_obj, "text", _("Send"));
-   sd->left_button = bi->item_obj;
+   sd->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/contact_editor");
+   evas_object_move(sd->frame, sd->x, sd->y);
+   evas_object_resize(sd->frame, sd->w, sd->h);
+   evas_object_smart_member_add(sd->frame, sd->obj);
+   evas_object_clip_set(sd->frame, sd->clip);
+   evas_object_show(sd->frame);
 
-   bi2 = calloc(1, sizeof(E_Button_Item));
-   bi2->obj = obj;
-   if(!negative_func) bi2->func = contact_editor_exit;
-   else bi2->func = negative_func;
-   bi2->data = data2;
-   bi2->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_28");
-   evas_object_smart_member_add(bi2->item_obj, obj);
-   evas_object_clip_set(bi2->item_obj, sd->clip);
-   evas_object_event_callback_add(bi2->item_obj, EVAS_CALLBACK_MOUSE_UP,
-                                  _e_button_cb_mouse_up, bi2);
-   edje_object_part_text_set(bi2->item_obj, "text", _("Cancel"));
-   sd->right_button = bi2->item_obj;
+   sd->button_left = positive_func;
+   sd->button_left_data = data1;
+   sd->button_right = negative_func;
+   sd->button_right_data = data2;
 
-   Embed_Canvas * ec = (Embed_Canvas *)malloc (sizeof(Embed_Canvas));
-   memset(ec, 0, sizeof(Embed_Canvas)); 
+   edje_object_part_text_set(sd->frame, "button.left", _("Send"));
+   edje_object_part_text_set(sd->frame, "button.right", _("Cancel"));
+   edje_object_part_text_set(sd->frame, "button.bottom", _("Add Contact"));
 
-   ec->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/contact_editor"); 
-   edje_object_part_text_set(ec->frame, "button.text", _("Add Contact"));
-   evas_object_smart_member_add(ec->frame, obj);
-   evas_object_clip_set(ec->frame, sd->clip);
+   edje_object_signal_callback_add(sd->frame, "mouse,clicked,*", "button.*", _e_button_cb_mouse_clicked, sd);
 
-   /*
-    * Setup the etk embed
-    */
-   ec->embed  = etk_embed_new(evas_object_evas_get(obj));
-   edje_object_part_swallow(ec->frame, "swallow", etk_embed_object_get(ETK_EMBED(ec->embed)));
+   sd->entry = etk_entry_new();
+   etk_signal_connect_by_code(ETK_WIDGET_FOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(_editor_focused_cb), NULL);
+   etk_signal_connect_by_code(ETK_WIDGET_UNFOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(_editor_unfocused_cb), NULL);
 
-   /*
-    * Create Box
-    */
-   ec->vbox = etk_vbox_new(ETK_FALSE, 0);
-   etk_container_add(ETK_CONTAINER(ec->embed), ec->vbox);
-
-   /*
-    * Create Entry 
-    */
-   ec->entry = etk_entry_new();
-   etk_box_append(ETK_BOX(ec->vbox), ec->entry, ETK_BOX_START, ETK_BOX_NONE, 0); // padding is 0
-   etk_box_spacing_set(ETK_BOX(ec->vbox), 20);
-   etk_signal_connect_by_code(ETK_WIDGET_FOCUSED_SIGNAL, ETK_OBJECT(ec->entry), ETK_CALLBACK(_editor_focused_cb), NULL);
-   etk_signal_connect_by_code(ETK_WIDGET_UNFOCUSED_SIGNAL, ETK_OBJECT(ec->entry), ETK_CALLBACK(_editor_unfocused_cb), NULL);
-
-   sd->embed = ec;
-  
-   Evas_Object *contact_button; 
-   contact_button = edje_object_part_object_get(ec->frame, "button"); 
-
-   evas_object_event_callback_add(contact_button, EVAS_CALLBACK_MOUSE_UP,
-				  _e_nav_contact_button_cb_mouse_down, obj);
+   sd->embed  = etk_embed_new(evas_object_evas_get(obj));
+   etk_container_add(ETK_CONTAINER(sd->embed), sd->entry);
+   edje_object_part_swallow(sd->frame, "swallow", etk_embed_object_get(ETK_EMBED(sd->embed)));
+   etk_widget_show_all(ETK_WIDGET(sd->embed));
 
    sd->contact_list = e_nav_list_add(evas_object_evas_get(obj),
 	 E_NAV_LIST_TYPE_BARD, THEMEDIR);
@@ -302,48 +209,86 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
 }
 
 void
-e_contact_editor_source_object_set(Evas_Object *obj, void *src_obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   sd->src_obj = src_obj;
-}
-
-Evas_Object *
-e_contact_editor_source_object_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, NULL;);
-   return sd->src_obj;
-}
-
-void
 e_contact_editor_activate(Evas_Object *obj)
 {
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   if(!sd) return;
-   evas_object_show(sd->event);
-   _e_contact_editor_update(obj);
+   Evas_Coord x, y, w, h;
+
+   evas_output_viewport_get(evas_object_evas_get(obj), &x, &y, &w, &h);
+   evas_object_move(obj, x, y);
+   evas_object_resize(obj, w, h);
+   evas_object_show(obj);
 }
 
 void
 e_contact_editor_deactivate(Evas_Object *obj)
 {
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   evas_object_hide(sd->event);
-
    e_misc_keyboard_hide();
-
-   _e_contact_editor_smart_hide(obj);
-   _e_contact_editor_smart_del(obj);
+   evas_object_del(obj);
 }
 
+void
+e_contact_editor_input_length_limit_set(Evas_Object *obj, size_t length_limit)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (length_limit > 0)
+     etk_entry_text_limit_set(ETK_ENTRY(sd->entry), length_limit);
+}
+
+size_t
+e_contact_editor_input_length_limit_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, 0;);
+
+   return etk_entry_text_limit_get(ETK_ENTRY(sd->entry));
+}
+
+void
+e_contact_editor_input_set(Evas_Object *obj, const char *name, const char *input)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   edje_object_part_text_set(sd->frame, "title", name);
+
+   if (!input)
+     input = "";
+
+   etk_entry_text_set(ETK_ENTRY(sd->entry), input);
+}
+
+const char *
+e_contact_editor_input_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return etk_entry_text_get(ETK_ENTRY(sd->entry));
+}
+
+void
+e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+
+   SMART_CHECK(obj, ;);
+
+   e_nav_list_clear(sd->contact_list);
+
+   for (l = contacts; l; l = l->next)
+     {
+	Evas_Object *bard = l->data;
+
+	e_nav_list_object_add(sd->contact_list, bard);
+     }
+}
 /* internal calls */
 static void
 _e_contact_editor_smart_init(void)
@@ -363,7 +308,7 @@ _e_contact_editor_smart_init(void)
 	       _e_contact_editor_smart_color_set,
 	       _e_contact_editor_smart_clip_set,
 	       _e_contact_editor_smart_clip_unset,
-	       
+	
 	       NULL /* data */
 	  };
 	_e_smart = evas_smart_class_new(&sc);
@@ -374,30 +319,24 @@ static void
 _e_contact_editor_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    sd = calloc(1, sizeof(E_Smart_Data));
-   if (!sd) return;
+   if (!sd)
+     return;
+
    sd->obj = obj;
-   
+
    sd->x = 0;
    sd->y = 0;
    sd->w = 0;
    sd->h = 0;
-   
+
    sd->clip = evas_object_rectangle_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->clip, obj);
-   evas_object_move(sd->clip, -10000, -10000);
-   evas_object_resize(sd->clip, 30000, 30000);
+   evas_object_move(sd->clip, sd->x, sd->y);
+   evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
-   evas_object_show(sd->clip);
 
-   sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
-   evas_object_smart_member_add(sd->event, obj);
-   evas_object_move(sd->event, -10000, -10000);
-   evas_object_resize(sd->event, 30000, 30000);
-   evas_object_color_set(sd->event, 255, 255, 255, 0);
-   evas_object_clip_set(sd->event, sd->clip);
-   
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -405,49 +344,63 @@ static void
 _e_contact_editor_smart_del(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   if(sd->bg_object) evas_object_del(sd->bg_object);
-   if(sd->left_button)  evas_object_del(sd->left_button);
-   if(sd->right_button) evas_object_del(sd->right_button);
-   if(sd->contact_list) evas_object_del(sd->contact_list);
+
+   SMART_CHECK(obj, ;);
+
+   if (sd->dir)
+     free(sd->dir);
+
    evas_object_del(sd->clip);
-   evas_object_del(sd->event);
+   evas_object_del(sd->frame);
+
+   etk_object_destroy(ETK_OBJECT(sd->embed));
+
+   if (sd->contact_list)
+     evas_object_del(sd->contact_list);
+
+   free(sd);
 }
 
-                    
+
 static void
 _e_contact_editor_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
+
+   SMART_CHECK(obj, ;);
+
    sd->x = x;
    sd->y = y;
-   _e_contact_editor_update(obj);
+
+   evas_object_move(sd->clip, sd->x, sd->y);
+   evas_object_move(sd->frame, sd->x, sd->y);
+   if (sd->contact_list)
+     evas_object_move(sd->contact_list, sd->x, sd->y);
 }
 
 static void
 _e_contact_editor_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
+
+   SMART_CHECK(obj, ;);
+
    sd->w = w;
    sd->h = h;
-   _e_contact_editor_update(obj);
+
+   evas_object_resize(sd->clip, sd->w, sd->h);
+   evas_object_resize(sd->frame, sd->w, sd->h);
+   if (sd->contact_list)
+     evas_object_resize(sd->contact_list, sd->w, sd->h);
 }
 
 static void
 _e_contact_editor_smart_show(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
+
+   SMART_CHECK(obj, ;);
+
    evas_object_show(sd->clip);
 }
 
@@ -455,22 +408,19 @@ static void
 _e_contact_editor_smart_hide(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   evas_object_hide(sd->clip);
 
-   evas_object_hide(sd->embed->frame);
-   etk_widget_hide(sd->embed->vbox);
-   etk_widget_hide(sd->embed->entry);
+   SMART_CHECK(obj, ;);
+
+   evas_object_hide(sd->clip);
 }
 
 static void
 _e_contact_editor_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 {
    E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
+
+   SMART_CHECK(obj, ;);
+
    evas_object_color_set(sd->clip, r, g, b, a);
 }
 
@@ -478,9 +428,9 @@ static void
 _e_contact_editor_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 {
    E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
+
+   SMART_CHECK(obj, ;);
+
    evas_object_clip_set(sd->clip, clip);
 }
 
@@ -488,112 +438,8 @@ static void
 _e_contact_editor_smart_clip_unset(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
+
+   SMART_CHECK(obj, ;);
+
    evas_object_clip_unset(sd->clip);
-} 
-
-void
-e_contact_editor_input_length_limit_set(Evas_Object *obj, size_t length_limit)
-{
-   E_Smart_Data *sd;
-   SMART_CHECK(obj, ;);
-
-   if(!sd) return;
-   if(length_limit > 0) etk_entry_text_limit_set(ETK_ENTRY(sd->embed->entry), length_limit);
-}
-
-size_t
-e_contact_editor_input_length_limit_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   SMART_CHECK(obj, 0;);
-
-   if(!sd) return 0;
-   return etk_entry_text_limit_get(ETK_ENTRY(sd->embed->entry));
-}
-
-void 
-e_contact_editor_input_set(Evas_Object *obj, const char *name, const char *input)
-{
-   E_Smart_Data *sd;
-   SMART_CHECK(obj, ;);
-
-   if(!sd) return;
-   if(sd->embed)
-     {
-        edje_object_part_text_set(sd->embed->frame, "title", name);
-        if(!input || !strcmp(input, "")) return;
-
-        etk_entry_text_set(ETK_ENTRY(sd->embed->entry), input);
-     }
-}
-
-const char * 
-e_contact_editor_input_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, NULL;);
-   if(!sd) return NULL;
-   return etk_entry_text_get(ETK_ENTRY(sd->embed->entry));
-}
-
-void 
-e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
-{
-   E_Smart_Data *sd;
-   Evas_List *l;
-
-   SMART_CHECK(obj, ;);
-
-   e_nav_list_clear(sd->contact_list);
-
-   for (l = contacts; l; l = l->next)
-     {
-	Evas_Object *bard = l->data;
-
-	e_nav_list_object_add(sd->contact_list, bard);
-     }
-}
-
-static void
-_e_contact_editor_update(Evas_Object *obj)
-{
-   Evas_Coord screen_x, screen_y, screen_w, screen_h;
-   E_Smart_Data *sd;
-   int indent=10;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-
-   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
-   evas_object_move(sd->bg_object, screen_x, screen_y);
-   evas_object_resize(sd->bg_object, screen_w, 10000);
-
-   evas_object_move(sd->contact_list, screen_x, screen_y);
-   evas_object_resize(sd->contact_list, screen_w, screen_h);
-
-   evas_object_show(sd->bg_object);
-   if(sd->left_button)
-     {
-        evas_object_resize(sd->left_button, screen_w*(1.0/3), (screen_h*(1.0/8)) );
-        evas_object_move(sd->left_button, screen_x+indent, screen_y+indent);
-        evas_object_show(sd->left_button);
-     }
-   if(sd->right_button)
-     {
-        evas_object_resize(sd->right_button, screen_w*(1.0/3), (screen_h*(1.0/8)) );
-        evas_object_move(sd->right_button, screen_w-indent-(screen_w*(1.0/3)), screen_y+indent);
-        evas_object_show(sd->right_button);
-     }
-
-   evas_object_move(sd->embed->frame, indent, (screen_h*(1.0/8)) + indent*2);
-   evas_object_resize(sd->embed->frame, screen_w - (indent * 2), screen_h - ((screen_h*(1.0/8)) + indent*2));
-   evas_object_show(sd->embed->frame);
-   etk_widget_show_all(ETK_WIDGET(sd->embed->embed));
-   etk_widget_show(sd->embed->vbox);
-   etk_widget_show(sd->embed->entry);
-   etk_widget_focus(sd->embed->entry);
 }

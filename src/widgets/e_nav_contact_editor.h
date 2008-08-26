@@ -23,19 +23,17 @@
 #ifndef E_NAV_CONTACT_EDITOR_H
 #define E_NAV_CONTACT_EDITOR_H
 
-
-/* object management */
 Evas_Object    *e_contact_editor_add(Evas *e);
-void            e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj, Evas_Object *src_obj), void *data2);
-void            e_contact_editor_source_object_set(Evas_Object *obj, void *src_obj);
-Evas_Object    *e_contact_editor_source_object_get(Evas_Object *obj);
+void            e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj), void *data2);
+
 void            e_contact_editor_activate(Evas_Object *obj);
 void            e_contact_editor_deactivate(Evas_Object *obj);
+
 void            e_contact_editor_input_length_limit_set(Evas_Object *obj, size_t length_limit);
 size_t          e_contact_editor_input_length_limit_get(Evas_Object *obj);
 void            e_contact_editor_input_set(Evas_Object *obj, const char *name, const char *input);
 const char     *e_contact_editor_input_get(Evas_Object *obj);
-void            e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *list);
-    
-#endif
 
+void            e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *list);
+
+#endif /* E_NAV_CONTACT_EDITOR_H */
