@@ -468,6 +468,12 @@ _e_nav_list_smart_del(Evas_Object *obj)
 
    etk_object_destroy(ETK_OBJECT(sd->embed));
 
+   while (sd->callbacks)
+     {
+	free(sd->callbacks->data);
+	sd->callbacks = evas_list_remove_list(sd->callbacks, sd->callbacks);
+     }
+
    free(sd);
 }
 
