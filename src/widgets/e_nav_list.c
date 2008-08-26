@@ -27,7 +27,7 @@
 #include "../e_nav.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
-typedef struct _Tag_List_Callback Tag_List_Callback;
+typedef struct _List_Row_Callback List_Row_Callback;
 
 struct _E_Smart_Data
 {
@@ -52,7 +52,7 @@ struct _E_Smart_Data
 
 };
 
-struct _Tag_List_Callback
+struct _List_Row_Callback
 {
    void (*func)(void *data, Evas_Object *li, Evas_Object *obj);
    void *data;
@@ -122,7 +122,7 @@ _list_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up 
 
    for (l = sd->callbacks; l; l = l->next)
      {
-	Tag_List_Callback *cb = l->data;
+	List_Row_Callback *cb = l->data;
 
 	cb->func(cb->data, li, obj);
      }
@@ -131,7 +131,7 @@ _list_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up 
 }
 
 static void
-_list_clicked_cb(void *data, Evas_Object *obj, const char *emission, const char *source)
+_list_button_clicked_cb(void *data, Evas_Object *obj, const char *emission, const char *source)
 {
    E_Smart_Data *sd = data;
 
@@ -169,7 +169,7 @@ e_nav_list_add(Evas *e, int type, const char *custom_dir)
    evas_object_show(sd->frame);
 
    edje_object_signal_callback_add(sd->frame,
-	 "mouse,clicked,*", "button.text", _list_clicked_cb, sd);
+	 "mouse,clicked,*", "button.text", _list_button_clicked_cb, sd);
 
    evas_object_event_callback_add(sd->obj, EVAS_CALLBACK_HIDE,
 	 _list_hide_cb, li);
@@ -280,7 +280,7 @@ void
 e_nav_list_callback_add(Evas_Object *li, void (*func)(void *data, Evas_Object *li, Evas_Object *obj), void *data)
 {
    E_Smart_Data *sd;
-   Tag_List_Callback *cb;
+   List_Row_Callback *cb;
 
    SMART_CHECK(li, ;);
 
@@ -298,7 +298,7 @@ void
 e_nav_list_callback_del(Evas_Object *li, void *func, void *data)
 {
    E_Smart_Data *sd;
-   Tag_List_Callback *cb;
+   List_Row_Callback *cb;
    Evas_List *l;
 
    SMART_CHECK(li, ;);
