@@ -2,9 +2,10 @@
 
 src/widgets/e_nav_alert.c
 src/widgets/e_nav_contact_editor.c
-src/widgets/e_nav_contact_list.c
 src/widgets/e_nav_dialog.c
+src/widgets/e_nav_list.c
 src/widgets/e_nav_textedit.c
+src/widgets/e_nav_tree_model.c
 
 src/e_ctrl.c
 src/e_flyingmenu.c
@@ -19,7 +20,6 @@ src/e_nav_item_location.c
 src/e_nav_item_neo_me.c
 src/e_nav_item_neo_other.c
 src/e_nav_misc.c
-src/e_nav_taglist.c
 src/e_nav_theme.c
 src/e_nav_tileset.c
 src/e_spiralmenu.c
