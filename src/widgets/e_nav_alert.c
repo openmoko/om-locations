@@ -192,6 +192,11 @@ _e_alert_smart_add(Evas_Object *obj)
    evas_object_color_set(sd->event, 255, 255, 255, 0);
    evas_object_clip_set(sd->event, sd->clip);
    
+   sd->title_color_r = 255;
+   sd->title_color_g = 255;
+   sd->title_color_b = 255;
+   sd->title_color_a = 255;
+
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -339,10 +344,6 @@ e_alert_title_set(Evas_Object *obj, const char *title, const char *message)
         sd->title_object = o;
         edje_object_part_text_set(sd->title_object, "title", title);
         edje_object_part_text_set(sd->title_object, "message", message);
-        sd->title_color_r = 255;
-        sd->title_color_g = 255;
-        sd->title_color_b = 255;
-        sd->title_color_a = 255;
      }
 }
 

@@ -920,7 +920,6 @@ action_show_alert(Action_Data *act_data)
 	  }
 
 	e_alert_theme_source_set(oa, THEMEDIR);
-	e_alert_title_color_set(oa, 255, 0, 0, 255);
 
 	act_data->alert = oa;
      }
@@ -929,6 +928,7 @@ action_show_alert(Action_Data *act_data)
      {
       case ACTION_STATE_DELETE:
 	 e_alert_title_set(oa, _("DELETE"), _("Are you sure?"));
+	 e_alert_title_color_set(oa, 255, 0, 0, 255);
 
 	 e_alert_button_add(oa, _("Yes"),
 	       (void *) action_delete, act_data);
@@ -938,9 +938,15 @@ action_show_alert(Action_Data *act_data)
       case ACTION_STATE_REPORT:
       default:
 	 if (act_data->send_error)
-	   e_alert_title_set(oa, _("ERROR"), act_data->send_error);
+	   {
+	      e_alert_title_set(oa, _("ERROR"), act_data->send_error);
+	      e_alert_title_color_set(oa, 255, 0, 0, 255);
+	   }
 	 else
-	   e_alert_title_set(oa, _("SUCCESS"), _("Tag sent"));
+	   {
+	      e_alert_title_set(oa, _("SUCCESS"), _("Tag sent"));
+	      e_alert_title_color_set(oa, 0, 255, 0, 255);
+	   }
 
 	 e_alert_button_add(oa, _("OK"),
 	       (void *) action_to_end, act_data);
