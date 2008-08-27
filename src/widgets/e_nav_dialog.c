@@ -47,7 +47,7 @@ struct _E_Button_Item
    Evas_Object *obj;
    Evas_Object *item_obj;
    Evas_Coord sz;
-   void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj);
+   void (*func) (void *data, Evas_Object *obj);
    void *data;
 };
 
@@ -55,7 +55,6 @@ struct _E_Smart_Data
 {
    Evas_Coord       x, y, w, h;
    Evas_Object     *obj;
-   Evas_Object     *src_obj;
    Evas_Object     *bg_object;
    Evas_Object     *title_object;
    Evas_Object     *text_object;
@@ -87,9 +86,6 @@ static void _e_dialog_smart_clip_unset(Evas_Object *obj);
 
 static int  _e_dialog_cb_animator(void *data);
 static void _e_dialog_update(Evas_Object *obj);
-static void _e_dialog_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event);
-static void _e_dialog_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event);
-static void _e_dialog_cb_src_obj_resize(void *data, Evas *evas, Evas_Object *obj, void *event);
 
 static Evas_Smart *_e_smart = NULL;
 
@@ -121,42 +117,6 @@ e_dialog_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_clip_set(sd->bg_object, sd->clip);
    evas_object_repeat_events_set(sd->bg_object, 1);
    evas_object_show(sd->bg_object);
-}
-
-void
-e_dialog_source_object_set(Evas_Object *obj, Evas_Object *src_obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   if (sd->src_obj)
-     {
-	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_DEL,
-				       _e_dialog_cb_src_obj_del);
-	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_MOVE,
-				       _e_dialog_cb_src_obj_move);
-	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_RESIZE,
-				       _e_dialog_cb_src_obj_resize);
-     }
-   sd->src_obj = src_obj;
-   if (sd->src_obj)
-     {
-	evas_object_event_callback_add(sd->src_obj, EVAS_CALLBACK_DEL,
-				       _e_dialog_cb_src_obj_del, obj);
-	evas_object_event_callback_add(sd->src_obj, EVAS_CALLBACK_MOVE,
-				       _e_dialog_cb_src_obj_move, obj);
-	evas_object_event_callback_add(sd->src_obj, EVAS_CALLBACK_RESIZE,
-				       _e_dialog_cb_src_obj_resize, obj);
-     }
-}
-
-Evas_Object *
-e_dialog_source_object_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, NULL;);
-   return sd->src_obj;
 }
 
 void
@@ -254,15 +214,6 @@ _e_dialog_smart_del(Evas_Object *obj)
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
-   if (sd->src_obj)
-     {
-	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_DEL,
-				       _e_dialog_cb_src_obj_del);
-	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_MOVE,
-				       _e_dialog_cb_src_obj_move);
-	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_RESIZE,
-				       _e_dialog_cb_src_obj_resize);
-     }
    while (sd->textblocks)   
      {
 	E_TextBlock_Item *tbi;
@@ -373,12 +324,11 @@ _e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    if (!bi) return;
    sd = evas_object_smart_data_get(bi->obj);
    if (!sd) return;
-   if (!sd->src_obj) return;
-   if (bi->func) bi->func(bi->data, bi->obj, sd->src_obj);
+   if (bi->func) bi->func(bi->data, bi->obj);
 }
 
 void
-e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data)
+e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data)
 {
    E_Smart_Data *sd;
    E_Button_Item *bi;
@@ -703,33 +653,4 @@ _e_dialog_cb_animator(void *data)
 	return 0;
      }
    return 1;
-}
-
-static void
-_e_dialog_cb_src_obj_del(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   E_Smart_Data *sd;
-     
-   sd = evas_object_smart_data_get(data);
-   if (!sd) return;
-}
-
-static void
-_e_dialog_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   E_Smart_Data *sd;
-     
-   sd = evas_object_smart_data_get(data);
-   if (!sd) return;
-   _e_dialog_update(sd->obj);
-}
-
-static void
-_e_dialog_cb_src_obj_resize(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   E_Smart_Data *sd;
-     
-   sd = evas_object_smart_data_get(data);
-   if (!sd) return;
-   _e_dialog_update(sd->obj);
 }

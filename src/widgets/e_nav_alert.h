@@ -26,13 +26,9 @@
 /* object management */
 Evas_Object    *e_alert_add(Evas *e);
 void            e_alert_theme_source_set(Evas_Object *obj, const char *custom_dir);
-void            e_alert_source_object_set(Evas_Object *obj, Evas_Object *src_obj);
-Evas_Object    *e_alert_source_object_get(Evas_Object *obj);
-void            e_alert_autodelete_set(Evas_Object *obj, Evas_Bool autodelete);
-Evas_Bool       e_alert_autodelete_get(Evas_Object *obj);
 void            e_alert_activate(Evas_Object *obj);
 void            e_alert_deactivate(Evas_Object *obj);
-void            e_alert_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data);
+void            e_alert_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data);
 void            e_alert_title_set(Evas_Object *obj, const char *title, const char *message);
 void            e_alert_title_color_set(Evas_Object *obj, int r, int g, int b, int a);
 

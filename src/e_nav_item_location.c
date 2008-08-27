@@ -617,7 +617,6 @@ typedef struct _Action_Data {
      int state;
 
      Evas *evas;
-     Evas_Object *obj;
 
      Evas_Object *dialog;
      Evas_Object *alert;
@@ -784,7 +783,6 @@ action_show_dialog(Action_Data *act_data)
 	  }
 
 	e_dialog_theme_source_set(od, THEMEDIR);
-	e_dialog_source_object_set(od, act_data->obj);
 
 	act_data->dialog = od;
      }
@@ -922,7 +920,6 @@ action_show_alert(Action_Data *act_data)
 	  }
 
 	e_alert_theme_source_set(oa, THEMEDIR);
-	e_alert_source_object_set(oa, act_data->obj);
 	e_alert_title_color_set(oa, 255, 0, 0, 255);
 
 	act_data->alert = oa;
@@ -1077,7 +1074,6 @@ action_new(Evas_Object *nav)
 
    act_data->state = ACTION_STATE_INIT;
    act_data->evas = evas_object_evas_get(nav);
-   act_data->obj = nav;
    act_data->world = e_nav_world_get(nav);
    if (!act_data->world)
      {

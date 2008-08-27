@@ -55,9 +55,9 @@ static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void position_search_timer_start();
 static void position_search_timer_stop();
-static void alert_exit(void *data, Evas_Object *obj, Evas_Object *src_obj);
-static void alert_gps_turn_on(void *data, Evas_Object *obj, Evas_Object *src_obj);
-static void alert_gps_cancel(void *data, Evas_Object *obj, Evas_Object *src_obj);
+static void alert_exit(void *data, Evas_Object *obj);
+static void alert_gps_turn_on(void *data, Evas_Object *obj);
+static void alert_gps_cancel(void *data, Evas_Object *obj);
 static int check_gps_state();
 static int turn_on_gps();
 static int _e_nav_cb_timer_pos_search_pause(void *data);
@@ -377,7 +377,6 @@ handle_gps(void *data)
     
         alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
         e_alert_theme_source_set(alert_dialog, THEMEDIR);
-        e_alert_source_object_set(alert_dialog, mdata.neo_me);
         e_alert_title_set(alert_dialog, _("GPS is off"), _("Turn on GPS?"));
         e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
         e_alert_button_add(alert_dialog, _("Yes"), alert_gps_turn_on, alert_dialog);
@@ -394,7 +393,7 @@ handle_gps(void *data)
 }
 
 static void
-alert_gps_turn_on(void *data, Evas_Object *obj, Evas_Object *src_obj)
+alert_gps_turn_on(void *data, Evas_Object *obj)
 {
    int ret;
    e_alert_deactivate(obj);
@@ -404,13 +403,13 @@ alert_gps_turn_on(void *data, Evas_Object *obj, Evas_Object *src_obj)
 }
 
 static void
-alert_gps_cancel(void *data, Evas_Object *obj, Evas_Object *src_obj)
+alert_gps_cancel(void *data, Evas_Object *obj)
 {
    e_alert_deactivate(obj);
 }
 
 static void
-alert_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
+alert_exit(void *data, Evas_Object *obj)
 {
    e_alert_deactivate(obj);
    e_ctrl_message_hide(mdata.ctrl);
@@ -485,7 +484,6 @@ _e_nav_cb_timer_pos_search_pause(void *data)
     
    alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
    e_alert_theme_source_set(alert_dialog, THEMEDIR);
-   e_alert_source_object_set(alert_dialog, mdata.neo_me);     
    fix_status = e_nav_world_item_neo_me_fixed_get(mdata.neo_me);
    if(fix_status)
      {
