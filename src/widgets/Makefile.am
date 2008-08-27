@@ -11,7 +11,6 @@ noinst_LTLIBRARIES = libwidget.la
 noinst_HEADERS =		\
 	e_nav_dialog.h		\
 	e_nav_alert.h		\
-	e_nav_textedit.h	\
 	e_nav_contact_editor.h	\
 	e_nav_entry.h		\
 	e_nav_list.h		\
@@ -21,7 +20,6 @@ noinst_HEADERS =		\
 libwidget_la_SOURCES =		\
 	e_nav_dialog.c		\
 	e_nav_alert.c		\
-	e_nav_textedit.c	\
 	e_nav_contact_editor.c	\
 	e_nav_entry.c		\
 	e_nav_list.c		\

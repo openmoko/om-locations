@@ -25,7 +25,6 @@
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
 #include "widgets/e_nav_alert.h"
-#include "widgets/e_nav_textedit.h"
 #include "widgets/e_nav_contact_editor.h"
 #include "e_ctrl.h"
 #include <time.h>

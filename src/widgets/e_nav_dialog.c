@@ -22,7 +22,7 @@
 
 #include "../e_nav.h"
 #include "e_nav_dialog.h"
-#include "e_nav_textedit.h"
+#include "e_nav_entry.h"
 #include "../e_nav_theme.h"
 
 /* navigator object */
@@ -418,7 +418,7 @@ e_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
      }
 }
 
-void 
+static void
 e_dialog_textblock_text_set(void *obj, const char *input)
 {
    E_TextBlock_Item *tbi = (E_TextBlock_Item*)obj;
@@ -452,17 +452,49 @@ e_dialog_textblock_text_get(Evas_Object *obj, const char *label)
 }
 
 static void
+on_entry_ok(void *data, Evas_Object *entry)
+{
+   E_TextBlock_Item *tbi = data;
+   E_Smart_Data *sd;
+   const char *text;
+
+   SMART_CHECK(tbi->obj, ;);
+
+   text = e_nav_entry_text_get(entry);
+   e_dialog_textblock_text_set(tbi, text);
+
+   evas_object_del(entry);
+}
+
+static void
+on_entry_cancel(void *data, Evas_Object *entry)
+{
+   evas_object_del(entry);
+}
+
+static void
 _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    E_TextBlock_Item *tbi = (E_TextBlock_Item*)data;
-   Evas_Object *teo = e_textedit_add(evas);
-   e_textedit_theme_source_set(teo, THEMEDIR, NULL, NULL, NULL, NULL);  
-   e_textedit_source_object_set(teo, data); // data is tbi ( TextBlock_Item)
-   e_textedit_input_set(teo, edje_object_part_text_get(tbi->label_obj, "dialog.label.text"), tbi->input);
-   e_textedit_input_length_limit_set(teo, tbi->length_limit);
+   Evas_Object *entry;
+   Evas_Coord x, y, w, h;
+  
+   entry = e_nav_entry_add(evas);
+   e_nav_entry_theme_source_set(entry, THEMEDIR);
+   e_nav_entry_title_set(entry, edje_object_part_text_get(tbi->label_obj, "dialog.label.text"));
+   e_nav_entry_text_set(entry, tbi->input);
+   e_nav_entry_text_limit_set(entry, tbi->length_limit);
    
-   evas_object_show(teo);
-   e_textedit_activate(teo);
+   e_nav_entry_button_add(entry, _("OK"), on_entry_ok, tbi);
+   e_nav_entry_button_add(entry, _("Cancel"), on_entry_cancel, tbi);
+
+   evas_output_viewport_get(evas, &x, &y, &w, &h);
+   evas_object_move(entry, x, y);
+   evas_object_resize(entry, w, h);
+
+   e_nav_entry_focus(entry);
+
+   evas_object_show(entry);
 }
 
 void 
