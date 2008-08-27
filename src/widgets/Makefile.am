@@ -13,6 +13,7 @@ noinst_HEADERS =		\
 	e_nav_alert.h		\
 	e_nav_textedit.h	\
 	e_nav_contact_editor.h	\
+	e_nav_entry.h		\
 	e_nav_list.h		\
 	e_nav_tree_model.h	\
 	debug.h
@@ -22,6 +23,7 @@ libwidget_la_SOURCES =		\
 	e_nav_alert.c		\
 	e_nav_textedit.c	\
 	e_nav_contact_editor.c	\
+	e_nav_entry.c		\
 	e_nav_list.c		\
 	e_nav_tree_model.c
 
