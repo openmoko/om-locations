@@ -154,13 +154,13 @@ group {
             rel2 {
                to: "background";
                relative: 1.0 0.0;
-               offset: 0 40;
+               offset: 0 39;
             }
          }
          description { state: "shown" 0.0;
 	    inherit: "default" 0.0;
 	    visible: 1;
-	    rel2.offset: 0 75;
+	    rel2.offset: 0 85;
          }
       }
       part { name: "button.text";
@@ -264,12 +264,12 @@ group {
 	    rel1 {
 		to: "background";
 	    	relative: 0.0 0.0;
-		offset: 0 0;
+		offset: 0 10;
 	    }
             rel2 {
                to: "background";
-               relative: 1.0 0.0;
-               offset: 0 100;
+               relative: 1.0 0.125;
+               offset: 0 10;
             }
          }
       }
@@ -286,8 +286,8 @@ group {
             }
             rel2 {
                to: "button_bar";
-               relative: 0.5 1.0;
-               offset: 0 0;
+               relative: 0.33 1.0;
+               offset: 20 0;
             }
             color: 255 255 255 255;
             color3: 0 0 0 0;
@@ -306,20 +306,20 @@ group {
          description { state: "default" 0.0;
             rel1 {
                to: "button_bar";
-               relative: 0.5 0.0;
-               offset: 0 0;
+               relative: 0.67 0.0;
+               offset: -10 0;
             }
             rel2 {
                to: "button_bar";
                relative: 1.0 1.0;
-               offset: -20 0;
+               offset: -10 0;
             }
             color: 255 255 255 255;
             color3: 0 0 0 0;
             text {
                font: "Edje-Sans-Bold";
                size: 28;
-               align: 1.0 0.5;
+               align: 0.5 0.5;
             }
          }
       }
@@ -331,19 +331,19 @@ group {
             rel1 {
                to: "button_bar";
                relative: 0.0 1.0;
-               offset: 20 0;
+               offset: 20 20;
             }
             rel2 {
                to: "button_bar";
                relative: 1.0 1.0;
-               offset: -20 50;
+               offset: -20 80;
             }
             color: 255 255 255 255;
             text {
                font: "Edje-Sans-Bold";
                size: 48;
                min: 1 1;
-               align: 0.0 0.5;
+               align: 0.0 0.0;
             }
          }
       }
@@ -354,12 +354,12 @@ group {
             rel1 {
                to: "title";
                relative: 0.0 1.0;
-               offset: 0 20;
+               offset: 0 40;
             }
             rel2 {
                to: "title";
                relative: 1.0 1.0;
-               offset: 0 70;
+               offset: 0 90;
             }
          } 
       }
