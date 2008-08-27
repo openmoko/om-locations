@@ -21,9 +21,9 @@
 #ifndef E_NAV_MISC_H
 #define E_NAV_MISC_H
 
-#include <X11/Xlib.h>
-#include <Ecore_X.h>
-#include "Ecore_X_Atoms.h"
+#include <Evas.h>
+
+typedef struct _E_Nav_Drop_Data E_Nav_Drop_Data;
 
 typedef enum {
         MTPRemoteNone = 0,
@@ -32,9 +32,14 @@ typedef enum {
         MTPRemoteToggle,
 } MTPRemoteOperation;
 
-
 void            e_misc_keyboard_launch();
 void            e_misc_keyboard_hide();
 int             e_misc_keyboard_status_get();
+
+E_Nav_Drop_Data *e_nav_drop_new(double duration, void (*func)(void *data, Evas_Object *obj), void *data);
+void             e_nav_drop_apply(E_Nav_Drop_Data *dd, Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h);
+void             e_nav_drop_stop(E_Nav_Drop_Data *dd, Evas_Bool do_cb);
+Evas_Bool        e_nav_drop_active_get(E_Nav_Drop_Data *dd);
+void             e_nav_drop_destroy(E_Nav_Drop_Data *dd);
 
 #endif
