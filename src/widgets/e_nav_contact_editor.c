@@ -20,14 +20,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include <Etk.h>
 #include "e_nav_contact_editor.h"
 #include "e_nav_list.h"
-#include "e_nav_dialog.h"
+#include "e_nav_entry.h"
+#include "../e_nav_item_neo_other.h"
 #include "../e_nav.h"
 #include "../e_nav_theme.h"
 #include "../e_nav_misc.h"
-#include "../e_ctrl.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
 
@@ -38,18 +37,8 @@ struct _E_Smart_Data
    Evas_Object     *obj;
    Evas_Object     *clip;
 
-   Evas_Object     *frame;
-
-   Etk_Widget      *embed;
-   Etk_Widget      *entry;
-
+   Evas_Object     *entry;
    Evas_Object     *contact_list;
-
-   void           (*button_left)(void *data, Evas_Object *obj);
-   void            *button_left_data;
-
-   void           (*button_right)(void *data, Evas_Object *obj);
-   void            *button_right_data;
 };
 
 static void _e_contact_editor_smart_init(void);
@@ -83,7 +72,7 @@ _e_nav_contact_cancel(void *data, Evas_Object *li)
    E_Smart_Data *sd = data;
 
    evas_object_hide(sd->contact_list);
-   etk_widget_focus(sd->entry);
+   e_nav_entry_focus(sd->entry);
 }
 
 static void
@@ -93,10 +82,10 @@ _e_nav_contact_sel(void *data, Evas_Object *li, Evas_Object *bard)
    const char *name;
 
    name = e_nav_world_item_neo_other_name_get(bard);
-   etk_entry_text_set(ETK_ENTRY(sd->entry), name);
+   e_nav_entry_text_set(sd->entry, name);
 
    evas_object_hide(sd->contact_list);
-   etk_widget_focus(sd->entry);
+   e_nav_entry_focus(sd->entry);
 }
 
 static int
@@ -116,48 +105,12 @@ _e_nav_contact_sort(void *data, Evas_Object *bard1, Evas_Object *bard2)
 }
 
 static void
-_e_button_cb_mouse_clicked(void *data, Evas_Object *obj, const char *emission, const char *source)
+on_add_contact(void *data, Evas_Object *entry)
 {
    E_Smart_Data *sd = data;
-   char *p;
 
-   p = strchr(source, '.');
-   if (!p)
-     return;
-   p++;
-
-   etk_widget_unfocus(sd->entry);
-
-   switch (*p)
-     {
-      case 'b':
-	 if (sd->contact_list)
-	   evas_object_show(sd->contact_list);
-	 break;
-      case 'l':
-	 if (sd->button_left)
-	   sd->button_left(sd->button_left_data, sd->obj);
-	 break;
-      case 'r':
-      default:
-	 if (sd->button_right)
-	   sd->button_right(sd->button_right_data, sd->obj);
-	 break;
-     }
-}
-
-static Etk_Bool
-_editor_focused_cb(Etk_Object *object, Etk_Event_Key_Down *event, void *data)
-{
-   e_misc_keyboard_launch();
-   return TRUE;
-}
-
-static Etk_Bool
-_editor_unfocused_cb(Etk_Object *object, Etk_Event_Key_Down *event, void *data)
-{
-   e_misc_keyboard_hide();
-   return TRUE;
+   e_nav_entry_unfocus(sd->entry);
+   evas_object_show(sd->contact_list);
 }
 
 void
@@ -170,32 +123,17 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
    if (custom_dir)
      sd->dir = strdup(custom_dir);
 
-   sd->frame = e_nav_theme_object_new(evas_object_evas_get(obj), custom_dir, "modules/diversity_nav/contact_editor");
-   evas_object_move(sd->frame, sd->x, sd->y);
-   evas_object_resize(sd->frame, sd->w, sd->h);
-   evas_object_smart_member_add(sd->frame, sd->obj);
-   evas_object_clip_set(sd->frame, sd->clip);
-   evas_object_show(sd->frame);
+   sd->entry = e_nav_entry_add(evas_object_evas_get(obj));
+   e_nav_entry_theme_source_set(sd->entry, sd->dir);
+   evas_object_move(sd->entry, sd->x, sd->y);
+   evas_object_resize(sd->entry, sd->w, sd->h);
+   evas_object_smart_member_add(sd->entry, sd->obj);
+   evas_object_clip_set(sd->entry, sd->clip);
+   evas_object_show(sd->entry);
 
-   sd->button_left = positive_func;
-   sd->button_left_data = data1;
-   sd->button_right = negative_func;
-   sd->button_right_data = data2;
-
-   edje_object_part_text_set(sd->frame, "button.left", _("Send"));
-   edje_object_part_text_set(sd->frame, "button.right", _("Cancel"));
-   edje_object_part_text_set(sd->frame, "button.bottom", _("Add Contact"));
-
-   edje_object_signal_callback_add(sd->frame, "mouse,clicked,*", "button.*", _e_button_cb_mouse_clicked, sd);
-
-   sd->entry = etk_entry_new();
-   etk_signal_connect_by_code(ETK_WIDGET_FOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(_editor_focused_cb), NULL);
-   etk_signal_connect_by_code(ETK_WIDGET_UNFOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(_editor_unfocused_cb), NULL);
-
-   sd->embed  = etk_embed_new(evas_object_evas_get(obj));
-   etk_container_add(ETK_CONTAINER(sd->embed), sd->entry);
-   edje_object_part_swallow(sd->frame, "swallow", etk_embed_object_get(ETK_EMBED(sd->embed)));
-   etk_widget_show_all(ETK_WIDGET(sd->embed));
+   e_nav_entry_button_add(sd->entry, _("Send"), positive_func, data1);
+   e_nav_entry_button_add(sd->entry, _("Cancel"), negative_func, data2);
+   e_nav_entry_button_add(sd->entry, _("Add Contact"), on_add_contact, sd);
 
    sd->contact_list = e_nav_list_add(evas_object_evas_get(obj),
 	 E_NAV_LIST_TYPE_BARD, THEMEDIR);
@@ -209,42 +147,13 @@ e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void
 }
 
 void
-e_contact_editor_activate(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   Evas_Coord x, y, w, h;
-
-   SMART_CHECK(obj, ;);
-
-   evas_output_viewport_get(evas_object_evas_get(obj), &x, &y, &w, &h);
-   evas_object_move(obj, x, y);
-   evas_object_resize(obj, w, h);
-   evas_object_show(obj);
-
-   etk_widget_focus(sd->entry);
-}
-
-void
-e_contact_editor_deactivate(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-
-   SMART_CHECK(obj, ;);
-
-   etk_widget_unfocus(sd->entry);
-
-   evas_object_del(obj);
-}
-
-void
 e_contact_editor_input_length_limit_set(Evas_Object *obj, size_t length_limit)
 {
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, ;);
 
-   if (length_limit > 0)
-     etk_entry_text_limit_set(ETK_ENTRY(sd->entry), length_limit);
+   e_nav_entry_text_limit_set(sd->entry, length_limit);
 }
 
 size_t
@@ -254,7 +163,7 @@ e_contact_editor_input_length_limit_get(Evas_Object *obj)
 
    SMART_CHECK(obj, 0;);
 
-   return etk_entry_text_limit_get(ETK_ENTRY(sd->entry));
+   return e_nav_entry_text_limit_get(sd->entry);
 }
 
 void
@@ -264,12 +173,10 @@ e_contact_editor_input_set(Evas_Object *obj, const char *name, const char *input
 
    SMART_CHECK(obj, ;);
 
-   edje_object_part_text_set(sd->frame, "title", name);
+   if (name)
+     e_nav_entry_title_set(sd->entry, name);
 
-   if (!input)
-     input = "";
-
-   etk_entry_text_set(ETK_ENTRY(sd->entry), input);
+   e_nav_entry_text_set(sd->entry, input);
 }
 
 const char *
@@ -279,7 +186,7 @@ e_contact_editor_input_get(Evas_Object *obj)
 
    SMART_CHECK(obj, NULL;);
 
-   return etk_entry_text_get(ETK_ENTRY(sd->entry));
+   return e_nav_entry_text_get(sd->entry);
 }
 
 void
@@ -299,6 +206,7 @@ e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
 	e_nav_list_object_add(sd->contact_list, bard);
      }
 }
+
 /* internal calls */
 static void
 _e_contact_editor_smart_init(void)
@@ -361,9 +269,7 @@ _e_contact_editor_smart_del(Evas_Object *obj)
      free(sd->dir);
 
    evas_object_del(sd->clip);
-   evas_object_del(sd->frame);
-
-   etk_object_destroy(ETK_OBJECT(sd->embed));
+   evas_object_del(sd->entry);
 
    if (sd->contact_list)
      evas_object_del(sd->contact_list);
@@ -383,7 +289,7 @@ _e_contact_editor_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    sd->y = y;
 
    evas_object_move(sd->clip, sd->x, sd->y);
-   evas_object_move(sd->frame, sd->x, sd->y);
+   evas_object_move(sd->entry, sd->x, sd->y);
    if (sd->contact_list)
      evas_object_move(sd->contact_list, sd->x, sd->y);
 }
@@ -399,7 +305,7 @@ _e_contact_editor_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    sd->h = h;
 
    evas_object_resize(sd->clip, sd->w, sd->h);
-   evas_object_resize(sd->frame, sd->w, sd->h);
+   evas_object_resize(sd->entry, sd->w, sd->h);
    if (sd->contact_list)
      evas_object_resize(sd->contact_list, sd->w, sd->h);
 }
@@ -412,6 +318,7 @@ _e_contact_editor_smart_show(Evas_Object *obj)
    SMART_CHECK(obj, ;);
 
    evas_object_show(sd->clip);
+   e_nav_entry_focus(sd->entry);
 }
 
 static void
@@ -422,6 +329,7 @@ _e_contact_editor_smart_hide(Evas_Object *obj)
    SMART_CHECK(obj, ;);
 
    evas_object_hide(sd->clip);
+   e_nav_entry_unfocus(sd->entry);
 }
 
 static void

@@ -669,7 +669,7 @@ action_finish(Action_Data *act_data)
 
    if (act_data->editor)
      {
-	e_contact_editor_deactivate(act_data->editor);
+	evas_object_del(act_data->editor);
 	act_data->editor = NULL;
      }
 
@@ -876,6 +876,7 @@ action_show_editor(Action_Data *act_data)
    editor = act_data->editor;
    if (!editor)
      {
+	Evas_Coord x, y, w, h;
 	Evas_List *contacts;
 
 	editor = e_contact_editor_add(act_data->evas);
@@ -890,6 +891,10 @@ action_show_editor(Action_Data *act_data)
 	      (void *) action_send, act_data,
 	      (void *) action_to_end, act_data);
 
+	evas_output_viewport_get(act_data->evas, &x, &y, &w, &h);
+	evas_object_move(editor, x, y);
+	evas_object_resize(editor, w, h);
+
 	e_contact_editor_input_set(editor, _("To:"), NULL);
 
 	contacts = e_ctrl_contact_list(xxx_ctrl);
@@ -899,7 +904,6 @@ action_show_editor(Action_Data *act_data)
      }
 
    evas_object_show(editor);
-   e_contact_editor_activate(editor);
 }
 
 static void
