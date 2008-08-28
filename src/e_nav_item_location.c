@@ -616,6 +616,7 @@ enum {
 typedef struct _Action_Data {
      int state;
 
+     Evas_Object *nav;
      Evas *evas;
 
      Evas_Object *dialog;
@@ -781,6 +782,7 @@ action_show_dialog(Action_Data *act_data)
 	  }
 
 	e_dialog_theme_source_set(od, THEMEDIR);
+	e_dialog_transient_for_set(od, act_data->nav);
 
 	act_data->dialog = od;
      }
@@ -918,6 +920,7 @@ action_show_alert(Action_Data *act_data)
 	  }
 
 	e_alert_theme_source_set(oa, THEMEDIR);
+	e_alert_transient_for_set(oa, act_data->nav);
 
 	act_data->alert = oa;
      }
@@ -1077,6 +1080,7 @@ action_new(Evas_Object *nav)
      return NULL;
 
    act_data->state = ACTION_STATE_INIT;
+   act_data->nav = nav;
    act_data->evas = evas_object_evas_get(nav);
    act_data->world = e_nav_world_get(nav);
    if (!act_data->world)
