@@ -180,7 +180,7 @@ _tag_style(char *buf, int len, Evas_Object *tag)
    Evas_Bool unread;
 
    title = e_nav_world_item_location_name_get(tag);
-   if (!title)
+   if (!title || !*title)
      title = _("No Title");
 
    unread = e_nav_world_item_location_unread_get(tag);
