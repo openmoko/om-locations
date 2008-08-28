@@ -191,10 +191,13 @@ e_nav_drop_apply(E_Nav_Drop_Data *dd, Evas_Object *obj, Evas_Coord x, Evas_Coord
    dd->end = dd->start + dd->duration;
 
    dd->active = 1;
-   dd->resize = 1;
+   dd->resize = 0;
 
    evas_object_event_callback_add(obj, EVAS_CALLBACK_DEL, _drop_stop, dd);
    dd->animator = ecore_animator_add(_drop_anim, dd);
+
+   evas_object_move(dd->obj, dd->x, -dd->h);
+   evas_object_resize(dd->obj, dd->w, dd->h);
 }
 
 void
