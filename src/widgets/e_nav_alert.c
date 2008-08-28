@@ -23,6 +23,7 @@
 #include "../e_nav.h"
 #include "e_nav_alert.h"
 #include "../e_nav_theme.h"
+#include "../e_nav_misc.h"
 
 /* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -52,13 +53,11 @@ struct _E_Smart_Data
    Evas_Object     *clip;
 
    Evas_List      *buttons;
-   double           activate_time;
-   int              activate_deactivate;
-   Ecore_Animator  *animator;
-   
+
+   E_Nav_Drop_Data *drop;
+
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
-   unsigned char active : 1;
 };
 
 static void _e_alert_smart_init(void);
@@ -72,7 +71,6 @@ static void _e_alert_smart_color_set(Evas_Object *obj, int r, int g, int b, int 
 static void _e_alert_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_alert_smart_clip_unset(Evas_Object *obj);
 
-static int  _e_alert_cb_animator(void *data);
 static void _e_alert_update(Evas_Object *obj);
 
 static Evas_Smart *_e_smart = NULL;
@@ -114,14 +112,12 @@ e_alert_activate(Evas_Object *obj)
    
    SMART_CHECK(obj, ;);
    evas_object_show(sd->event);
-   if (sd->active) return;
-   sd->activate_deactivate = 1;
-   sd->active = 1;
-   sd->activate_time = ecore_time_get();
-   _e_alert_update(obj);
 
-   if (sd->animator) return;
-   sd->animator = ecore_animator_add(_e_alert_cb_animator, obj);
+   if (e_nav_drop_active_get(sd->drop))
+     return;
+
+   e_nav_drop_apply(sd->drop, obj, 0, 0, 0, 0);
+   _e_alert_update(obj);
 }
 
 void
@@ -130,12 +126,10 @@ e_alert_deactivate(Evas_Object *obj)
    E_Smart_Data *sd;
    
    SMART_CHECK(obj, ;);
-   if (!sd->active) return;
-   sd->activate_deactivate = -1;
 
-   evas_object_hide(sd->event);
-   _e_alert_smart_hide(obj);
-   _e_alert_smart_del(obj);    
+   e_nav_drop_stop(sd->drop, FALSE);
+
+   evas_object_del(obj);
 }
 
 /* internal calls */
@@ -197,6 +191,8 @@ _e_alert_smart_add(Evas_Object *obj)
    sd->title_color_b = 255;
    sd->title_color_a = 255;
 
+   sd->drop = e_nav_drop_new(1.0, NULL, NULL);
+
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -207,6 +203,9 @@ _e_alert_smart_del(Evas_Object *obj)
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
+
+   e_nav_drop_destroy(sd->drop);
+
    while (sd->buttons)   
      {
 	E_Button_Item *bi;
@@ -367,37 +366,25 @@ _e_alert_update(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
-   if (sd->activate_deactivate == -1)
+   /* adjust dropping */
+   if (e_nav_drop_active_get(sd->drop))
      {
-	sd->activate_deactivate = 0;
-	sd->active = 0;
-	evas_object_hide(sd->event);
-        return;
+	Evas_Coord x, y, w, h;
+
+	evas_output_viewport_get(evas_object_evas_get(obj),
+	      &x, &y, &w, &h);
+
+	y = h / 3.0;
+	h /= 3.0;
+
+	if (sd->w != w || sd->h != h)
+	  e_nav_drop_apply(sd->drop, obj, x, y, w, h);
      }
 
-   int screen_x, screen_y, screen_w, screen_h;
-   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
-   int alert_x = 0;
-   int alert_y = 0;
-   int alert_w = screen_w;
-   int alert_h = 0;
-
-   double t;
-   if (sd->activate_deactivate == 0)
-     {
-        alert_y = screen_h* (1.0/3);
-        alert_h = screen_h * (1.0/3);
-     }
-   else if (sd->activate_deactivate == 1)
-     {
-	t = ecore_time_get() - sd->activate_time;
-	t = t / 1.0; /* anim time */
-	if (t >= 1.0) t = 1.0;
-	t = 1.0 - ((1.0 - t) * (1.0 - t)); /* decelerate */
-	if (t >= 1.0) sd->activate_deactivate = 0;
-        alert_y = ((-screen_h) * (1.0/3)) + (t * screen_h * (1.0/3) * 2);
-        alert_h = screen_h * (1.0/3);
-     }
+   int alert_x = sd->x;
+   int alert_y = sd->y;
+   int alert_w = sd->w;
+   int alert_h = sd->h;
 
    evas_object_move(sd->bg_object, alert_x, alert_y );
    evas_object_resize(sd->bg_object, alert_w, alert_h );
@@ -432,22 +419,4 @@ _e_alert_update(Evas_Object *obj)
         evas_object_show(bi->item_obj);
         tmp_x = tmp_x + button_w + 3;
      }
-}
-
-static int
-_e_alert_cb_animator(void *data)
-{
-   E_Smart_Data *sd;
-     
-   sd = evas_object_smart_data_get(data);
-   if (!sd) return 0;
- 
-   _e_alert_update(sd->obj);
-   if (sd->activate_deactivate == 0)
-     {
-	sd->animator = NULL;
-	if (!sd->active) evas_object_del(sd->obj);
-	return 0;
-     }
-   return 1;
 }
