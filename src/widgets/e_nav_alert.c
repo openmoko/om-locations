@@ -48,7 +48,10 @@ struct _E_Smart_Data
    int              title_color_g;
    int              title_color_b;
    int              title_color_a;
-   Evas_Object     *event;
+
+   /* the parent the alert is transient for */
+   Evas_Object     *parent;
+   Evas_Object     *parent_mask;
    
    Evas_Object     *clip;
 
@@ -106,21 +109,112 @@ e_alert_theme_source_set(Evas_Object *obj, const char *custom_dir)
 }
 
 static void
-_e_alert_drop_apply(Evas_Object *obj)
+_e_alert_move_and_resize(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_Coord x, y, w, h;
    
    SMART_CHECK(obj, ;);
 
-   evas_output_viewport_get(evas_object_evas_get(obj),
-	 &x, &y, &w, &h);
+   if (sd->parent)
+     {
+	evas_object_geometry_get(sd->parent, &x, &y, &w, &h);
 
-   y = h / 3.0;
-   h = h / 3.0;
+	evas_object_move(sd->parent_mask, x, y);
+	evas_object_resize(sd->parent_mask, w, h);
 
-   if (sd->w != w || sd->h != h)
-     e_nav_drop_apply(sd->drop, obj, x, y, w, h);
+	y = h / 3.0;
+	h = h / 3.0;
+     }
+   else
+     {
+	x = sd->x;
+	y = sd->y;
+	w = sd->w;
+	h = sd->h;
+     }
+
+   if (sd->drop)
+     {
+	e_nav_drop_apply(sd->drop, obj, x, y, w, h);
+     }
+   else if (sd->parent)
+     {
+	evas_object_move(obj, x, y);
+	evas_object_resize(obj, w, h);
+     }
+}
+
+static void
+on_parent_del(void *data, Evas *evas, Evas_Object *parent, void *event)
+{
+   e_alert_transient_for_set(data, NULL);
+}
+
+void
+e_alert_transient_for_set(Evas_Object *obj, Evas_Object *parent)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (sd->parent)
+     {
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_DEL,
+	      on_parent_del);
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_MOVE,
+	      (void *) _e_alert_move_and_resize);
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_RESIZE,
+	      (void *) _e_alert_move_and_resize);
+     }
+
+   sd->parent = parent;
+   if (sd->parent)
+     {
+	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_DEL,
+	      on_parent_del, obj);
+	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_MOVE,
+	      (void *) _e_alert_move_and_resize, obj);
+	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_RESIZE,
+	      (void *) _e_alert_move_and_resize, obj);
+
+	if (!sd->parent_mask)
+	  {
+	     sd->parent_mask = evas_object_rectangle_add(evas_object_evas_get(obj));
+
+	     evas_object_smart_member_add(sd->parent_mask, sd->obj);
+	     evas_object_clip_set(sd->parent_mask, sd->clip);
+	     evas_object_lower(sd->parent_mask);
+	     evas_object_color_set(sd->parent_mask, 0, 0, 0, 0);
+	     evas_object_show(sd->parent_mask);
+	  }
+     }
+   else if (sd->parent_mask)
+     {
+	evas_object_del(sd->parent_mask);
+	sd->parent_mask = NULL;
+     }
+
+   _e_alert_move_and_resize(obj);
+}
+
+Evas_Object *
+e_alert_transient_for_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return sd->parent;
+}
+
+static void
+on_drop_done(void *data, Evas_Object *obj)
+{
+   E_Smart_Data *sd = data;
+
+   e_nav_drop_destroy(sd->drop);
+   sd->drop = NULL;
 }
 
 void
@@ -129,12 +223,12 @@ e_alert_activate(Evas_Object *obj)
    E_Smart_Data *sd;
    
    SMART_CHECK(obj, ;);
-   evas_object_show(sd->event);
 
-   if (e_nav_drop_active_get(sd->drop))
+   if (sd->drop)
      return;
 
-   _e_alert_drop_apply(obj);
+   sd->drop = e_nav_drop_new(1.0, on_drop_done, sd);
+   _e_alert_move_and_resize(obj);
 }
 
 void
@@ -144,7 +238,8 @@ e_alert_deactivate(Evas_Object *obj)
    
    SMART_CHECK(obj, ;);
 
-   e_nav_drop_stop(sd->drop, FALSE);
+   if (sd->drop)
+     e_nav_drop_stop(sd->drop, FALSE);
 
    evas_object_del(obj);
 }
@@ -195,19 +290,10 @@ _e_alert_smart_add(Evas_Object *obj)
    evas_object_resize(sd->clip, 30000, 30000);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
 
-   sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
-   evas_object_smart_member_add(sd->event, obj);
-   evas_object_move(sd->event, -10000, -10000);
-   evas_object_resize(sd->event, 30000, 30000);
-   evas_object_color_set(sd->event, 255, 255, 255, 0);
-   evas_object_clip_set(sd->event, sd->clip);
-   
    sd->title_color_r = 255;
    sd->title_color_g = 255;
    sd->title_color_b = 255;
    sd->title_color_a = 255;
-
-   sd->drop = e_nav_drop_new(1.0, NULL, NULL);
 
    evas_object_smart_data_set(obj, sd);
 }
@@ -220,7 +306,21 @@ _e_alert_smart_del(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
-   e_nav_drop_destroy(sd->drop);
+   if (sd->parent)
+     {
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_DEL,
+	      on_parent_del);
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_MOVE,
+	      (void *) _e_alert_move_and_resize);
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_RESIZE,
+	      (void *) _e_alert_move_and_resize);
+     }
+
+   if (sd->parent_mask)
+     evas_object_del(sd->parent_mask);
+
+   if (sd->drop)
+     e_nav_drop_destroy(sd->drop);
 
    while (sd->buttons)   
      {
@@ -233,8 +333,8 @@ _e_alert_smart_del(Evas_Object *obj)
      }
    if(sd->bg_object) evas_object_del(sd->bg_object);
    if(sd->title_object) evas_object_del(sd->title_object);
+
    evas_object_del(sd->clip);
-   evas_object_del(sd->event);
 }
                     
 static void
@@ -386,10 +486,6 @@ _e_alert_update(Evas_Object *obj)
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
-
-   /* adjust dropping */
-   if (e_nav_drop_active_get(sd->drop))
-     _e_alert_drop_apply(sd->obj);
 
    int alert_x = sd->x;
    int alert_y = sd->y;

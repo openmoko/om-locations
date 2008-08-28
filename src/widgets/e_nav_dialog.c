@@ -58,7 +58,10 @@ struct _E_Smart_Data
    Evas_Object     *obj;
    Evas_Object     *bg_object;
    Evas_Object     *title_object;
-   Evas_Object     *event;
+
+   /* the parent the dialog is transient for */
+   Evas_Object     *parent;
+   Evas_Object     *parent_mask;
    
    Evas_Object     *clip;
 
@@ -117,25 +120,128 @@ e_dialog_theme_source_set(Evas_Object *obj, const char *custom_dir)
 }
 
 static void
-_e_dialog_drop_apply(Evas_Object *obj)
+_e_dialog_move_and_resize(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_Coord x, y, w, h;
    
    SMART_CHECK(obj, ;);
 
-   evas_output_viewport_get(evas_object_evas_get(obj),
-	 &x, &y, &w, &h);
+   if (sd->parent)
+     {
+	evas_object_geometry_get(sd->parent, &x, &y, &w, &h);
 
-   y = h / 8.0;
+	evas_object_move(sd->parent_mask, x, y);
+	evas_object_resize(sd->parent_mask, w, h);
 
-   if (evas_list_count(sd->textblocks))
-     h *= 5.0 / 8.0;
+	y = h / 8.0;
+
+	if (sd->textblocks)
+	  h *= 5.0 / 8.0;
+	else
+	  h /= 3.0;
+     }
    else
-     h /= 3.0;
+     {
+	x = sd->x;
+	y = sd->y;
+	w = sd->w;
+	h = sd->h;
+     }
 
-   if (sd->w != w || sd->h != h)
-     e_nav_drop_apply(sd->drop, obj, x, y, w, h);
+   if (sd->drop)
+     {
+	e_nav_drop_apply(sd->drop, obj, x, y, w, h);
+     }
+   else if (sd->parent)
+     {
+	evas_object_move(obj, x, y);
+	evas_object_resize(obj, w, h);
+     }
+}
+
+static void
+on_parent_del(void *data, Evas *evas, Evas_Object *parent, void *event)
+{
+   e_dialog_transient_for_set(data, NULL);
+}
+
+void
+e_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (sd->parent)
+     {
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_DEL,
+	      on_parent_del);
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_MOVE,
+	      (void *) _e_dialog_move_and_resize);
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_RESIZE,
+	      (void *) _e_dialog_move_and_resize);
+     }
+
+   sd->parent = parent;
+   if (sd->parent)
+     {
+	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_DEL,
+	      on_parent_del, obj);
+	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_MOVE,
+	      (void *) _e_dialog_move_and_resize, obj);
+	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_RESIZE,
+	      (void *) _e_dialog_move_and_resize, obj);
+
+	if (!sd->parent_mask)
+	  {
+	     sd->parent_mask = evas_object_rectangle_add(evas_object_evas_get(obj));
+
+	     evas_object_smart_member_add(sd->parent_mask, sd->obj);
+	     evas_object_clip_set(sd->parent_mask, sd->clip);
+	     evas_object_lower(sd->parent_mask);
+	     evas_object_color_set(sd->parent_mask, 0, 0, 0, 0);
+	     evas_object_show(sd->parent_mask);
+	  }
+     }
+   else if (sd->parent_mask)
+     {
+	evas_object_del(sd->parent_mask);
+	sd->parent_mask = NULL;
+     }
+
+   _e_dialog_move_and_resize(obj);
+}
+
+Evas_Object *
+e_dialog_transient_for_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return sd->parent;
+}
+
+static void
+on_drop_done(void *data, Evas_Object *obj)
+{
+   E_Smart_Data *sd = data;
+   Evas_List *l;
+
+   evas_object_color_set(sd->bg_object, 0, 0, 0, 200);
+
+   for (l = sd->buttons; l; l = l->next)
+     {
+	E_Button_Item *bi = l->data;
+	Evas_Object *base;
+
+	base = edje_object_part_object_get(bi->item_obj, "base");
+	evas_object_color_set(base, 0, 0, 0, 128);
+     }
+
+   e_nav_drop_destroy(sd->drop);
+   sd->drop = NULL;
 }
 
 void
@@ -144,12 +250,12 @@ e_dialog_activate(Evas_Object *obj)
    E_Smart_Data *sd;
    
    SMART_CHECK(obj, ;);
-   evas_object_show(sd->event);
 
-   if (e_nav_drop_active_get(sd->drop))
+   if (sd->drop)
      return;
 
-   _e_dialog_drop_apply(obj);
+   sd->drop = e_nav_drop_new(1.0, on_drop_done, sd);
+   _e_dialog_move_and_resize(obj);
 }
 
 void
@@ -159,7 +265,8 @@ e_dialog_deactivate(Evas_Object *obj)
    
    SMART_CHECK(obj, ;);
 
-   e_nav_drop_stop(sd->drop, FALSE);
+   if (sd->drop)
+     e_nav_drop_stop(sd->drop, FALSE);
 
    evas_object_del(obj);
 }
@@ -191,24 +298,6 @@ _e_dialog_smart_init(void)
 }
 
 static void
-on_drop_done(void *data, Evas_Object *obj)
-{
-   E_Smart_Data *sd = data;
-   Evas_List *l;
-
-   evas_object_color_set(sd->bg_object, 0, 0, 0, 200);
-
-   for (l = sd->buttons; l; l = l->next)
-     {
-	E_Button_Item *bi = l->data;
-	Evas_Object *base;
-
-	base = edje_object_part_object_get(bi->item_obj, "base");
-	evas_object_color_set(base, 0, 0, 0, 128);
-     }
-}
-
-static void
 _e_dialog_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
@@ -228,15 +317,6 @@ _e_dialog_smart_add(Evas_Object *obj)
    evas_object_resize(sd->clip, 30000, 30000);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
 
-   sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
-   evas_object_smart_member_add(sd->event, obj);
-   evas_object_move(sd->event, -10000, -10000);
-   evas_object_resize(sd->event, 30000, 30000);
-   evas_object_color_set(sd->event, 255, 255, 255, 0);
-   evas_object_clip_set(sd->event, sd->clip);
-   
-   sd->drop = e_nav_drop_new(1.0, on_drop_done, sd);
-
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -248,7 +328,21 @@ _e_dialog_smart_del(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
-   e_nav_drop_destroy(sd->drop);
+   if (sd->parent)
+     {
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_DEL,
+	      on_parent_del);
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_MOVE,
+	      (void *) _e_dialog_move_and_resize);
+	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_RESIZE,
+	      (void *) _e_dialog_move_and_resize);
+     }
+
+   if (sd->parent_mask)
+     evas_object_del(sd->parent_mask);
+
+   if (sd->drop)
+     e_nav_drop_destroy(sd->drop);
 
    while (sd->textblocks)   
      {
@@ -276,8 +370,8 @@ _e_dialog_smart_del(Evas_Object *obj)
      }
    if(sd->bg_object) evas_object_del(sd->bg_object);
    if(sd->title_object) evas_object_del(sd->title_object);
+
    evas_object_del(sd->clip);
-   evas_object_del(sd->event);
 }
                     
 static void
@@ -545,10 +639,6 @@ _e_dialog_update(Evas_Object *obj)
    if (!sd) return;
 
    tbc = (evas_list_count(sd->textblocks));
-
-   /* adjust dropping */
-   if (e_nav_drop_active_get(sd->drop))
-     _e_dialog_drop_apply(sd->obj);
 
    int dialog_x = sd->x;
    int dialog_y = sd->y;

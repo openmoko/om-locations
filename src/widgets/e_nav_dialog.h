@@ -26,6 +26,8 @@
 /* object management */
 Evas_Object    *e_dialog_add(Evas *e);
 void            e_dialog_theme_source_set(Evas_Object *obj, const char *custom_dir);
+void            e_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent);
+Evas_Object    *e_dialog_transient_for_get(Evas_Object *obj);
 void            e_dialog_activate(Evas_Object *obj);
 void            e_dialog_deactivate(Evas_Object *obj);
 void            e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data);

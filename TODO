@@ -2,3 +2,4 @@
 * rename diversity/diversity_nav to om-locations
 * make Locations work as a map viewer when there is no dbus
 * clean up the code
+* dialog and alert should share code..
