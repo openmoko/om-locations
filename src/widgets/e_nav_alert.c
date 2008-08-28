@@ -105,6 +105,24 @@ e_alert_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_show(sd->bg_object);
 }
 
+static void
+_e_alert_drop_apply(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_Coord x, y, w, h;
+   
+   SMART_CHECK(obj, ;);
+
+   evas_output_viewport_get(evas_object_evas_get(obj),
+	 &x, &y, &w, &h);
+
+   y = h / 3.0;
+   h = h / 3.0;
+
+   if (sd->w != w || sd->h != h)
+     e_nav_drop_apply(sd->drop, obj, x, y, w, h);
+}
+
 void
 e_alert_activate(Evas_Object *obj)
 {
@@ -116,8 +134,7 @@ e_alert_activate(Evas_Object *obj)
    if (e_nav_drop_active_get(sd->drop))
      return;
 
-   e_nav_drop_apply(sd->drop, obj, 0, 0, 0, 0);
-   _e_alert_update(obj);
+   _e_alert_drop_apply(obj);
 }
 
 void
@@ -177,7 +194,6 @@ _e_alert_smart_add(Evas_Object *obj)
    evas_object_move(sd->clip, -10000, -10000);
    evas_object_resize(sd->clip, 30000, 30000);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
-   evas_object_show(sd->clip);
 
    sd->event = evas_object_rectangle_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->event, obj);
@@ -322,6 +338,7 @@ e_alert_button_add(Evas_Object *obj, const char *label, void (*func) (void *data
    bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button_48");
    evas_object_smart_member_add(bi->item_obj, obj);
    evas_object_clip_set(bi->item_obj, sd->clip);
+   evas_object_show(bi->item_obj);
    evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,
 				  _e_button_cb_mouse_up, bi);
    
@@ -343,6 +360,10 @@ e_alert_title_set(Evas_Object *obj, const char *title, const char *message)
         sd->title_object = o;
         edje_object_part_text_set(sd->title_object, "title", title);
         edje_object_part_text_set(sd->title_object, "message", message);
+
+        evas_object_smart_member_add(sd->title_object, obj);
+        evas_object_clip_set(sd->title_object, sd->clip);
+	evas_object_show(sd->title_object);
      }
 }
 
@@ -368,18 +389,7 @@ _e_alert_update(Evas_Object *obj)
 
    /* adjust dropping */
    if (e_nav_drop_active_get(sd->drop))
-     {
-	Evas_Coord x, y, w, h;
-
-	evas_output_viewport_get(evas_object_evas_get(obj),
-	      &x, &y, &w, &h);
-
-	y = h / 3.0;
-	h /= 3.0;
-
-	if (sd->w != w || sd->h != h)
-	  e_nav_drop_apply(sd->drop, obj, x, y, w, h);
-     }
+     _e_alert_drop_apply(sd->obj);
 
    int alert_x = sd->x;
    int alert_y = sd->y;
@@ -388,7 +398,6 @@ _e_alert_update(Evas_Object *obj)
 
    evas_object_move(sd->bg_object, alert_x, alert_y );
    evas_object_resize(sd->bg_object, alert_w, alert_h );
-   evas_object_show(sd->bg_object);
 
    if(sd->title_object)
      {
@@ -396,7 +405,6 @@ _e_alert_update(Evas_Object *obj)
         evas_object_move(sd->title_object, alert_x, alert_y );
         Evas_Object *o = edje_object_part_object_get(sd->title_object, "title");
         evas_object_color_set(o, sd->title_color_r, sd->title_color_g, sd->title_color_b, sd->title_color_a);
-        evas_object_show(sd->title_object);
      }
 
    int tmp_x;
@@ -416,7 +424,6 @@ _e_alert_update(Evas_Object *obj)
         bi = l->data;
         evas_object_move(bi->item_obj, tmp_x, (alert_y+alert_h*(3.0/7)) );
         evas_object_resize(bi->item_obj, button_w, button_h);
-        evas_object_show(bi->item_obj);
         tmp_x = tmp_x + button_w + 3;
      }
 }
