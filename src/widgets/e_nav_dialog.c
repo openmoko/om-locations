@@ -35,8 +35,8 @@ struct _E_TextBlock_Item
 {
    Evas_Object *obj;
    Evas_Coord sz;
-   const char *label;
-   const char *input;
+   char *label;
+   char *input;
    Evas_Object *label_obj;
    Evas_Object *item_obj;
    size_t length_limit;
@@ -238,6 +238,11 @@ _e_dialog_smart_del(Evas_Object *obj)
 	sd->textblocks = evas_list_remove_list(sd->textblocks, sd->textblocks);
 	evas_object_del(tbi->label_obj);
 	evas_object_del(tbi->item_obj);
+	if (tbi->label)
+	  free(tbi->label);
+	if (tbi->input)
+	  free(tbi->input);
+
 	free(tbi);
      }
    while (sd->buttons)   
