@@ -381,8 +381,8 @@ handle_gps(void *data)
         e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
         e_alert_button_add(alert_dialog, _("Yes"), alert_gps_turn_on, alert_dialog);
         e_alert_button_add(alert_dialog, _("No"), alert_gps_cancel, alert_dialog);
-        evas_object_show(alert_dialog);
         e_alert_activate(alert_dialog); 
+        evas_object_show(alert_dialog);
      }
    else
      {
@@ -497,8 +497,8 @@ _e_nav_cb_timer_pos_search_pause(void *data)
         e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
         e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
      }
-   evas_object_show(alert_dialog);
    e_alert_activate(alert_dialog); 
+   evas_object_show(alert_dialog);
 
    return 0;
 }

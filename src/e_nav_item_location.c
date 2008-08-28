@@ -654,14 +654,12 @@ action_finish(Action_Data *act_data)
 {
    if (act_data->dialog)
      {
-	e_dialog_activate(act_data->dialog);
 	e_dialog_deactivate(act_data->dialog);
 	act_data->dialog = NULL;
      }
 
    if (act_data->alert)
      {
-	e_alert_activate(act_data->alert);
 	e_alert_deactivate(act_data->alert);
 	act_data->alert = NULL;
      }
@@ -850,8 +848,8 @@ action_show_dialog(Action_Data *act_data)
 	 break;
      }
 
-   evas_object_show(act_data->dialog);
    e_dialog_activate(act_data->dialog);
+   evas_object_show(act_data->dialog);
 }
 
 static void
@@ -953,8 +951,8 @@ action_show_alert(Action_Data *act_data)
 	 break;
      }
 
-   evas_object_show(oa);
    e_alert_activate(oa);
+   evas_object_show(oa);
 }
 
 static int
