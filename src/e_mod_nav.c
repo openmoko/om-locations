@@ -648,9 +648,11 @@ _e_mod_nav_dbus_init(void)
 	if (diversity_equipment_config_set(eqp, "device-path",
 		 DBUS_TYPE_STRING, &dev))
 	  {
+#if 0
 	     dev = "/tmp/nmea.log";
 	     diversity_equipment_config_set(eqp, "log",
 		   DBUS_TYPE_STRING, &dev);
+#endif
 
 	     diversity_dbus_signal_connect((Diversity_DBus *) mdata.self,
 		   DIVERSITY_DBUS_IFACE_OBJECT,
