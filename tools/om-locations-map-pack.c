@@ -305,7 +305,7 @@ static void fetch_completion(void *data, const char *file, int status)
 		return;
 	}
 
-	if (verbose)
+	if (verbose && file)
 		printf("saved to %s\n", file);
 
 	if (tile_iter_next(iter)) {
@@ -316,6 +316,14 @@ static void fetch_completion(void *data, const char *file, int status)
 	} else {
 		ecore_main_loop_quit();
 	}
+}
+
+static int
+fetch_skip_idler(void *data)
+{
+	fetch_completion(data, NULL, 0);
+
+	return 0;
 }
 
 static int fetch_sched(TileIter *iter)
@@ -347,8 +355,9 @@ static int fetch_sched(TileIter *iter)
 			(skip) ? "skip" : "fetch",
 			tile_iter_cur(iter) + 1,
 			tile_iter_count(iter), url);
+
 	if (skip) {
-		fetch_completion(iter, dst, 0);
+		ecore_idler_add(fetch_skip_idler, iter);
 
 		return 1;
 	}
