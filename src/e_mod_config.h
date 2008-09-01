@@ -30,6 +30,7 @@
 #define DEFAULT_VALUE_SPAN 1024
 #define DEFAULT_VALUE_NEO_ME_LON 121.575348
 #define DEFAULT_VALUE_NEO_ME_LAT 25.073111
+#define DEFAULT_VALUE_TILE_PATH "/tmp/diversity-maps"
 
 typedef struct Diversity_Nav_Config Diversity_Nav_Config; 
 struct Diversity_Nav_Config

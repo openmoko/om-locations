@@ -679,7 +679,16 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    e_ctrl_nav_set(mdata.ctrl, mdata.nav);
    e_nav_world_ctrl_set(mdata.nav, mdata.ctrl);
 
-   tile_path = "/tmp/diversity-maps";
+   mdata.cfg = dn_config_new();
+
+   lon = dn_config_float_get(mdata.cfg, "lon");
+   lat = dn_config_float_get(mdata.cfg, "lat");
+
+   span = dn_config_int_get(mdata.cfg, "span");
+   if (span < E_NAV_SPAN_MIN)
+     span = E_NAV_SPAN_MIN;
+
+   tile_path = dn_config_string_get(mdata.cfg, "tile_path");
    mdata.tileset = e_nav_tileset_add(mdata.nav,
 	 E_NAV_TILESET_FORMAT_OSM, tile_path);
    if (mdata.tileset)
@@ -695,15 +704,6 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 
 	evas_object_show(mdata.tileset);
      }
-
-   mdata.cfg = dn_config_new();
-
-   lon = dn_config_float_get(mdata.cfg, "lon");
-   lat = dn_config_float_get(mdata.cfg, "lat");
-
-   span = dn_config_int_get(mdata.cfg, "span");
-   if (span < E_NAV_SPAN_MIN)
-     span = E_NAV_SPAN_MIN;
 
    if (_e_mod_nav_dbus_init())
      {

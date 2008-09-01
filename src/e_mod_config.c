@@ -87,6 +87,7 @@ _init_default_config_value(Diversity_Nav_Config *cfg)
    dn_config_int_set(cfg, "span", DEFAULT_VALUE_SPAN);
    dn_config_float_set(cfg, "neo_me_lon", DEFAULT_VALUE_NEO_ME_LON);
    dn_config_float_set(cfg, "neo_me_lat", DEFAULT_VALUE_NEO_ME_LAT);
+   dn_config_string_set(cfg, "tile_path", DEFAULT_VALUE_TILE_PATH);
 }
 
 static int 
