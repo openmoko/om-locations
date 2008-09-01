@@ -405,6 +405,12 @@ e_nav_tileset_proxy_set(Evas_Object *obj, E_DBus_Proxy *proxy)
 			    DBUS_TYPE_STRING, &sd->src,
 			    DBUS_TYPE_INVALID,
 			    DBUS_TYPE_INVALID);
+
+   e_dbus_proxy_simple_call(sd->proxy, "SetPath",
+			    NULL,
+			    DBUS_TYPE_STRING, &sd->dir,
+			    DBUS_TYPE_INVALID,
+			    DBUS_TYPE_INVALID);
 }
 
 E_DBus_Proxy *

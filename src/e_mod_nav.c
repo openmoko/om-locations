@@ -94,23 +94,13 @@ osm_tileset_add(Evas_Object *nav)
 
    if (proxy)
      {
-	char *path;
+	const char *path;
 
-	if (e_dbus_proxy_simple_call(proxy, "GetPath",
-				     NULL,
-				     DBUS_TYPE_INVALID,
-				     DBUS_TYPE_STRING, &path,
-				     DBUS_TYPE_INVALID))
-	  {
-	     nt = e_nav_tileset_add(nav,
-		   E_NAV_TILESET_FORMAT_OSM, path);
-	     e_nav_tileset_proxy_set(nt, proxy);
-	     e_nav_tileset_monitor_add(nt, path);
-
-	     free(path);
-	  }
-	else
-	  e_dbus_proxy_destroy(proxy);
+	path = dn_config_string_get(cfg, "tile_path");
+	nt = e_nav_tileset_add(nav,
+	      E_NAV_TILESET_FORMAT_OSM, path);
+	e_nav_tileset_proxy_set(nt, proxy);
+	e_nav_tileset_monitor_add(nt, path);
      }
 
    if (!nt)
