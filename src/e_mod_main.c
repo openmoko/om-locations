@@ -49,15 +49,6 @@ on_delete_request(Ecore_Evas *ee)
 }
 
 static void
-on_show(Ecore_Evas *ee)
-{
-   Evas *evas;
-
-   evas = ecore_evas_get(ee);
-   _e_mod_nav_init(evas, theme_name);
-}
-
-static void
 on_resize(Ecore_Evas *ee)
 {
    Evas *evas;
@@ -127,12 +118,12 @@ main(int argc, char **argv)
    ecore_evas_title_set(ee, _("Locations"));
    ecore_evas_callback_delete_request_set(ee, on_delete_request);
    ecore_evas_callback_destroy_set(ee, on_delete_request);
-   ecore_evas_callback_show_set(ee, on_show);
    ecore_evas_callback_resize_set(ee, on_resize);
 
    ecore_evas_callback_focus_in_set(ee, on_focused_in);
    ecore_evas_callback_focus_out_set(ee, on_focused_out);
 
+   _e_mod_nav_init(ecore_evas_get(ee), theme_name);
    ecore_evas_show(ee);
 
    ecore_main_loop_begin();
