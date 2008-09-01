@@ -20,6 +20,7 @@
 
 #include "e_nav.h"
 #include "e_nav_tileset.h"
+#include "tileman.h"
 #include <e_dbus_proxy.h>
 #include <math.h>
 
@@ -32,7 +33,6 @@
 #include <Eet.h>
 
 typedef struct _E_Smart_Data E_Smart_Data;
-typedef struct _E_Nav_Tile_Job E_Nav_Tile_Job;
 
 typedef struct _E_Nav_Map E_Nav_Map;
 typedef struct _E_Nav_Map_Desc E_Nav_Map_Desc;
@@ -61,24 +61,17 @@ struct _E_Smart_Data
 {
    Evas_Object *obj;
    Evas_Object *clip;
-   Evas_Object *underlay;
    Evas_Coord x, y, w, h;
 
    Evas_Object *nav;
-   E_DBus_Proxy *proxy;
-
-   Ecore_Hash *jobs;
-
-   E_Nav_Tileset_Format format;
-   char *dir;
-   char *src;
-   char *suffix;
-   int size;
-   int min_level, max_level;
 
    Evas_List *maps;
    Ecore_Hash *mons;
 
+   Tileman *tman;
+   int tilesize;
+
+   int min_level, max_level;
    int min_span, max_span;
    double max_lon, max_lat;
 
@@ -91,19 +84,9 @@ struct _E_Smart_Data
       Evas_Coord offset_x, offset_y;
       int olevel, ospan;
       int ox, oy, ow, oh;
-      E_Nav_Tile_Job **jobs;
+      Evas_Object **jobs;
       int num_jobs;
    } tiles;
-};
-
-struct _E_Nav_Tile_Job
-{
-   Evas_Object *nt;
-   Evas_Object *obj;
-   int level;
-   int x, y;
-   unsigned int id;
-   double timestamp;
 };
 
 static void _e_nav_tileset_smart_init(void);
@@ -120,17 +103,10 @@ static void _e_nav_tileset_smart_clip_unset(Evas_Object *obj);
 inline static void mercator_project(double lon, double lat, double *x, double *y);
 inline static void mercator_project_inv(double x, double y, double *lon, double *lat);
 
-static int job_submit(E_Nav_Tile_Job *job, int force);
-static void job_cancel(E_Nav_Tile_Job *job);
-static void job_reset(E_Nav_Tile_Job *job, int x, int y);
-static void job_load(E_Nav_Tile_Job *job);
-
-static void _e_nav_tileset_tile_completed_cb(Evas_Object *obj, DBusMessage *message);
 static int _e_nav_tileset_prepare(Evas_Object *obj);
 static void _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h);
 static int _e_nav_tileset_realloc(Evas_Object *obj, int num_jobs);
 static void _e_nav_tileset_free(Evas_Object *obj);
-static E_Nav_Tile_Job *_e_nav_tileset_tile_add(Evas_Object *obj, int i, int j);
 static Evas_Object *_e_nav_tileset_tile_get(Evas_Object *obj, int i, int j);
 static void _e_nav_tileset_update(Evas_Object *obj);
 
@@ -161,20 +137,16 @@ e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir
 	return NULL;
      }
 
-   sd->nav = nav;
+   sd->tman = tileman_new(evas_object_evas_get(nav), format, dir);
+   sd->tilesize = tileman_tile_size_get(sd->tman);
+   tileman_levels_list(sd->tman, &sd->max_level, &sd->min_level);
 
-   sd->format = format;
-   sd->dir = strdup(dir);
-   sd->src = strdup("osm");
-   sd->suffix = strdup("png");
-   sd->size = 256;
-   sd->min_level = 0;
-   sd->max_level = 17;
-
-   sd->min_span = (1 << sd->min_level) * sd->size;
-   sd->max_span = (1 << sd->max_level) * sd->size * 2;
+   sd->min_span = (1 << sd->min_level) * sd->tilesize;
+   sd->max_span = (1 << sd->max_level) * sd->tilesize * 2;
    sd->max_lon = 180.0;
    mercator_project_inv(0.0, 0.0, NULL, &sd->max_lat);
+
+   sd->nav = nav;
 
    e_nav_world_tileset_set(nav, obj);
 
@@ -196,13 +168,9 @@ proxy_level_set(Evas_Object *obj)
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(obj);
-   if (!sd || !sd->proxy) return;
+   if (!sd) return;
 
-   e_dbus_proxy_simple_call(sd->proxy, "SetLevel",
-			    NULL,
-			    DBUS_TYPE_INT32, &sd->level,
-			    DBUS_TYPE_INVALID,
-			    DBUS_TYPE_INVALID);
+   tileman_proxy_level_set(sd->tman, sd->level);
 }
 
 int
@@ -223,7 +191,7 @@ e_nav_tileset_span_set(Evas_Object *obj, int span)
    sd->py *= (double) span / sd->span;
    sd->span = span;
 
-   level = (int) (log((double) span / sd->size) / M_LOG2);
+   level = (int) (log((double) span / sd->tilesize) / M_LOG2);
 
    if (level < sd->min_level)
      level = sd->min_level;
@@ -340,7 +308,7 @@ e_nav_tileset_level_set(Evas_Object *obj, int level)
    if (level < sd->min_level || level > sd->max_level)
      return 0;
 
-   e_nav_tileset_span_set(obj, (1 << level) * sd->size);
+   e_nav_tileset_span_set(obj, (1 << level) * sd->tilesize);
 
    return 1;
 }
@@ -442,22 +410,7 @@ e_nav_tileset_proxy_set(Evas_Object *obj, E_DBus_Proxy *proxy)
    
    SMART_CHECK(obj, ;);
 
-   if (sd->proxy == proxy)
-     return;
-
-   if (sd->proxy)
-     e_dbus_proxy_disconnect_signal(sd->proxy, "TileCompleted",
-	   (E_DBus_Signal_Cb) _e_nav_tileset_tile_completed_cb, obj);
-
-   sd->proxy = proxy;
-   e_dbus_proxy_connect_signal(sd->proxy, "TileCompleted",
-	 (E_DBus_Signal_Cb) _e_nav_tileset_tile_completed_cb, obj);
-
-   e_dbus_proxy_simple_call(sd->proxy, "SetSource",
-			    NULL,
-			    DBUS_TYPE_STRING, &sd->src,
-			    DBUS_TYPE_INVALID,
-			    DBUS_TYPE_INVALID);
+   tileman_proxy_set(sd->tman, proxy);
 }
 
 E_DBus_Proxy *
@@ -467,7 +420,7 @@ e_nav_tileset_proxy_get(Evas_Object *obj)
    
    SMART_CHECK(obj, NULL;);
 
-   return sd->proxy;
+   return tileman_proxy_get(sd->tman);
 }
 
 static Eet_Data_Descriptor *
@@ -673,6 +626,23 @@ map_free(E_Nav_Map *map)
    free(map);
 }
 
+static int
+map_get_key(E_Nav_Map *map, char *buf, int size, int z, int x, int y)
+{
+   if (z < map->desc->min_level ||
+       z > map->desc->max_level)
+     return 0;
+
+   if (x < map->min_x[z] || x > map->max_x[z] ||
+       y < map->min_y[z] || y > map->max_y[z])
+     return 0;
+
+   snprintf(buf, size, "%s/%d/%d/%d",
+	 map->desc->source, z, x, y);
+
+   return 1;
+}
+
 static void
 on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Event event, const char *path)
 {
@@ -857,15 +827,6 @@ _e_nav_tileset_smart_add(Evas_Object *obj)
    evas_object_smart_member_add(sd->clip, obj);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
 
-   sd->underlay = evas_object_rectangle_add(evas_object_evas_get(obj));
-   evas_object_smart_member_add(sd->underlay, obj);
-   evas_object_color_set(sd->underlay, 180, 180, 180, 255);
-   evas_object_clip_set(sd->underlay, sd->clip);
-   evas_object_lower(sd->underlay);
-   evas_object_show(sd->underlay);
-
-   sd->jobs = ecore_hash_new(ecore_direct_hash, ecore_direct_compare);
-
    ecore_file_init();
    sd->mons = ecore_hash_new(ecore_str_hash, ecore_str_compare);
    ecore_hash_free_key_cb_set(sd->mons, free);
@@ -893,20 +854,11 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
 	sd->maps = evas_list_remove_list(sd->maps, sd->maps);
      }
 
-   if (sd->dir) free(sd->dir);
-   if (sd->src) free(sd->src);
-   if (sd->suffix) free(sd->suffix);
-
-   evas_object_del(sd->underlay);
    evas_object_del(sd->clip);
-
-   if (sd->proxy)
-     e_dbus_proxy_disconnect_signal(sd->proxy, "TileCompleted",
-	   (E_DBus_Signal_Cb) _e_nav_tileset_tile_completed_cb, obj);
 
    _e_nav_tileset_free(obj);
 
-   ecore_hash_destroy(sd->jobs);
+   tileman_destroy(sd->tman);
 
    free(sd);
 }
@@ -920,7 +872,6 @@ _e_nav_tileset_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    if (!sd) return;
    sd->x = x;
    sd->y = y;
-   evas_object_move(sd->underlay, sd->x, sd->y);
    evas_object_move(sd->clip, sd->x, sd->y);
    _e_nav_tileset_update(obj);
 }
@@ -934,7 +885,6 @@ _e_nav_tileset_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    if (!sd) return;
    sd->w = w;
    sd->h = h;
-   evas_object_resize(sd->underlay, sd->w, sd->h);
    evas_object_resize(sd->clip, sd->w, sd->h);
    _e_nav_tileset_update(obj);
 }
@@ -1021,257 +971,67 @@ mercator_project_inv(double x, double y, double *lon, double *lat)
       *lat = DEGREES(atan(sinh((1.0 - y * 2.0) * M_PI)));
 }
 
-static int
-job_submit(E_Nav_Tile_Job *job, int force)
-{
-   E_Smart_Data *sd;
-   unsigned int id;
-
-   sd = evas_object_smart_data_get(job->nt);
-   if (!sd || !sd->proxy) return 0;
-
-   //printf("submit job for tile (%d,%d)@%d\n", job->x, job->y, sd->level);
-
-   if (job->id)
-     return 1;
-
-   if (!e_dbus_proxy_simple_call(sd->proxy, "SubmitTile",
-				 NULL,
-				 DBUS_TYPE_INT32, &job->x,
-				 DBUS_TYPE_INT32, &job->y,
-				 DBUS_TYPE_BOOLEAN, &force,
-				 DBUS_TYPE_INVALID,
-				 DBUS_TYPE_UINT32, &id,
-				 DBUS_TYPE_INVALID))
-     {
-	printf("failed to get tile\n");
-
-	return 0;
-     }
-
-   job->id = id;
-   job->timestamp = ecore_time_get();
-
-   ecore_hash_set(sd->jobs, (void *) id, job);
-
-   return 1;
-}
-
-static void
-job_cancel(E_Nav_Tile_Job *job)
-{
-   E_Smart_Data *sd;
-
-   if (!job->id) return;
-
-   sd = evas_object_smart_data_get(job->nt);
-   if (!sd || !sd->proxy) return;
-
-   e_dbus_proxy_simple_call(sd->proxy, "CancelTile",
-			    NULL,
-			    DBUS_TYPE_UINT32, &job->id,
-			    DBUS_TYPE_INVALID,
-			    DBUS_TYPE_INVALID);
-
-   //printf("job %u cancelled\n", job->id);
-
-   ecore_hash_remove(sd->jobs, (void *) job->id);
-   job->id = 0;
-}
-
-static void
-job_reset(E_Nav_Tile_Job *job, int x, int y)
-{
-   E_Smart_Data *sd;
-
-   sd = evas_object_smart_data_get(job->nt);
-   if (!sd) return;
-
-   if (job->id)
-     job_cancel(job);
-
-   job->level = sd->level;
-   job->x = x;
-   job->y = y;
-
-   evas_object_image_file_set(job->obj, NULL, NULL);
-   evas_object_hide(job->obj);
-}
-
-static int
-job_load_from_map(E_Nav_Tile_Job *job, E_Nav_Map *map)
-{
-   E_Smart_Data *sd;
-   int err;
-   char key[64];
-
-   sd = evas_object_smart_data_get(job->nt);
-   if (!sd) return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-
-   if (job->level < map->desc->min_level ||
-       job->level > map->desc->max_level)
-     return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-
-   if (job->x < map->min_x[job->level] || job->x > map->max_x[job->level] ||
-       job->y < map->min_y[job->level] || job->y > map->max_y[job->level])
-     return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-
-   snprintf(key, sizeof(key), "%s/%d/%d/%d",
-	 sd->src, job->level, job->x, job->y);
-
-   evas_object_image_file_set(job->obj, map->path, key);
-   err = evas_object_image_load_error_get(job->obj);
-
-   return err;
-}
-
-static void
-job_load(E_Nav_Tile_Job *job)
-{
-   E_Smart_Data *sd;
-   Evas_List *l;
-   char buf[PATH_MAX];
-   int err;
-
-   sd = evas_object_smart_data_get(job->nt);
-   if (!sd) return;
-
-   snprintf(buf, sizeof(buf), "%s/%s/%d/%d/%d.%s",
-	 sd->dir, sd->src,
-	 job->level, job->x, job->y, sd->suffix);
-
-   evas_object_image_file_set(job->obj, buf, NULL);
-   err = evas_object_image_load_error_get(job->obj);
-
-   if (err == EVAS_LOAD_ERROR_NONE)
-     {
-	evas_object_show(job->obj);
-
-	return;
-     }
-
-   for (l = sd->maps; l; l = l->next)
-     {
-	err = job_load_from_map(job, l->data);
-	if (err == EVAS_LOAD_ERROR_NONE)
-	  break;
-     }
-   
-   if (err == EVAS_LOAD_ERROR_NONE)
-     {
-	evas_object_show(job->obj);
-     }
-   else
-     {
-	evas_object_hide(job->obj);
-
-	/* `buf' is reloaded when job is done */
-	evas_object_image_file_set(job->obj, buf, NULL);
-
-	job_submit(job, 1);
-     }
-}
-
-static void
-_e_nav_tileset_tile_completed_cb(Evas_Object *obj, DBusMessage *message)
-{
-   E_Smart_Data *sd;
-   E_Nav_Tile_Job *job;
-   unsigned int id;
-   int status;
-
-   if (!message)
-     return;
-
-   sd = evas_object_smart_data_get(obj);
-   if (!sd || !sd->proxy) return;
-
-   if (!dbus_message_get_args(message, NULL,
-			      DBUS_TYPE_UINT32, &id,
-			      DBUS_TYPE_INT32, &status,
-			      DBUS_TYPE_INVALID))
-     return;
-
-   job = ecore_hash_get(sd->jobs, (void *) id);
-   if (!job)
-     return;
-
-   //printf("job %u completed with status %d\n", id, status);
-   if (status == 0 && job->obj)
-     {
-	evas_object_image_reload(job->obj);
-	if (evas_object_image_load_error_get(job->obj) == EVAS_LOAD_ERROR_NONE)
-	  evas_object_show(job->obj);
-     }
-
-   job->id = 0;
-   ecore_hash_remove(sd->jobs, (void *) id);
-}
-
-static E_Nav_Tile_Job *
+static Evas_Object *
 _e_nav_tileset_tile_add(Evas_Object *obj, int i, int j)
 {
    E_Smart_Data *sd;
-   E_Nav_Tile_Job *job;
+   Evas_Object *tile;
 
    sd = evas_object_smart_data_get(obj);
    if (!sd) return NULL;
 
-   job = calloc(1, sizeof(E_Nav_Tile_Job));
-   if (!job) return NULL;
+   tile = tileman_tile_add(sd->tman);
+   evas_object_smart_member_add(tile, sd->obj);
+   evas_object_clip_set(tile, sd->clip);
+   evas_object_pass_events_set(tile, 1);
+   evas_object_stack_below(tile, sd->clip);
 
-   job->nt = obj;
-   job->obj = evas_object_image_add(evas_object_evas_get(sd->obj));
+   sd->tiles.jobs[(j * sd->tiles.ow) + i] = tile;
 
-   evas_object_smart_member_add(job->obj, sd->obj);
-   evas_object_clip_set(job->obj, sd->clip);
-   evas_object_pass_events_set(job->obj, 1);
-   evas_object_stack_below(job->obj, sd->clip);
-   evas_object_image_smooth_scale_set(job->obj, 0);
-
-   sd->tiles.jobs[(j * sd->tiles.ow) + i] = job;
-
-   job->level = sd->level;
-   job->x = i + sd->tiles.ox;
-   job->y = j + sd->tiles.oy;
-
-   return job;
+   return tile;
 }
  
 static Evas_Object *
 _e_nav_tileset_tile_get(Evas_Object *obj, int i, int j)
 {
    E_Smart_Data *sd;
-   E_Nav_Tile_Job *job;
+   Evas_Object *tile;
    int x, y;
 
    sd = evas_object_smart_data_get(obj);
    if (!sd) return NULL;
 
+   tile = sd->tiles.jobs[(j * sd->tiles.ow) + i];
+   if (!tile)
+     tile = _e_nav_tileset_tile_add(obj, i, j);
+
    x = i + sd->tiles.ox;
    y = j + sd->tiles.oy;
 
-   job = sd->tiles.jobs[(j * sd->tiles.ow) + i];
-   if (job)
+   if (!tileman_tile_load(tile, sd->level, x, y))
      {
-	if (job->level == sd->level && job->x == x && job->y == y)
+	Evas_List *l;
+	int err = 1;
+
+	for (l = sd->maps; l; l = l->next)
 	  {
-	     if (!job->id)
-	       evas_object_show(job->obj);
+	     E_Nav_Map *map = l->data;
+	     char key[64];
 
-	     return job->obj;
+	     if (map_get_key(map, key, sizeof(key), sd->level, x, y) &&
+		 tileman_tile_image_set(tile, map->path, key))
+	       {
+		  err = EVAS_LOAD_ERROR_NONE;
+
+		  break;
+	       }
 	  }
-
-	job_reset(job, x, y);
+   
+	if (err != EVAS_LOAD_ERROR_NONE)
+	  tileman_tile_download(tile, sd->level, x, y);
      }
-   else
-     job = _e_nav_tileset_tile_add(obj, i, j);
 
-
-   if (TILE_VALID(sd->level, x, y))
-     job_load(job);
-
-   return job->obj;
+   return tile;
 }
 
 enum {
@@ -1299,7 +1059,7 @@ _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h)
 
    for (j = y; j < y + h; j++)
      {
-	E_Nav_Tile_Job **src, **dst;
+	Evas_Object **src, **dst;
 
 	if (j < sd->tiles.oy ||
 	    j >= sd->tiles.oy + sd->tiles.oh)
@@ -1310,7 +1070,7 @@ _e_nav_tileset_rearrange(Evas_Object *obj, int x, int y, int w, int h)
 
 	for (i = x; i < x + w; i++)
 	  {
-	     E_Nav_Tile_Job *job;
+	     Evas_Object *job;
 
 	     if (i < sd->tiles.ox ||
 		 i >= sd->tiles.ox + sd->tiles.ow)
@@ -1336,7 +1096,7 @@ _e_nav_tileset_realloc(Evas_Object *obj, int num_jobs)
      {
 	void *p;
 
-	p = realloc(sd->tiles.jobs, num_jobs * sizeof(E_Nav_Tile_Job *));
+	p = realloc(sd->tiles.jobs, num_jobs * sizeof(Evas_Object *));
 	if (!p)
 	  return 0;
 
@@ -1344,7 +1104,7 @@ _e_nav_tileset_realloc(Evas_Object *obj, int num_jobs)
 
 	num_jobs -= sd->tiles.num_jobs;
 	memset(sd->tiles.jobs + sd->tiles.num_jobs, 0,
-	      num_jobs * sizeof(E_Nav_Tile_Job *));
+	      num_jobs * sizeof(Evas_Object *));
 
 	sd->tiles.num_jobs += num_jobs;
      }
@@ -1352,11 +1112,11 @@ _e_nav_tileset_realloc(Evas_Object *obj, int num_jobs)
      {
 	for (i = num_jobs; i < sd->tiles.num_jobs; i++)
 	  {
-	     E_Nav_Tile_Job *job;
+	     Evas_Object *job;
 
 	     job = sd->tiles.jobs[i];
 	     if (job)
-	       evas_object_hide(job->obj);
+	       evas_object_hide(job);
 	  }
      }
 
@@ -1374,16 +1134,10 @@ static void _e_nav_tileset_free(Evas_Object *obj)
 
    for (i = 0; i < sd->tiles.num_jobs; i++)
      {
-	E_Nav_Tile_Job *job;
+	Evas_Object *job;
 
 	job = sd->tiles.jobs[i];
-	if (job)
-	  {
-	     if (job->id)
-	       job_cancel(job);
-	     evas_object_del(job->obj);
-	     free(job);
-	  }
+	evas_object_del(job);
      }
    free(sd->tiles.jobs);
 
@@ -1409,7 +1163,7 @@ _e_nav_tileset_prepare(Evas_Object *obj)
    num_tiles = (1 << sd->level);
 
    tilesize = (double) sd->span / num_tiles;
-   if (tilesize < 1.0 || tilesize / sd->size < 0.1)
+   if (tilesize < 1.0 || tilesize / sd->tilesize < 0.1)
      return MODE_FAIL;
 
    tiles_ow = 1 + (((double)sd->w + tilesize) / tilesize);
@@ -1491,10 +1245,9 @@ _e_nav_tileset_update(Evas_Object *obj)
 			      sd->y + sd->tiles.offset_y + y);
 
 	     if ((mode == MODE_RELOAD) || (mode == MODE_RESIZE))
-	       {
-		  evas_object_resize(o, xx - x, yy - y);
-		  evas_object_image_fill_set(o, 0, 0, xx - x, yy - y);
-	       }
+	       evas_object_resize(o, xx - x, yy - y);
+
+	     evas_object_show(o);
 	  }
      }
 }
