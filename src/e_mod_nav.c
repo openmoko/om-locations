@@ -40,6 +40,7 @@ static struct _E_Module_Data {
 
      Evas_Object          *ctrl;
      Evas_Object          *nav;
+     Evas_Object          *tileset; /* owned by nav */
      Evas_Object          *neo_me;
 
      Diversity_World      *world;
@@ -504,13 +505,11 @@ _e_nav_cb_timer_pos_search_pause(void *data)
    return 0;
 }
 
-static Evas_Object *
-osm_tileset_add(Evas_Object *nav)
+static E_DBus_Proxy *
+_dbus_atlas_proxy_get(void)
 {
    Diversity_Equipment *eqp;
    E_DBus_Proxy *proxy;
-   Evas_Object *nt = NULL;
-   char *path;
 
    eqp = diversity_bard_equipment_get(mdata.self, "osm");
    if (!eqp)
@@ -520,34 +519,9 @@ osm_tileset_add(Evas_Object *nav)
    if (proxy)
      proxy = e_dbus_proxy_new_from_proxy(proxy, NULL, NULL);
 
-   if (!proxy)
-     {
-	diversity_equipment_destroy(eqp);
-
-	return NULL;
-     }
-
-   if (e_dbus_proxy_simple_call(proxy, "GetPath",
-	    NULL,
-	    DBUS_TYPE_INVALID,
-	    DBUS_TYPE_STRING, &path,
-	    DBUS_TYPE_INVALID))
-     {
-	nt = e_nav_tileset_add(nav,
-	      E_NAV_TILESET_FORMAT_OSM, path);
-	e_nav_tileset_proxy_set(nt, proxy);
-	e_nav_tileset_monitor_add(nt, path);
-
-	free(path);
-     }
-   else
-     {
-	e_dbus_proxy_destroy(proxy);
-     }
-
    diversity_equipment_destroy(eqp);
 
-   return nt;
+   return proxy;
 }
 
 /* 
@@ -557,7 +531,6 @@ static void
 _e_mod_neo_me_init()
 {
    Evas_Object *nwi;
-   int accuracy;
    double neo_me_lat, neo_me_lon;
 
    if (mdata.neo_me) return;
@@ -567,13 +540,16 @@ _e_mod_neo_me_init()
    nwi = e_nav_world_item_neo_me_add(mdata.nav, THEMEDIR,
 				     neo_me_lon, neo_me_lat, mdata.self);
 
-   /* if already fixed, change the skin.   */
-   accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;   
-   diversity_dbus_property_get(((Diversity_DBus *) mdata.self),
-	 DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-   if(accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)   
+   if (mdata.self)
      {
-       e_nav_world_item_neo_me_fixed_set(nwi, 1);
+	int accuracy;
+
+	accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;
+	diversity_dbus_property_get(((Diversity_DBus *) mdata.self),
+	      DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+
+	if (accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)
+	  e_nav_world_item_neo_me_fixed_set(nwi, 1);
      }
 
    e_nav_world_item_neo_me_name_set(nwi, _("Me"));
@@ -679,6 +655,7 @@ fail:
 void
 _e_mod_nav_init(Evas *evas, const char *theme_name)
 {
+   const char *tile_path;
    double lon, lat;
    int span;
 
@@ -702,6 +679,23 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
    e_ctrl_nav_set(mdata.ctrl, mdata.nav);
    e_nav_world_ctrl_set(mdata.nav, mdata.ctrl);
 
+   tile_path = "/tmp/diversity-maps";
+   mdata.tileset = e_nav_tileset_add(mdata.nav,
+	 E_NAV_TILESET_FORMAT_OSM, tile_path);
+   if (mdata.tileset)
+     {
+	e_nav_tileset_monitor_add(mdata.tileset, tile_path);
+	e_nav_tileset_monitor_add(mdata.tileset, MAPSDIR);
+
+	/* known places where maps are stored */
+	e_nav_tileset_monitor_add(mdata.tileset, "/usr/share/om-maps");
+	e_nav_tileset_monitor_add(mdata.tileset, "/usr/local/share/om-maps");
+	e_nav_tileset_monitor_add(mdata.tileset, "/media/card/om-maps");
+	e_nav_tileset_monitor_add(mdata.tileset, "/usr/share/diversity-nav/maps");
+
+	evas_object_show(mdata.tileset);
+     }
+
    mdata.cfg = dn_config_new();
 
    lon = dn_config_float_get(mdata.cfg, "lon");
@@ -713,27 +707,21 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 
    if (_e_mod_nav_dbus_init())
      {
-	Evas_Object *nt;
-
 	e_nav_world_set(mdata.nav, mdata.world);
-	_e_mod_neo_me_init();
 
-	nt = osm_tileset_add(mdata.nav);
-	if (nt)
+	if (mdata.tileset)
 	  {
-	     e_nav_tileset_monitor_add(nt, MAPSDIR);
+	     E_DBus_Proxy *atlas;
 
-	     /* known places where maps are stored */
-	     e_nav_tileset_monitor_add(nt, "/usr/share/om-maps");
-	     e_nav_tileset_monitor_add(nt, "/usr/local/share/om-maps");
-	     e_nav_tileset_monitor_add(nt, "/media/card/om-maps");
-	     e_nav_tileset_monitor_add(nt, "/usr/share/diversity-nav/maps");
-
-	     evas_object_show(nt);
+	     atlas = _dbus_atlas_proxy_get();
+	     if (atlas)
+	       e_nav_tileset_proxy_set(mdata.tileset, atlas);
 	  }
 
-	e_nav_world_item_geometry_get(mdata.neo_me, &lon, &lat, NULL, NULL);
      }
+
+   _e_mod_neo_me_init();
+   e_nav_world_item_geometry_get(mdata.neo_me, &lon, &lat, NULL, NULL);
 
    e_nav_coord_set(mdata.nav, lon, lat, 0.0);
    e_nav_span_set(mdata.nav, span, 0.0);
@@ -782,10 +770,24 @@ _e_mod_nav_shutdown(void)
    dn_config_save(mdata.cfg);
    dn_config_destroy(mdata.cfg);
 
+   if (mdata.tileset)
+     {
+	E_DBus_Proxy *atlas;
+
+	atlas = e_nav_tileset_proxy_get(mdata.tileset);
+	if (atlas)
+	  {
+	     e_nav_tileset_proxy_set(mdata.tileset, NULL);
+	     e_dbus_proxy_destroy(atlas);
+	  }
+     }
+   evas_object_del(mdata.neo_me);
+
+   _e_mod_nav_dbus_shutdown();
+
+   /* FIXME xxx_ctrl in e_nav_item_location.c */
+   //evas_object_del(mdata.ctrl);
+
    evas_object_del(mdata.nav);
    mdata.nav = NULL;
-
-   /* FIXME dbus should be able to be shutdown earlier */
-   //evas_object_del(mdata.ctrl);
-   _e_mod_nav_dbus_shutdown();
 }
