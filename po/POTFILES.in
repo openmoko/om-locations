@@ -23,3 +23,4 @@ src/e_nav_misc.c
 src/e_nav_theme.c
 src/e_nav_tileset.c
 src/e_spiralmenu.c
+src/tileman.c

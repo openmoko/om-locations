@@ -812,6 +812,48 @@ group {
 }
 
 group {
+   name: "modules/diversity_nav/tile";
+   parts {
+      part { name: "bg";
+         type: RECT;
+         mouse_events: 0;
+         description { state: "default" 0.0;
+            color: 176 176 160 255;
+            rel1 {
+               relative: 0.0 0.0;
+               offset: 1 1;
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: -1 -1;
+            }
+         }
+      }
+      part {
+         name: "status";
+         type: TEXT;
+         description {
+            state: "default" 0.0;
+            color: 0 0 0 255;
+            rel1 {
+               relative: 0.0 0.0;
+               offset: 0 0;
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: 0 0;
+            }
+	    text {
+               font: "Edje-Sans";
+               align: 0.5 0.5;
+               size: 18;
+	    }
+	 }
+      }
+   }
+}
+
+group {
    name: "modules/diversity_nav/city";
    parts {
       part { name: "base";
