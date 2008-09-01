@@ -79,11 +79,24 @@ dn_config_destroy(Diversity_Nav_Config *cfg)
    FREE(cfg);
 }
 
+static void
+_init_default_config_value(Diversity_Nav_Config *cfg)
+{
+   dn_config_float_set(cfg, "lat", DEFAULT_VALUE_LAT);
+   dn_config_float_set(cfg, "lon", DEFAULT_VALUE_LON);
+   dn_config_int_set(cfg, "scale", DEFAULT_VALUE_SCALE);
+   dn_config_float_set(cfg, "neo_me_lon", DEFAULT_VALUE_NEO_ME_LON);
+   dn_config_float_set(cfg, "neo_me_lat", DEFAULT_VALUE_NEO_ME_LAT);
+}
+
 static int 
 dn_config_load(Diversity_Nav_Config *cfg)
 {
    char *fname = NULL;
    int ret;
+
+   cfg->cfg_data = dn_config_create_hash();
+   _init_default_config_value(cfg);
 
    fname = dn_config_file_name_get(cfg);
    ret = dn_config_file_load(cfg, fname);
@@ -108,20 +121,9 @@ dn_config_file_name_get(Diversity_Nav_Config *cfg)
    return strdup(cfg_filename);
 }
 
-static void
-_init_default_config_value(Diversity_Nav_Config *cfg)
-{
-   dn_config_float_set(cfg, "lat", DEFAULT_VALUE_LAT);
-   dn_config_float_set(cfg, "lon", DEFAULT_VALUE_LON);
-   dn_config_float_set(cfg, "scale", DEFAULT_VALUE_SCALE);
-   dn_config_float_set(cfg, "neo_me_lon", DEFAULT_VALUE_NEO_ME_LON);
-   dn_config_float_set(cfg, "neo_me_lat", DEFAULT_VALUE_NEO_ME_LAT);
-}
-
 static int
 dn_config_file_load(Diversity_Nav_Config *cfg, const char *file)
 {
-   Ecore_Hash *hash;
    int fd;
    long size;
    char *data;
@@ -130,9 +132,6 @@ dn_config_file_load(Diversity_Nav_Config *cfg, const char *file)
    if (fd == -1)
      {
         printf("Unable to open cfg file %s.\n", file);
-        /*  still create the hash for cfg and init the default value*/
-        cfg->cfg_data = dn_config_create_hash();
-        _init_default_config_value(cfg);
         return FALSE;
      }
 
@@ -152,11 +151,7 @@ dn_config_file_load(Diversity_Nav_Config *cfg, const char *file)
    dn_config_file_unlock(fd);
    close(fd);
 
-   /* create the hash to store the values */
-   cfg->cfg_data = dn_config_create_hash();
-   hash = cfg->cfg_data;
- 
-   dn_config_parse(cfg, hash, data);
+   dn_config_parse(cfg, cfg->cfg_data, data);
    FREE(data);
 
    return TRUE;
