@@ -24,6 +24,7 @@
 #include "e_ctrl.h"
 #include "e_nav_tileset.h"
 #include "e_nav_item_location.h"
+#include "msgboard.h"
 
 #define E_NEW(s, n) (s *)calloc(n, sizeof(s))
 
@@ -44,7 +45,7 @@ struct _E_Smart_Data
    /* sorted by stack order */
    Evas_Object *panel_buttons;
    Evas_Object *listview;   
-   Evas_Object *message;
+   Evas_Object *msgboard;
    Evas_Object *map_overlay;   
    Evas_Object *clip;
 
@@ -338,14 +339,12 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 				  _e_nav_view_right,
 				  obj);
 
-   sd->message = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir,
-				      "modules/diversity_nav/message");
-   edje_object_part_text_set(sd->message, "message.text", _("Searching for your location"));
-
-   evas_object_smart_member_add(sd->message, obj);
-   evas_object_move(sd->message, sd->x, sd->y);
-   evas_object_resize(sd->message, sd->w, sd->h);
-   evas_object_clip_set(sd->message, sd->clip);
+   sd->msgboard = msgboard_add(evas_object_evas_get(obj));
+   evas_object_smart_member_add(sd->msgboard, obj);
+   evas_object_move(sd->msgboard, sd->x, sd->y);
+   evas_object_resize(sd->msgboard, sd->w, sd->h);
+   evas_object_clip_set(sd->msgboard, sd->clip);
+   evas_object_show(sd->msgboard);
 
    sd->listview = e_nav_list_add(evas_object_evas_get(obj), E_NAV_LIST_TYPE_TAG, THEMEDIR);
    e_nav_list_title_set(sd->listview, _("View Tags"));
@@ -497,7 +496,7 @@ _e_ctrl_smart_del(Evas_Object *obj)
    evas_object_del(sd->clip);
    evas_object_del(sd->map_overlay);
    evas_object_del(sd->panel_buttons);
-   evas_object_del(sd->message);
+   evas_object_del(sd->msgboard);
    free(sd);
 }
 
@@ -514,7 +513,7 @@ _e_ctrl_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    evas_object_move(sd->clip, sd->x, sd->y);
    evas_object_move(sd->map_overlay, sd->x, sd->y);
    evas_object_move(sd->panel_buttons, sd->x, sd->y);
-   evas_object_move(sd->message, sd->x, sd->y);
+   evas_object_move(sd->msgboard, sd->x, sd->y);
    evas_object_move(sd->listview, sd->x, sd->y);
 }
 
@@ -530,7 +529,7 @@ _e_ctrl_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_resize(sd->map_overlay, sd->w, sd->h);
    evas_object_resize(sd->panel_buttons, sd->w, sd->h);
-   evas_object_resize(sd->message, sd->w, sd->h);
+   evas_object_resize(sd->msgboard, sd->w, sd->h);
    evas_object_resize(sd->listview, sd->w, sd->h);
 }
 
@@ -703,31 +702,24 @@ e_ctrl_follow_set(Evas_Object *obj, int follow)
    sd->follow = follow;
 }
 
-void
-e_ctrl_message_text_set(Evas_Object *obj, const char *msg)
+unsigned int
+e_ctrl_message_text_add(Evas_Object *obj, const char *msg, double timeout)
 {
    E_Smart_Data *sd;
-   SMART_CHECK(obj, ;);
-   if(!sd) return;
-   edje_object_part_text_set(sd->message, "message.text", msg);
+
+   SMART_CHECK(obj, 0;);
+
+   return msgboard_message_add(sd->msgboard, msg, timeout);
 }
 
 void
-e_ctrl_message_hide(Evas_Object *obj)
+e_ctrl_message_text_del(Evas_Object *obj, unsigned int msg_id)
 {
    E_Smart_Data *sd;
-   SMART_CHECK(obj, ;);
-   if(!sd) return;
-   evas_object_hide(sd->message);
-}
 
-void
-e_ctrl_message_show(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
    SMART_CHECK(obj, ;);
-   if(!sd) return;
-   evas_object_show(sd->message);
+
+   msgboard_message_del(sd->msgboard, msg_id);
 }
 
 void

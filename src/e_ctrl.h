@@ -33,11 +33,11 @@ void                e_ctrl_span_drag_value_set(Evas_Object *obj, int span);
 void                e_ctrl_span_text_value_set(Evas_Object *obj, const char* buf);
 void                e_ctrl_longitude_set(Evas_Object *obj, const char* buf);
 void                e_ctrl_latitude_set(Evas_Object *obj, const char* buf);
-void                e_ctrl_message_text_set(Evas_Object *obj, const char *msg);
-void                e_ctrl_message_hide(Evas_Object *obj);
-void                e_ctrl_message_show(Evas_Object *obj);
 int                 e_ctrl_follow_get(Evas_Object* obj);
 void                e_ctrl_follow_set(Evas_Object *obj, int follow);
+
+unsigned int        e_ctrl_message_text_add(Evas_Object *obj, const char *msg, double timeout);
+void                e_ctrl_message_text_del(Evas_Object *obj, unsigned int msg_id);
 
 void                e_ctrl_taglist_tag_add(Evas_Object *obj, Evas_Object *loc);
 void                e_ctrl_taglist_tag_set(Evas_Object *obj, Evas_Object *loc);

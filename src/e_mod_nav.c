@@ -48,6 +48,7 @@ static struct _E_Module_Data {
      Diversity_Viewport   *worldview;
 
      Ecore_Timer          *fix_timer;
+     unsigned int          fix_msg_id;
 } mdata;
 
 
@@ -363,7 +364,6 @@ on_property_changed(void *data, DBusMessage *msg)
         e_nav_world_item_neo_me_fixed_set(nwi, 1);
         fixed = 1;
         position_search_timer_stop();
-        e_ctrl_message_hide(mdata.ctrl);
      }
 }
 
@@ -414,7 +414,7 @@ static void
 alert_exit(void *data, Evas_Object *obj)
 {
    e_alert_deactivate(obj);
-   e_ctrl_message_hide(mdata.ctrl);
+   position_search_timer_stop();
 }
 
 #define GPS_DEVICE_NAME "/sys/bus/platform/drivers/neo1973-pm-gps/neo1973-pm-gps.0/pwron"
@@ -462,7 +462,9 @@ turn_on_gps()
 static void
 position_search_timer_start()
 {
-   e_ctrl_message_show(mdata.ctrl);
+   mdata.fix_msg_id = e_ctrl_message_text_add(mdata.ctrl,
+	 _("Searching for your location"), 0.0);
+
    mdata.fix_timer = ecore_timer_add(60.0,
                            _e_nav_cb_timer_pos_search_pause,
                            NULL);
@@ -475,6 +477,12 @@ position_search_timer_stop()
      {
 	ecore_timer_del(mdata.fix_timer);
 	mdata.fix_timer = NULL;
+     }
+
+   if (mdata.fix_msg_id)
+     {
+	e_ctrl_message_text_del(mdata.ctrl, mdata.fix_msg_id);
+	mdata.fix_msg_id = 0;
      }
 }
 
@@ -502,6 +510,8 @@ _e_nav_cb_timer_pos_search_pause(void *data)
      }
    e_alert_activate(alert_dialog); 
    evas_object_show(alert_dialog);
+
+   mdata.fix_timer = NULL;
 
    return 0;
 }
