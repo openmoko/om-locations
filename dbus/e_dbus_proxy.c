@@ -84,7 +84,7 @@ typedef struct
 {
   E_DBus_Signal_Handler *sh;
 
-  void *sig_s;
+  char *sig_s;
   void *sig_c;
   void *sig_d;
 } E_DBus_Proxy_Signal_Signature;
@@ -215,6 +215,7 @@ e_dbus_proxy_destroy(E_DBus_Proxy *proxy)
     while ((sig = ecore_list_next(proxy->signal_handlers)))
     {
       e_dbus_signal_handler_del(proxy->manager->e_connection, sig->sh);
+      free(sig->sig_s);
       free(sig);
     }
 
@@ -505,6 +506,14 @@ e_dbus_proxy_connect_signal(E_DBus_Proxy *proxy, const char *signal_name, E_DBus
   if (!sig)
     return;
 
+  sig->sig_s = strdup(signal_name);
+  if (!sig->sig_s)
+  {
+    free(sig);
+
+    return;
+  }
+
   sig->sh = e_dbus_signal_handler_add(proxy->manager->e_connection,
                                       proxy->name,
                                       proxy->path,
@@ -515,12 +524,12 @@ e_dbus_proxy_connect_signal(E_DBus_Proxy *proxy, const char *signal_name, E_DBus
 
   if (!sig->sh)
   {
+    free(sig->sig_s);
     free(sig);
 
     return;
   }
 
-  sig->sig_s = (void *) signal_name;
   sig->sig_c = cb_signal;
   sig->sig_d = data;
 
@@ -536,12 +545,14 @@ e_dbus_proxy_disconnect_signal(E_DBus_Proxy *proxy, const char *signal_name, E_D
     return;
 
   ecore_list_first_goto(proxy->signal_handlers);
-  while ((sig = ecore_list_next(proxy->signal_handlers)))
+  while ((sig = ecore_list_current(proxy->signal_handlers)))
   {
-    if (sig->sig_s == signal_name &&
+    if (strcmp(sig->sig_s, signal_name) == 0 &&
         sig->sig_c == cb_signal &&
         sig->sig_d == data)
       break;
+
+    ecore_list_next(proxy->signal_handlers);
   }
 
   if (sig)
