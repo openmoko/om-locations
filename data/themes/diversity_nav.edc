@@ -29,6 +29,28 @@ styles
 }
 
 group {
+   name: "modules/diversity_nav/msgboard";
+   parts {
+      part { name: "bg";
+         type: RECT;
+         mouse_events: 0;
+         description {
+            state: "default" 0.0;
+            color: 0 0 0 0;
+            rel1 {
+               relative: 0.0 0.0;
+               offset: 0 0;
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: 0 0;
+            }
+         }
+      }
+   }
+}
+
+group {
    name: "modules/diversity_nav/message";
    parts {
       part { name: "message.icon";
@@ -41,32 +63,27 @@ group {
                offset: 0 0;
             }
             rel2 {
-               relative: 1.0 0.1;
+               relative: 1.0 1.0;
                offset: 0 0;
             }
             align: 0.0 0.0;
+            fill.smooth: 0;
             image.normal: "red_dot1.png";
          }
          description { state: "red0" 0.0;
             inherit: "default" 0.0;
-            min: 16 16;
-            max: 16 16;
-            fill.smooth: 0;
             color: 255 255 255 255;
          }
          description { state: "red1" 0.0;
             inherit: "default" 0.0;
-            fill.smooth: 0;
             color: 255 255 255 128;
          }
          description { state: "red2" 0.0;
             inherit: "default" 0.0;
-            fill.smooth: 0;
             color: 255 255 255 64;
          }
          description { state: "red3" 0.0;
             inherit: "default" 0.0;
-            fill.smooth: 0;
             color: 255 255 255 32;
          }
       }
@@ -75,6 +92,7 @@ group {
          mouse_events: 0;
          description {
             state: "default" 0.0;
+	    fixed: 1 1;
             rel1 {
                relative: 1.0 0.0;
                offset: 5 0;
@@ -82,7 +100,7 @@ group {
             }
             rel2 {
                relative: 1.0 1.0;
-               offset: 0 0;
+               offset: 5 0;
                to: "message.icon";
             }
             align: 0.0 0.5;

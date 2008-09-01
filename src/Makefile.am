@@ -28,6 +28,7 @@ noinst_HEADERS =		\
 	e_nav_item_location.h	\
 	e_nav_dbus.h		\
 	e_ctrl.h		\
+	msgboard.h		\
 	tileman.h		\
 	e_nav_misc.h
 
@@ -48,6 +49,7 @@ om_locations_SOURCES =		\
 	e_nav_item_location.c	\
 	e_nav_dbus.c		\
 	e_ctrl.c		\
+	msgboard.c		\
 	tileman.c		\
 	e_nav_misc.c
 
