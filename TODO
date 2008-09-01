@@ -1,5 +1,3 @@
-* show information when a tile is not available (error, downloading, etc.)
 * rename diversity/diversity_nav to om-locations
-* make Locations work as a map viewer when there is no dbus
-* clean up the code
 * dialog and alert should share code..
+* clean up the code
