@@ -210,6 +210,9 @@ dn_config_save(Diversity_Nav_Config *cfg)
      {
         int len;
 
+	if (key && *key == '#')
+	  continue;
+
         len = snprintf(data, sizeof(data), "%s = %s\n", key,
                                 (char *)ecore_hash_get(cfg->cfg_data, key));
 
@@ -221,6 +224,27 @@ dn_config_save(Diversity_Nav_Config *cfg)
    close(fd);
 
    return TRUE;
+}
+
+static const char *
+dn_config_value_get(Diversity_Nav_Config *cfg, const char *k)
+{
+   const char *val = NULL;
+
+   if (k && strlen(k) < 64)
+     {
+	char hidden[64 + 1];
+
+	hidden[0] = '#';
+	strcpy(hidden + 1, k);
+
+	val = ecore_hash_get(cfg->cfg_data, hidden);
+     }
+
+   if (!val)
+     val = ecore_hash_get(cfg->cfg_data, k);
+
+   return val;
 }
 
 void
@@ -236,7 +260,7 @@ dn_config_string_get(Diversity_Nav_Config *cfg, const char *k)
 {
    if(!k) return NULL;
 
-   return ecore_hash_get(cfg->cfg_data, k);
+   return dn_config_value_get(cfg, k);
 }
 
 void
@@ -259,7 +283,7 @@ dn_config_int_get(Diversity_Nav_Config *cfg, const char *k)
 
    if(!k) return v;
 
-   val = ecore_hash_get(cfg->cfg_data, k);
+   val = dn_config_value_get(cfg, k);
    if (val) v = atoi(val);
 
    return v;
@@ -285,7 +309,7 @@ dn_config_float_get(Diversity_Nav_Config *cfg, const char *k)
 
    if(!k) return 0.0;
 
-   val = ecore_hash_get(cfg->cfg_data, k);
+   val = dn_config_value_get(cfg, k);
    if (val) v = atof(val);
 
    return v;
