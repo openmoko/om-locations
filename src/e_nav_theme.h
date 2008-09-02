@@ -3,8 +3,6 @@
  * Copyright 2008 OpenMoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
  *
- * This work is based on e17 project.  See also COPYING.e17.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -23,9 +21,16 @@
 #ifndef E_NAV_THEME_H
 #define E_NAV_THEME_H
 
-void e_nav_theme_init(const char *theme_name);
-const char *e_nav_theme_name_get(void);
-Evas_Object * e_nav_theme_object_new(Evas *e, const char *custom_dir, const char *group);
-int e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group);
+#include <Evas.h>
 
-#endif
+int              e_nav_theme_init(const char *theme);
+void             e_nav_theme_shutdown(void);
+
+const char      *e_nav_theme_name_get(void);
+const char      *e_nav_theme_path_get(void);
+
+/* custom_dir is ignored */
+Evas_Object     *e_nav_theme_object_new(Evas *e, const char *custom_dir, const char *group);
+int              e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group);
+
+#endif /* E_NAV_THEME_H */

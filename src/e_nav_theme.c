@@ -3,8 +3,6 @@
  * Copyright 2008 OpenMoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
  *
- * This work is based on e17 project.  See also COPYING.e17.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -21,76 +19,122 @@
  */
 
 
-#include <Edje.h>
-#include <limits.h>
-#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "e_nav_theme.h"
 
-#define DEFAULT_THEME "default"
-const char *diversity_theme_name = NULL;
+#include <Evas.h>
+#include <Edje.h>
+
+#define DEFAULT_THEME_NAME "default"
+
+static char *theme_name;
+static char *theme_path;
+
+int
+e_nav_theme_init(const char *theme)
+{
+   const char *dot, *slash;
+
+   if (!theme)
+     theme = DEFAULT_THEME_NAME;
+
+   if (theme_name)
+     return 1;
+
+   dot = strrchr(theme, '.');
+   slash = strrchr(theme, '/');
+
+   if (dot || slash)
+     {
+	theme_path = strdup(theme);
+	if (slash)
+	  {
+	     theme_name = strdup(slash + 1);
+	     if (theme_name && dot)
+	       {
+		  dot = strrchr(theme_name, '.');
+		  *((char *) dot) = '\0';
+	       }
+	  }
+	else
+	  {
+	     int len = dot - theme;
+
+	     theme_name = malloc(len + 1);
+	     if (theme_name)
+	       {
+		  memcpy(theme_name, theme, len);
+		  theme_name[len] = '\0';
+	       }
+	  }
+     }
+   else
+     {
+	theme_name = strdup(theme);
+	theme_path = malloc(strlen(THEMEDIR) + 1 + strlen(theme) + 4 + 1);
+	if (theme_path)
+	  sprintf(theme_path, "%s/%s.edj", THEMEDIR, theme);
+     }
+
+   if (!theme_name || !theme_path)
+     {
+	e_nav_theme_shutdown();
+
+	return 0;
+     }
+
+   return 1;
+}
 
 void
-e_nav_theme_init(const char *theme_name)
+e_nav_theme_shutdown(void)
 {
-   diversity_theme_name = theme_name;
-   if(!diversity_theme_name)
-     diversity_theme_name = strdup(DEFAULT_THEME);
+   if (theme_name)
+     {
+	free(theme_name);
+	theme_name = NULL;
+     }
+
+   if (theme_path)
+     {
+	free(theme_path);
+	theme_path = NULL;
+     }
 }
 
-const char *
-e_nav_theme_name_get(void)
+const char *e_nav_theme_name_get(void)
 {
-   return diversity_theme_name;
+   return theme_name;
 }
 
-static int
-_e_nav_theme_edje_object_set(Evas_Object *o, const char *category, const char *group)
+const char *e_nav_theme_path_get(void)
 {
-   char buf[PATH_MAX];
-   int ok=0;
-
-   if(category==NULL) return ok;
-   
-   snprintf(buf, sizeof(buf), "%s/%s.edj", THEMEDIR, category);
-   ok = edje_object_file_set(o, buf, group);
-
-   return ok;
+   return theme_path;
 }
 
 Evas_Object *
 e_nav_theme_object_new(Evas *e, const char *custom_dir, const char *group)
 {
-   Evas_Object *o;
+   Evas_Object *obj;
 
-   o = edje_object_add(e);
-   if (!_e_nav_theme_edje_object_set(o, diversity_theme_name, group))
-     {
-        if (custom_dir)
-          {
-             char buf[PATH_MAX];
+   obj = edje_object_add(e);
+   if (!obj)
+     return NULL;
 
-             snprintf(buf, sizeof(buf), "%s/%s.edj", custom_dir, DEFAULT_THEME);
-             edje_object_file_set(o, buf, group);
-          }
-     }
-   return o;
+   if (!e_nav_theme_object_set(obj, custom_dir, group))
+     printf("failed to use group %s in theme %s\n", group, theme_name);
+
+   return obj;
 }
 
 int
-e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group)
+e_nav_theme_object_set(Evas_Object *obj, const char *custom_dir, const char *group)
 {
-   int ok=0;  
-   if (!_e_nav_theme_edje_object_set(o, diversity_theme_name, group))
-     {
-	if (custom_dir)
-	  {
-	     char buf[PATH_MAX];
-	     
-	     snprintf(buf, sizeof(buf), "%s/%s.edj", custom_dir, DEFAULT_THEME);
-	     ok = edje_object_file_set(o, buf, group);
-	  }
-     }
-   return ok;
-}
+   if (!theme_path)
+     return 0;
 
+   return edje_object_file_set(obj, theme_path, group);
+}

@@ -801,4 +801,6 @@ _e_mod_nav_shutdown(void)
 
    evas_object_del(mdata.nav);
    mdata.nav = NULL;
+
+   e_nav_theme_shutdown();
 }
