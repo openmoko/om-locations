@@ -21,7 +21,10 @@
 #ifndef E_MOD_NAV_H
 #define E_MOD_NAV_H
 
-void _e_mod_nav_init(Evas *evas, const char *theme_name);
+#include <Evas.h>
+#include "e_mod_config.h"
+
+void _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg);
 void _e_mod_nav_update(Evas *evas);
 void _e_mod_nav_shutdown(void);
 

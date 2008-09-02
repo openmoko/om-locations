@@ -21,7 +21,7 @@
 #include <Ecore_Evas.h>
 #include <Edje.h>
 #include <Etk.h>
-#include <string.h>
+#include <unistd.h>
 
 #include "e_mod_nav.h"
 #include "e_mod_config.h"
@@ -29,7 +29,6 @@
 
 #include "config.h"
 
-static const char *theme_name;
 static int kbd_status = MTPRemoteNone;
 
 static int
@@ -71,11 +70,19 @@ on_focused_out(Ecore_Evas *ee)
    e_misc_keyboard_hide();
 }
 
+static void
+usage(const char *prog)
+{
+   printf("Usage: %s [-s] [-t <theme>]\n", prog);
+}
+
 int
 main(int argc, char **argv)
 {
    Ecore_Evas *ee;
-
+   Diversity_Nav_Config *cfg;
+   int opt;
+   
    bindtextdomain(PACKAGE, LOCALEDIR);
    bind_textdomain_codeset(PACKAGE, "UTF-8");
 
@@ -93,21 +100,29 @@ main(int argc, char **argv)
 
    ecore_app_args_set(argc, (const char **) argv);
 
+   cfg = dn_config_new();
+
+   while ((opt = getopt(argc, argv, "st:")) != -1)
      {
-        int i=1;
-        for (i = 1; i < argc; i++)
-          {
-             if (((!strcmp(argv[i], "-t")) ||
-                  (!strcmp(argv[i], "-theme")) ||
-                  (!strcmp(argv[i], "--theme"))) && (i < (argc - 1)))
-               {
-                  char buf[32];
-                  
-                  sscanf(argv[i +1], "%s", buf);
-                  theme_name = strdup(buf);
-                  i++;
-               }
-          }
+	switch (opt)
+	  {
+	   case 's':
+	      dn_config_int_set(cfg, "#standalone", 1);
+	      break;
+	   case 't':
+	      dn_config_string_set(cfg, "#theme", optarg);
+	      break;
+	   default:
+	      usage(argv[0]);
+	      return -1;
+	      break;
+	  }
+     }
+   
+   if (optind != argc)
+     {
+	usage(argv[0]);
+	return -1;
      }
 
    ee = ecore_evas_software_x11_16_new(NULL, 0, 0, 0, 480, 640);
@@ -123,12 +138,15 @@ main(int argc, char **argv)
    ecore_evas_callback_focus_in_set(ee, on_focused_in);
    ecore_evas_callback_focus_out_set(ee, on_focused_out);
 
-   _e_mod_nav_init(ecore_evas_get(ee), theme_name);
+   _e_mod_nav_init(ecore_evas_get(ee), cfg);
    ecore_evas_show(ee);
 
    ecore_main_loop_begin();
 
    ecore_evas_free(ee);
+
+   dn_config_save(cfg);
+   dn_config_destroy(cfg);
 
    edje_shutdown();
    ecore_evas_shutdown();

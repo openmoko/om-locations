@@ -664,16 +664,20 @@ fail:
 }
 
 void
-_e_mod_nav_init(Evas *evas, const char *theme_name)
+_e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg)
 {
-   const char *tile_path;
+   const char *theme, *tile_path;
    double lon, lat;
    int span;
+   int standalone;
 
    if (mdata.nav)
      return;
 
-   e_nav_theme_init(theme_name);
+   mdata.cfg = cfg;
+
+   theme = dn_config_string_get(mdata.cfg, "theme");
+   e_nav_theme_init(theme);
 
    mdata.nav = e_nav_add(evas);
    if (!mdata.nav)
@@ -689,8 +693,6 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 
    e_ctrl_nav_set(mdata.ctrl, mdata.nav);
    e_nav_world_ctrl_set(mdata.nav, mdata.ctrl);
-
-   mdata.cfg = dn_config_new();
 
    lon = dn_config_float_get(mdata.cfg, "lon");
    lat = dn_config_float_get(mdata.cfg, "lat");
@@ -716,7 +718,8 @@ _e_mod_nav_init(Evas *evas, const char *theme_name)
 	evas_object_show(mdata.tileset);
      }
 
-   if (_e_mod_nav_dbus_init())
+   standalone = dn_config_int_get(mdata.cfg, "standalone");
+   if (!standalone && _e_mod_nav_dbus_init())
      {
 	e_nav_world_set(mdata.nav, mdata.world);
 
@@ -777,9 +780,6 @@ _e_mod_nav_shutdown(void)
    e_nav_world_item_geometry_get(mdata.neo_me, &lon, &lat, NULL, NULL);
    dn_config_float_set(mdata.cfg, "neo_me_lon", lon);
    dn_config_float_set(mdata.cfg, "neo_me_lat", lat);
-
-   dn_config_save(mdata.cfg);
-   dn_config_destroy(mdata.cfg);
 
    if (mdata.tileset)
      {
