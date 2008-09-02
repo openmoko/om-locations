@@ -55,6 +55,16 @@
 #define N_(str) (str)
 #endif
 
+#if ENABLE_DEBUG
+#define SMART_CHECK(obj, ret) \
+   sd = evas_object_smart_data_get(obj); \
+   if (!sd) return ret \
+   if (strcmp(evas_object_type_get(obj), SMART_NAME)) return ret
+#else
+#define SMART_CHECK(obj, ret) \
+   sd = evas_object_smart_data_get(obj)
+#endif
+
 typedef enum _E_Nav_World_Item_Type
 {
    E_NAV_WORLD_ITEM_TYPE_WALLPAPER,

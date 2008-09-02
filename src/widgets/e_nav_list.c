@@ -69,12 +69,8 @@ static void _e_nav_list_smart_color_set(Evas_Object *obj, int r, int g, int b, i
 static void _e_nav_list_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_nav_list_smart_clip_unset(Evas_Object *obj);
 
+#define SMART_NAME "e_nav_list"
 static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_nav_list")) return ret
 
 static int
 _list_compare(Etk_Tree_Col *col, Etk_Tree_Row *row1, Etk_Tree_Row *row2, void *data)
@@ -406,7 +402,7 @@ _e_nav_list_smart_init(void)
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "e_nav_list",
+	     SMART_NAME,
 	     EVAS_SMART_CLASS_VERSION,
 	     _e_nav_list_smart_add,
 	     _e_nav_list_smart_del,

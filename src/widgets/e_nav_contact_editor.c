@@ -52,12 +52,8 @@ static void _e_contact_editor_smart_color_set(Evas_Object *obj, int r, int g, in
 static void _e_contact_editor_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_contact_editor_smart_clip_unset(Evas_Object *obj);
 
+#define SMART_NAME "e_contact_editor"
 static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_contact_editor")) return ret
 
 Evas_Object *
 e_contact_editor_add(Evas *e)
@@ -215,7 +211,7 @@ _e_contact_editor_smart_init(void)
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "e_contact_editor",
+	     SMART_NAME,
 	       EVAS_SMART_CLASS_VERSION,
 	       _e_contact_editor_smart_add,
 	       _e_contact_editor_smart_del,

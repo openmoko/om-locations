@@ -77,12 +77,8 @@ static int _e_flyingmenu_cb_animator(void *data);
 static void _e_flyingmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event);
 static void _e_flyingmenu_cb_item_up(void *data, Evas *evas, Evas_Object *obj, void *event);
 
+#define SMART_NAME "e_flyingmenu"
 static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_flyingmenu")) return ret
 
 Evas_Object *
 e_flyingmenu_add(Evas *e)
@@ -233,7 +229,7 @@ _e_flyingmenu_smart_init(void)
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "e_flyingmenu",
+	     SMART_NAME,
 	       EVAS_SMART_CLASS_VERSION,
 	       _e_flyingmenu_smart_add,
 	       _e_flyingmenu_smart_del,

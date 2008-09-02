@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "msgboard.h"
+#include "e_nav.h"
 #include "e_nav_theme.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
@@ -64,12 +65,8 @@ static void _msgboard_smart_clip_unset(Evas_Object *obj);
 
 static void _msgboard_update(Evas_Object *mb);
 
+#define SMART_NAME "msgboard"
 static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "msgboard")) return ret
 
 static int
 msg_timeout(void *data)
@@ -217,7 +214,7 @@ _msgboard_smart_init(void)
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "msgboard",
+	     SMART_NAME,
 	     EVAS_SMART_CLASS_VERSION,
 	     _msgboard_smart_add,
 	     _msgboard_smart_del,

@@ -69,12 +69,8 @@ static void _e_ctrl_smart_color_set(Evas_Object *obj, int r, int g, int b, int a
 static void _e_ctrl_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _e_ctrl_smart_clip_unset(Evas_Object *obj);
 
+#define SMART_NAME "e_ctrl"
 static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_ctrl")) return ret
 
 
 Evas_Object *
@@ -427,7 +423,7 @@ _e_ctrl_smart_init(void)
    {
       static const Evas_Smart_Class sc =
       {
-	 "e_ctrl",
+	 SMART_NAME,
 	 EVAS_SMART_CLASS_VERSION,
 	 _e_ctrl_smart_add,
 	 _e_ctrl_smart_del,

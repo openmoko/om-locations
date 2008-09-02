@@ -87,12 +87,8 @@ static void _e_dialog_smart_clip_unset(Evas_Object *obj);
 
 static void _e_dialog_update(Evas_Object *obj);
 
+#define SMART_NAME "e_dialog"
 static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_dialog")) return ret
 
 Evas_Object *
 e_dialog_add(Evas *e)
@@ -279,7 +275,7 @@ _e_dialog_smart_init(void)
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "e_dialog",
+	     SMART_NAME,
 	       EVAS_SMART_CLASS_VERSION,
 	       _e_dialog_smart_add,
 	       _e_dialog_smart_del,

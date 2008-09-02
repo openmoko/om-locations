@@ -72,12 +72,8 @@ static void on_job_completed(Tileman *tman, DBusMessage *message);
 static int job_submit(Tileman *tman, E_Smart_Data *sd, int force);
 static void job_cancel(Tileman *tman, E_Smart_Data *sd);
 
+#define SMART_NAME "tileman_tile"
 static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "tileman_tile")) return ret
 
 #define TILE_VALID_NUM(lv, num) ((num) >= 0 && (num) < (1 << lv))
 #define TILE_VALID(lv, x, y) (TILE_VALID_NUM(lv, x) && TILE_VALID_NUM(lv, y))
@@ -471,7 +467,7 @@ _tileman_tile_smart_init(void)
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "tileman_tile",
+	     SMART_NAME,
 	     EVAS_SMART_CLASS_VERSION,
 	     _tileman_tile_smart_add,
 	     _tileman_tile_smart_del,

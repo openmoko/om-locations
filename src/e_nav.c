@@ -138,12 +138,8 @@ static void _e_nav_world_item_move_resize(E_Nav_World_Item *nwi);
 
 static void _e_nav_world_item_cb_item_del(void *data, Evas *evas, Evas_Object *obj, void *event);
 
+#define SMART_NAME "e_nav"
 static Evas_Smart *_e_smart = NULL;
-
-#define SMART_CHECK(obj, ret) \
-   sd = evas_object_smart_data_get(obj); \
-   if (!sd) return ret \
-   if (strcmp(evas_object_type_get(obj), "e_nav")) return ret
 
 Evas_Object *
 e_nav_add(Evas *e)
@@ -701,7 +697,7 @@ _e_nav_smart_init(void)
      {
 	static const Evas_Smart_Class sc =
 	  {
-	     "e_nav",
+	     SMART_NAME,
 	       EVAS_SMART_CLASS_VERSION,
 	       _e_nav_smart_add,
 	       _e_nav_smart_del,
