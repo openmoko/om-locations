@@ -460,14 +460,17 @@ on_property_changed(void *data, DBusMessage *msg)
 }
 
 void
-_e_mod_nav_init(Evas *evas, const char *theme_name)
+_e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg_local)
 {
    Evas_Object *nt;
    double lat, lon, scale;
    double neo_me_lat, neo_me_lon;
+   const char *theme_name;
 
    if (nav) return;
-   cfg = dn_config_new();
+   cfg = cfg_local;
+
+   theme_name = dn_config_string_get(cfg, "theme");
    e_nav_theme_init(theme_name);
 
    e_nav_dbus_init();
@@ -772,9 +775,6 @@ _e_mod_nav_shutdown(void)
    dn_config_float_set(cfg, "lat", lat);
    dn_config_float_set(cfg, "lon", lon);
    dn_config_float_set(cfg, "scale", scale);
-
-   dn_config_save(cfg);
-   dn_config_destroy(cfg);
 
    if (world)
      {
