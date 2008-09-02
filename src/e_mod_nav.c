@@ -791,5 +791,7 @@ _e_mod_nav_shutdown(void)
    evas_object_del(nav);
    nav = NULL;
    e_nav_dbus_shutdown();
+
+   e_nav_theme_shutdown();
 }
 
