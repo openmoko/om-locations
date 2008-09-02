@@ -486,6 +486,7 @@ _e_nav_cb_timer_pos_search_pause(void *data)
     
    alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
    e_alert_theme_source_set(alert_dialog, THEMEDIR);
+   e_alert_transient_for_set(alert_dialog, mdata.nav);
    fix_status = e_nav_world_item_neo_me_fixed_get(mdata.neo_me);
    if(fix_status)
      {
