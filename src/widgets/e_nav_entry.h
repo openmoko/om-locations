@@ -24,7 +24,6 @@
 #define E_NAV_ENTRY_H
 
 Evas_Object    *e_nav_entry_add(Evas *e);
-void            e_nav_entry_theme_source_set(Evas_Object *entry, const char *custom_dir);
 
 void            e_nav_entry_button_add(Evas_Object *entry, const char *label, void (*func)(void *data, Evas_Object *entry), void *data);
 void            e_nav_entry_button_remove(Evas_Object *entry, void (*func)(void *data, Evas_Object *entry), void *data);

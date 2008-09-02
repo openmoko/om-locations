@@ -69,9 +69,6 @@ struct _E_Smart_Data
    Evas_List      *buttons;
 
    E_Nav_Drop_Data *drop;
-
-   /* directory to find theme .edj files from the module - if there is one */
-   const char      *dir;
 };
 
 static void _e_dialog_smart_init(void);
@@ -95,24 +92,6 @@ e_dialog_add(Evas *e)
 {
    _e_dialog_smart_init();
    return evas_object_smart_add(e, _e_smart);
-}
-
-void
-e_dialog_theme_source_set(Evas_Object *obj, const char *custom_dir)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   
-   sd->dir = custom_dir;
-   sd->bg_object = evas_object_rectangle_add(evas_object_evas_get(obj)); 
-   evas_object_smart_member_add(sd->bg_object, obj);
-   evas_object_move(sd->bg_object, sd->x, sd->y);
-   evas_object_resize(sd->bg_object, sd->w, sd->h);
-   evas_object_color_set(sd->bg_object, 0, 0, 0, 255);
-   evas_object_clip_set(sd->bg_object, sd->clip);
-   evas_object_repeat_events_set(sd->bg_object, 1);
-   evas_object_show(sd->bg_object);
 }
 
 static void
@@ -294,6 +273,19 @@ _e_dialog_smart_init(void)
 }
 
 static void
+_theme_source_set(E_Smart_Data *sd)
+{
+   sd->bg_object = evas_object_rectangle_add(evas_object_evas_get(sd->obj)); 
+   evas_object_smart_member_add(sd->bg_object, sd->obj);
+   evas_object_move(sd->bg_object, sd->x, sd->y);
+   evas_object_resize(sd->bg_object, sd->w, sd->h);
+   evas_object_color_set(sd->bg_object, 0, 0, 0, 255);
+   evas_object_clip_set(sd->bg_object, sd->clip);
+   evas_object_repeat_events_set(sd->bg_object, 1);
+   evas_object_show(sd->bg_object);
+}
+
+static void
 _e_dialog_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
@@ -312,6 +304,8 @@ _e_dialog_smart_add(Evas_Object *obj)
    evas_object_move(sd->clip, -10000, -10000);
    evas_object_resize(sd->clip, 30000, 30000);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
+
+   _theme_source_set(sd);
 
    evas_object_smart_data_set(obj, sd);
 }
@@ -468,7 +462,8 @@ e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *dat
    bi->obj = obj;
    bi->func = func;
    bi->data = data;
-   bi->item_obj = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/button");
+   bi->item_obj = e_nav_theme_object_new(evas_object_evas_get(obj),
+	 NULL, "modules/diversity_nav/button");
    evas_object_smart_member_add(bi->item_obj, obj);
    evas_object_clip_set(bi->item_obj, sd->clip);
    evas_object_show(bi->item_obj);
@@ -489,7 +484,8 @@ e_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
    if(!sd->title_object) 
      {
         Evas_Object *o;
-        o = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/text");
+        o = e_nav_theme_object_new(evas_object_evas_get(obj),
+	      NULL, "modules/diversity_nav/dialog/text");
         sd->title_object = o;
         edje_object_part_text_set(sd->title_object, "title", title);
         edje_object_part_text_set(sd->title_object, "message", message);
@@ -561,7 +557,6 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    Evas_Coord x, y, w, h;
   
    entry = e_nav_entry_add(evas);
-   e_nav_entry_theme_source_set(entry, THEMEDIR);
    e_nav_entry_title_set(entry, edje_object_part_text_get(tbi->label_obj, "dialog.label.text"));
    e_nav_entry_text_set(entry, tbi->input);
    e_nav_entry_text_limit_set(entry, tbi->length_limit);
@@ -593,7 +588,8 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
      tbi->label = strdup("");
 
    Evas_Object *text_object;
-   text_object = e_nav_theme_object_new( evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/dialog/label");
+   text_object = e_nav_theme_object_new(evas_object_evas_get(obj),
+	 NULL, "modules/diversity_nav/dialog/label");
    edje_object_part_text_set(text_object, "dialog.label.text", label);
 
    tbi->label_obj = text_object;

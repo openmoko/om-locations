@@ -34,7 +34,6 @@ struct _E_Smart_Data
    Evas_Coord       x, y, w, h;
    Evas_Object     *obj;
    Evas_Object     *clip;
-   char            *dir;
    int              type;
 
    Evas_Object     *frame;
@@ -136,7 +135,7 @@ _list_button_clicked_cb(void *data, Evas_Object *obj, const char *emission, cons
 }
 
 Evas_Object *
-e_nav_list_add(Evas *e, int type, const char *custom_dir)
+e_nav_list_add(Evas *e, int type)
 {
    Evas_Object *li;
    Evas_Object *embed_obj;
@@ -151,13 +150,9 @@ e_nav_list_add(Evas *e, int type, const char *custom_dir)
 
    SMART_CHECK(li, NULL;);
 
-   if (custom_dir)
-     sd->dir = strdup(custom_dir);
-
    sd->type = type;
 
-   sd->frame = e_nav_theme_object_new(e, sd->dir,
-	 "modules/diversity_nav/list");
+   sd->frame = e_nav_theme_object_new(e, NULL, "modules/diversity_nav/list");
    evas_object_smart_member_add(sd->frame, sd->obj);
    evas_object_move(sd->frame, sd->x, sd->y);
    evas_object_resize(sd->frame, sd->w, sd->h);
@@ -455,9 +450,6 @@ _e_nav_list_smart_del(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd)
      return;
-
-   if (sd->dir)
-     free(sd->dir);
 
    evas_object_del(sd->clip);
    evas_object_del(sd->frame);

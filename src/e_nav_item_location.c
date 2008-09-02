@@ -781,7 +781,6 @@ action_show_dialog(Action_Data *act_data)
 	     return;
 	  }
 
-	e_dialog_theme_source_set(od, THEMEDIR);
 	e_dialog_transient_for_set(od, act_data->nav);
 
 	act_data->dialog = od;
@@ -885,7 +884,7 @@ action_show_editor(Action_Data *act_data)
 	     return;
 	  }
 
-	e_contact_editor_theme_source_set(editor, THEMEDIR,
+	e_contact_editor_callbacks_set(editor,
 	      (void *) action_send, act_data,
 	      (void *) action_to_end, act_data);
 
@@ -919,7 +918,6 @@ action_show_alert(Action_Data *act_data)
 	     return;
 	  }
 
-	e_alert_theme_source_set(oa, THEMEDIR);
 	e_alert_transient_for_set(oa, act_data->nav);
 
 	act_data->alert = oa;

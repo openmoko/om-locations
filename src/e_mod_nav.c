@@ -377,7 +377,6 @@ handle_gps(void *data)
         Evas_Object *alert_dialog;
     
         alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
-        e_alert_theme_source_set(alert_dialog, THEMEDIR);
 	e_alert_transient_for_set(alert_dialog, mdata.nav);
         e_alert_title_set(alert_dialog, _("GPS is off"), _("Turn on GPS?"));
         e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
@@ -493,7 +492,6 @@ _e_nav_cb_timer_pos_search_pause(void *data)
    int fix_status;
     
    alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
-   e_alert_theme_source_set(alert_dialog, THEMEDIR);
    e_alert_transient_for_set(alert_dialog, mdata.nav);
    fix_status = e_nav_world_item_neo_me_fixed_get(mdata.neo_me);
    if(fix_status)

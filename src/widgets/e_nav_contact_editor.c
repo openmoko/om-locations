@@ -33,7 +33,6 @@ typedef struct _E_Smart_Data E_Smart_Data;
 struct _E_Smart_Data
 {
    Evas_Coord       x, y, w, h;
-   char            *dir;
    Evas_Object     *obj;
    Evas_Object     *clip;
 
@@ -110,29 +109,18 @@ on_add_contact(void *data, Evas_Object *entry)
 }
 
 void
-e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj), void *data2)
+e_contact_editor_callbacks_set(Evas_Object *obj, void (*positive_func)(void *data, Evas_Object *obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj), void *data2)
 {
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, ;);
-
-   if (custom_dir)
-     sd->dir = strdup(custom_dir);
-
-   sd->entry = e_nav_entry_add(evas_object_evas_get(obj));
-   e_nav_entry_theme_source_set(sd->entry, sd->dir);
-   evas_object_move(sd->entry, sd->x, sd->y);
-   evas_object_resize(sd->entry, sd->w, sd->h);
-   evas_object_smart_member_add(sd->entry, sd->obj);
-   evas_object_clip_set(sd->entry, sd->clip);
-   evas_object_show(sd->entry);
 
    e_nav_entry_button_add(sd->entry, _("Send"), positive_func, data1);
    e_nav_entry_button_add(sd->entry, _("Cancel"), negative_func, data2);
    e_nav_entry_button_add(sd->entry, _("Add Contact"), on_add_contact, sd);
 
    sd->contact_list = e_nav_list_add(evas_object_evas_get(obj),
-	 E_NAV_LIST_TYPE_BARD, THEMEDIR);
+	 E_NAV_LIST_TYPE_BARD);
    e_nav_list_title_set(sd->contact_list, _("Select a contact"));
    e_nav_list_sort_set(sd->contact_list, _e_nav_contact_sort, NULL);
    e_nav_list_button_add(sd->contact_list, _("Cancel"), _e_nav_contact_cancel, sd);
@@ -251,6 +239,13 @@ _e_contact_editor_smart_add(Evas_Object *obj)
    evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
 
+   sd->entry = e_nav_entry_add(evas_object_evas_get(obj));
+   evas_object_move(sd->entry, sd->x, sd->y);
+   evas_object_resize(sd->entry, sd->w, sd->h);
+   evas_object_smart_member_add(sd->entry, sd->obj);
+   evas_object_clip_set(sd->entry, sd->clip);
+   evas_object_show(sd->entry);
+
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -260,9 +255,6 @@ _e_contact_editor_smart_del(Evas_Object *obj)
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, ;);
-
-   if (sd->dir)
-     free(sd->dir);
 
    evas_object_del(sd->clip);
    evas_object_del(sd->entry);

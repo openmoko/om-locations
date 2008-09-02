@@ -31,7 +31,7 @@ enum {
      E_NAV_LIST_TYPE_TAG,
 };
 
-Evas_Object    *e_nav_list_add(Evas *e, int type, const char *custom_dir);
+Evas_Object    *e_nav_list_add(Evas *e, int type);
 
 void            e_nav_list_title_set(Evas_Object *li, const char *title);
 void            e_nav_list_sort_set(Evas_Object *li, int (*func)(void *data, Evas_Object *obj1, Evas_Object *obj2), void *data);

@@ -31,7 +31,6 @@ typedef struct _E_Smart_Data E_Smart_Data;
 struct _E_Smart_Data
 {
    Evas_Coord       x, y, w, h;
-   char            *dir;
    Evas_Object     *obj;
    Evas_Object     *clip;
 
@@ -124,38 +123,6 @@ static void
 on_frame_hide(void *data, Evas *e, Evas_Object *obj, void *event)
 {
    e_misc_keyboard_hide();
-}
-
-void
-e_nav_entry_theme_source_set(Evas_Object *entry, const char *custom_dir)
-{
-   E_Smart_Data *sd;
-
-   SMART_CHECK(entry, ;);
-
-   evas_object_event_callback_add(entry, EVAS_CALLBACK_HIDE, on_frame_hide, sd);
-
-   if (custom_dir)
-     sd->dir = strdup(custom_dir);
-
-   sd->frame = e_nav_theme_object_new(evas_object_evas_get(entry),
-	 custom_dir, "modules/diversity_nav/entry");
-   evas_object_move(sd->frame, sd->x, sd->y);
-   evas_object_resize(sd->frame, sd->w, sd->h);
-   evas_object_smart_member_add(sd->frame, sd->obj);
-   evas_object_clip_set(sd->frame, sd->clip);
-   evas_object_show(sd->frame);
-
-   edje_object_signal_callback_add(sd->frame, "mouse,clicked,*", "button.*", on_button_clicked, sd);
-
-   sd->entry = etk_entry_new();
-   etk_signal_connect_by_code(ETK_WIDGET_FOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(on_entry_focused), sd);
-   etk_signal_connect_by_code(ETK_WIDGET_UNFOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(on_entry_unfocused), sd);
-
-   sd->embed  = etk_embed_new(evas_object_evas_get(entry));
-   etk_container_add(ETK_CONTAINER(sd->embed), sd->entry);
-   edje_object_part_swallow(sd->frame, "swallow", etk_embed_object_get(ETK_EMBED(sd->embed)));
-   etk_widget_show_all(ETK_WIDGET(sd->embed));
 }
 
 void
@@ -336,6 +303,31 @@ _e_nav_entry_smart_init(void)
 }
 
 static void
+_theme_source_set(E_Smart_Data *sd)
+{
+   evas_object_event_callback_add(sd->obj, EVAS_CALLBACK_HIDE, on_frame_hide, sd);
+
+   sd->frame = e_nav_theme_object_new(evas_object_evas_get(sd->obj),
+	 NULL, "modules/diversity_nav/entry");
+   evas_object_move(sd->frame, sd->x, sd->y);
+   evas_object_resize(sd->frame, sd->w, sd->h);
+   evas_object_smart_member_add(sd->frame, sd->obj);
+   evas_object_clip_set(sd->frame, sd->clip);
+   evas_object_show(sd->frame);
+
+   edje_object_signal_callback_add(sd->frame, "mouse,clicked,*", "button.*", on_button_clicked, sd);
+
+   sd->entry = etk_entry_new();
+   etk_signal_connect_by_code(ETK_WIDGET_FOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(on_entry_focused), sd);
+   etk_signal_connect_by_code(ETK_WIDGET_UNFOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(on_entry_unfocused), sd);
+
+   sd->embed  = etk_embed_new(evas_object_evas_get(sd->obj));
+   etk_container_add(ETK_CONTAINER(sd->embed), sd->entry);
+   edje_object_part_swallow(sd->frame, "swallow", etk_embed_object_get(ETK_EMBED(sd->embed)));
+   etk_widget_show_all(ETK_WIDGET(sd->embed));
+}
+
+static void
 _e_nav_entry_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
@@ -357,6 +349,8 @@ _e_nav_entry_smart_add(Evas_Object *obj)
    evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_color_set(sd->clip, 255, 255, 255, 255);
 
+   _theme_source_set(sd);
+
    evas_object_smart_data_set(obj, sd);
 }
 
@@ -366,9 +360,6 @@ _e_nav_entry_smart_del(Evas_Object *obj)
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, ;);
-
-   if (sd->dir)
-     free(sd->dir);
 
    evas_object_del(sd->clip);
    evas_object_del(sd->frame);

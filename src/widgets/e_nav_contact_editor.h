@@ -27,7 +27,7 @@
 #include <unistd.h>
 
 Evas_Object    *e_contact_editor_add(Evas *e);
-void            e_contact_editor_theme_source_set(Evas_Object *obj, const char *custom_dir, void (*positive_func)(void *data, Evas_Object *obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj), void *data2);
+void            e_contact_editor_callbacks_set(Evas_Object *obj, void (*positive_func)(void *data, Evas_Object *obj), void *data1, void (*negative_func)(void *data, Evas_Object *obj), void *data2);
 
 void            e_contact_editor_input_length_limit_set(Evas_Object *obj, size_t length_limit);
 size_t          e_contact_editor_input_length_limit_get(Evas_Object *obj);

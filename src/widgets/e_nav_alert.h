@@ -25,7 +25,6 @@
 
 /* object management */
 Evas_Object    *e_alert_add(Evas *e);
-void            e_alert_theme_source_set(Evas_Object *obj, const char *custom_dir);
 void            e_alert_transient_for_set(Evas_Object *obj, Evas_Object *parent);
 Evas_Object    *e_alert_transient_for_get(Evas_Object *obj);
 void            e_alert_activate(Evas_Object *obj);

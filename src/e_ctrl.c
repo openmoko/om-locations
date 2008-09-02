@@ -342,7 +342,7 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    evas_object_clip_set(sd->msgboard, sd->clip);
    evas_object_show(sd->msgboard);
 
-   sd->listview = e_nav_list_add(evas_object_evas_get(obj), E_NAV_LIST_TYPE_TAG, THEMEDIR);
+   sd->listview = e_nav_list_add(evas_object_evas_get(obj), E_NAV_LIST_TYPE_TAG);
    e_nav_list_title_set(sd->listview, _("View Tags"));
    e_nav_list_sort_set(sd->listview, _e_nav_tag_sort, obj);
    e_nav_list_callback_add(sd->listview, _e_nav_tag_sel, obj);
