@@ -53,15 +53,7 @@ static struct _E_Module_Data {
 
 static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
-static void position_search_timer_start();
-static void position_search_timer_stop();
-static void alert_exit(void *data, Evas_Object *obj);
-static void alert_gps_turn_on(void *data, Evas_Object *obj);
-static void alert_gps_cancel(void *data, Evas_Object *obj);
-static int check_gps_state();
-static int turn_on_gps();
-static int _e_nav_cb_timer_pos_search_pause(void *data);
-static int handle_gps(void *data);
+static void gps_search_stop();
 
 static void
 viewport_object_added(void *data, DBusMessage *msg)
@@ -344,118 +336,104 @@ on_neo_me_property_changed(void *data, DBusMessage *msg)
    e_nav_world_item_neo_me_fixed_set(neo_me, fixed);
 
    if (mdata.fix_timer && fixed)
-     position_search_timer_stop();
-}
-
-static int
-handle_gps(void *data)
-{
-   Evas_Object *neo_me;
-   int gps_state;
-
-   neo_me = e_nav_world_neo_me_get(mdata.nav);
-   if (!neo_me)
-     return FALSE;
-
-   gps_state = check_gps_state();
-
-   if (!gps_state)
-     {
-        Evas_Object *alert_dialog;
-
-        alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
-	e_alert_transient_for_set(alert_dialog, mdata.nav);
-        e_alert_title_set(alert_dialog, _("GPS is off"), _("Turn on GPS?"));
-        e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-        e_alert_button_add(alert_dialog, _("Yes"), alert_gps_turn_on, alert_dialog);
-        e_alert_button_add(alert_dialog, _("No"), alert_gps_cancel, alert_dialog);
-        e_alert_activate(alert_dialog);
-        evas_object_show(alert_dialog);
-     }
-   else if (!e_nav_world_item_neo_me_fixed_get(neo_me))
-     position_search_timer_start();
-
-   return FALSE;
-}
-
-static void
-alert_gps_turn_on(void *data, Evas_Object *obj)
-{
-   int ret;
-   e_alert_deactivate(obj);
-   ret = turn_on_gps();
-   if(ret)
-     position_search_timer_start();
-}
-
-static void
-alert_gps_cancel(void *data, Evas_Object *obj)
-{
-   e_alert_deactivate(obj);
-}
-
-static void
-alert_exit(void *data, Evas_Object *obj)
-{
-   e_alert_deactivate(obj);
-   position_search_timer_stop();
+     gps_search_stop();
 }
 
 #define GPS_DEVICE_NAME "/sys/bus/platform/drivers/neo1973-pm-gps/neo1973-pm-gps.0/pwron"
+enum {
+     GPS_STATE_NA,
+     GPS_STATE_OFF,
+     GPS_STATE_ON,
+};
 
 static int
-check_gps_state()
+gps_state_get(void)
 {
-   FILE *gpsd; 
-   int ret;
-   char data;
-   gpsd = fopen(GPS_DEVICE_NAME, "r");
-   if(!gpsd) 
+   FILE *fp;
+   int state = GPS_STATE_NA;
+
+   fp = fopen(GPS_DEVICE_NAME, "r");
+   if (fp)
      {
-        printf("Open gps device %s failed.\n", GPS_DEVICE_NAME);
-        return FALSE;
+	char buf;
+	size_t ret;
+
+	ret = fread(&buf, 1, 1, fp);
+	fclose(fp);
+
+	if (ret == 1)
+	  state = (buf == '1') ? GPS_STATE_ON : GPS_STATE_OFF;
      }
-   ret=fread(&data, sizeof(char), sizeof(&data), gpsd);
-   fclose(gpsd);
 
-   if(ret <=  0) 
-     return FALSE;
+   if (state == GPS_STATE_NA)
+     printf("failed to get GPS device state\n");
 
-   if(data == '1')
-     return TRUE; 
+   return state;
+}
+
+static int
+gps_state_set(int state)
+{
+   FILE *fp;
+   char buf;
+
+   if (state == GPS_STATE_NA)
+     return GPS_STATE_NA;
+
+   fp = fopen(GPS_DEVICE_NAME, "w");
+   if (!fp)
+     return GPS_STATE_NA;
+
+   buf = (state == GPS_STATE_ON) ? '1' : '0';
+   fwrite(&buf, 1, 1, fp);
+   fclose(fp);
+
+   return gps_state_get();
+}
+
+static void
+gps_search_confirm(void *data, Evas_Object *obj)
+{
+   e_alert_deactivate(obj);
+   gps_search_stop();
+}
+
+static int
+gps_search_timeout(void *data)
+{
+   Evas_Object *neo_me;
+   Evas_Object *ad;
+   int fixed = 0;
+
+   neo_me = e_nav_world_neo_me_get(mdata.nav);
+   if (neo_me)
+     fixed = e_nav_world_item_neo_me_fixed_get(neo_me);
+
+   ad = e_alert_add(evas_object_evas_get(mdata.nav));
+   e_alert_transient_for_set(ad, mdata.nav);
+   if (fixed)
+     {
+	e_alert_title_set(ad, _("GPS FIX"), _("Your approximate location"));
+	e_alert_title_color_set(ad, 0, 255, 0, 255);
+     }
    else
-     return FALSE;
-} 
-
-static int
-turn_on_gps()
-{
-   FILE *gpsd; 
-   gpsd = fopen(GPS_DEVICE_NAME, "w");
-   if(!gpsd) 
      {
-        printf("Open gps device %s to write failed.\n", GPS_DEVICE_NAME);
-        return FALSE;
+	e_alert_title_set(ad, _("ERROR"), _("Unable to locate a fix"));
+	e_alert_title_color_set(ad, 255, 0, 0, 255);
      }
-   char *on = "1\n";
-   fwrite(on, sizeof(char), strlen(on), gpsd);
-   fclose(gpsd);
-   return TRUE;
+
+   e_alert_button_add(ad, _("OK"), gps_search_confirm, NULL);
+
+   e_alert_activate(ad);
+   evas_object_show(ad);
+
+   mdata.fix_timer = NULL;
+
+   return 0;
 }
 
 static void
-position_search_timer_start()
-{
-   mdata.fix_msg_id = e_ctrl_message_text_add(mdata.ctrl,
-	 _("Searching for your location"), 0.0);
-
-   mdata.fix_timer = ecore_timer_add(60.0,
-                           _e_nav_cb_timer_pos_search_pause,
-                           NULL);
-}
-
-static void
-position_search_timer_stop()
+gps_search_stop()
 {
    if (mdata.fix_timer)
      {
@@ -470,37 +448,64 @@ position_search_timer_stop()
      }
 }
 
+static void
+gps_search_start(void)
+{
+   mdata.fix_msg_id = e_ctrl_message_text_add(mdata.ctrl,
+	 _("Searching for your location"), 0.0);
+
+   mdata.fix_timer = ecore_timer_add(60.0,
+                           gps_search_timeout,
+                           NULL);
+}
+
+static void
+gps_check_yes(void *data, Evas_Object *obj)
+{
+   e_alert_deactivate(obj);
+
+   if (gps_state_set(GPS_STATE_ON) == GPS_STATE_ON)
+     gps_search_start();
+}
+
+static void
+gps_check_no(void *data, Evas_Object *obj)
+{
+   e_alert_deactivate(obj);
+}
+
 static int
-_e_nav_cb_timer_pos_search_pause(void *data)
+gps_check(void *data)
 {
    Evas_Object *neo_me;
-   Evas_Object *alert_dialog;
-   int fixed = 0;
+   int state;
 
    neo_me = e_nav_world_neo_me_get(mdata.nav);
-   if (neo_me)
-     fixed = e_nav_world_item_neo_me_fixed_get(neo_me);
+   if (!neo_me)
+     return FALSE;
 
-   alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
-   e_alert_transient_for_set(alert_dialog, mdata.nav);
-   if (fixed)
+   state = gps_state_get();
+   if (state == GPS_STATE_ON)
      {
-	e_alert_title_set(alert_dialog, _("GPS FIX"), _("Your approximate location"));
-	e_alert_title_color_set(alert_dialog, 0, 255, 0, 255);
-	e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
+	if (!e_nav_world_item_neo_me_fixed_get(neo_me))
+	  gps_search_start();
      }
-   else
+   else if (state == GPS_STATE_OFF)
      {
-	e_alert_title_set(alert_dialog, _("ERROR"), _("Unable to locate a fix"));
-	e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-	e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
+	Evas_Object *ad;
+
+	ad = e_alert_add(evas_object_evas_get(mdata.nav));
+	e_alert_transient_for_set(ad, mdata.nav);
+	e_alert_title_set(ad, _("GPS is off"), _("Turn on GPS?"));
+	e_alert_title_color_set(ad, 255, 0, 0, 255);
+	e_alert_button_add(ad, _("Yes"), gps_check_yes, NULL);
+	e_alert_button_add(ad, _("No"), gps_check_no, NULL);
+
+	e_alert_activate(ad);
+	evas_object_show(ad);
      }
-   e_alert_activate(alert_dialog);
-   evas_object_show(alert_dialog);
 
-   mdata.fix_timer = NULL;
-
-   return 0;
+   return FALSE;
 }
 
 static E_DBus_Proxy *
@@ -748,7 +753,7 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg)
 
    _e_mod_nav_update(evas);
 
-   ecore_timer_add(2.0, handle_gps, NULL);
+   ecore_timer_add(2.0, gps_check, NULL);
 }
 
 void
