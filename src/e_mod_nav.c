@@ -50,8 +50,6 @@ static struct _E_Module_Data {
      unsigned int          fix_msg_id;
 } mdata;
 
-
-static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void gps_search_stop();
 
@@ -140,8 +138,6 @@ viewport_object_added(void *data, DBusMessage *msg)
              e_ctrl_contact_add(mdata.ctrl, nwi);
 
              diversity_dbus_signal_connect((Diversity_DBus *) obj,
-                  DIVERSITY_DBUS_IFACE_OBJECT, "GeometryChanged", on_neo_other_geometry_changed, nwi);
-             diversity_dbus_signal_connect((Diversity_DBus *) obj,
                   DIVERSITY_DBUS_IFACE_OBJECT, "PropertyChanged", on_neo_other_property_changed, nwi);            
           }
 #if 0
@@ -215,35 +211,6 @@ viewport_object_removed(void *data, DBusMessage *msg)
      }
 }
 
-
-/* 
- * neo_other geometry changed cb function 
- */
-static void
-on_neo_other_geometry_changed(void *data, DBusMessage *msg)
-{
-   Evas_Object *nwi = data;
-   DBusError err;
-   double lon, lat;
-   double dummy1, dummy2;
-   Evas_Coord w, h; 
-
-   dbus_error_init(&err);
-   dbus_message_get_args(msg, &err, DBUS_TYPE_DOUBLE, &lon, DBUS_TYPE_DOUBLE, &lat,
-       DBUS_TYPE_DOUBLE, &dummy1, DBUS_TYPE_DOUBLE, &dummy2, DBUS_TYPE_INVALID);
-   if (dbus_error_is_set(&err)) {
-      printf("Error: %s - %s\n", err.name, err.message);
-      return;
-   }
-
-   evas_object_geometry_get(edje_object_part_object_get(nwi, "phone"), NULL, NULL, &w, &h);
-   e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
-   e_nav_world_item_update(nwi);
-}
-
-/* 
- * neo_other property changed cb function 
- */
 static void
 on_neo_other_property_changed(void *data, DBusMessage *msg)
 {
