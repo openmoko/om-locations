@@ -21,17 +21,19 @@
 #ifndef E_NAV_TILESET_H
 #define E_NAV_TILESET_H
 
-#include "e_nav.h"
+#include <Evas.h>
+#include <e_dbus_proxy.h>
 
 #define RADIANS(d) ((d) * M_PI / 180.0)
 #define DEGREES(d) ((d) * 180.0 / M_PI)
 #define M_LOG2		(0.6931471805)
 
+/* this should be kept the same as Tileman_Format */
 typedef enum _E_Nav_Tileset_Format {
    E_NAV_TILESET_FORMAT_OSM,
 } E_Nav_Tileset_Format;
 
-Evas_Object            *e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir);
+Evas_Object            *e_nav_tileset_add(Evas *e, E_Nav_Tileset_Format format, const char *dir);
 void                    e_nav_tileset_update(Evas_Object *obj);
 
 int                     e_nav_tileset_span_set(Evas_Object *obj, int span);
@@ -57,7 +59,6 @@ int                     e_nav_tileset_from_offsets(Evas_Object *obj, double x, d
 void                    e_nav_tileset_monitor_add(Evas_Object *obj, const char *dn);
 void                    e_nav_tileset_monitor_del(Evas_Object *obj, const char *dn);
 
-#include <e_dbus_proxy.h>
 void                    e_nav_tileset_proxy_set(Evas_Object *obj, E_DBus_Proxy *proxy);
 E_DBus_Proxy           *e_nav_tileset_proxy_get(Evas_Object *obj);
 

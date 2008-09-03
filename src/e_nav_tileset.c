@@ -63,8 +63,6 @@ struct _E_Smart_Data
    Evas_Object *clip;
    Evas_Coord x, y, w, h;
 
-   Evas_Object *nav;
-
    Evas_List *maps;
    Ecore_Hash *mons;
 
@@ -117,13 +115,13 @@ static Evas_Smart *_e_smart = NULL;
 #define TILE_VALID(lv, x, y) (TILE_VALID_NUM(lv, x) && TILE_VALID_NUM(lv, y))
 
 Evas_Object *
-e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir)
+e_nav_tileset_add(Evas *e, E_Nav_Tileset_Format format, const char *dir)
 {
    Evas_Object *obj;
    E_Smart_Data *sd;
 
    _e_nav_tileset_smart_init();
-   obj = evas_object_smart_add(evas_object_evas_get(nav), _e_smart);
+   obj = evas_object_smart_add(e, _e_smart);
    if (!obj) return NULL;
 
    sd = evas_object_smart_data_get(obj);
@@ -133,7 +131,7 @@ e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir
 	return NULL;
      }
 
-   sd->tman = tileman_new(evas_object_evas_get(nav), format, dir);
+   sd->tman = tileman_new(e, format, dir);
    if (!sd->tman)
      {
 	evas_object_del(obj);
@@ -148,10 +146,6 @@ e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir
    sd->max_span = (1 << sd->max_level) * sd->tilesize * 2;
    sd->max_lon = 180.0;
    mercator_project_inv(0.0, 0.0, NULL, &sd->max_lat);
-
-   sd->nav = nav;
-
-   e_nav_world_tileset_set(nav, obj);
 
    e_nav_tileset_level_set(obj, sd->min_level);
    e_nav_tileset_center_set(obj, 0.0, 0.0);

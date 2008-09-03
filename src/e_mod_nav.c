@@ -700,10 +700,12 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg)
      span = E_NAV_SPAN_MIN;
 
    tile_path = dn_config_string_get(mdata.cfg, "tile_path");
-   mdata.tileset = e_nav_tileset_add(mdata.nav,
+   mdata.tileset = e_nav_tileset_add(evas,
 	 E_NAV_TILESET_FORMAT_OSM, tile_path);
    if (mdata.tileset)
      {
+	e_nav_world_tileset_set(mdata.nav, mdata.tileset);
+
 	e_nav_tileset_monitor_add(mdata.tileset, tile_path);
 	e_nav_tileset_monitor_add(mdata.tileset, MAPSDIR);
 
