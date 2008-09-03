@@ -572,6 +572,7 @@ _e_mod_nav_dbus_shutdown(void)
 {
    if (mdata.worldview)
      {
+	diversity_viewport_stop(mdata.worldview);
 	diversity_viewport_destroy(mdata.worldview);
 
 	mdata.worldview = NULL;
@@ -731,7 +732,6 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg)
 	     if (atlas)
 	       e_nav_tileset_proxy_set(mdata.tileset, atlas);
 	  }
-
      }
 
    _e_mod_neo_me_init();
