@@ -53,161 +53,227 @@ static struct _E_Module_Data {
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void gps_search_stop();
 
+static Evas_Object *
+viewport_ap_added(Diversity_Ap *ap)
+{
+#if 0
+   Evas_Object *nwi;
+   double lon = 0.0, lat = 0.0, w = 0.0, h = 0.0;
+   int accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;
+   char *ssid = NULL;
+   int flags = 0;
+
+   diversity_object_geometry_get((Diversity_Object *) ap,
+	 &lon, &lat, &w, &h);
+   diversity_dbus_property_get((Diversity_DBus *) ap,
+	 DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+
+   /* XXX */
+   if (accuracy == DIVERSITY_OBJECT_ACCURACY_NONE)
+     return NULL;
+
+   diversity_dbus_property_get((Diversity_DBus *) ap,
+	 DIVERSITY_DBUS_IFACE_AP, "Ssid", &ssid);
+   diversity_dbus_property_get((Diversity_DBus *) ap,
+	 DIVERSITY_DBUS_IFACE_AP, "Flags", &flags);
+
+   lon += w / 2;
+   lat += h / 2;
+
+   nwi = e_nav_world_item_ap_add(mdata.nav, THEMEDIR, lon, lat);
+
+   e_nav_world_item_ap_range_set(nwi, w / 2);
+   if (ssid)
+     {
+	e_nav_world_item_ap_essid_set(nwi, ssid);
+
+	free(ssid);
+     }
+
+   if (flags)
+     e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_WEP);
+
+   return nwi;
+#else
+   return NULL;
+#endif
+}
+
+static Evas_Object *
+viewport_bard_added(Diversity_Bard *bard)
+{
+   Evas_Object *nwi;
+   char *name = NULL;
+   char *phone = NULL;
+
+   diversity_bard_prop_get(bard, "fullname", &name);
+   diversity_bard_prop_get(bard, "phone", &phone);
+
+   printf("new contact %s: %s\n", name, phone);
+
+   nwi = e_nav_world_item_neo_other_add(mdata.nav,
+	 THEMEDIR, 0.0, 0.0, (void *) bard);
+
+   if (name)
+     {
+	e_nav_world_item_neo_other_name_set(nwi, name);
+	free(name);
+     }
+
+   if (phone)
+     {
+	e_nav_world_item_neo_other_phone_set(nwi, phone);
+	free(phone);
+     }
+
+   diversity_dbus_signal_connect((Diversity_DBus *) bard,
+	 DIVERSITY_DBUS_IFACE_OBJECT, "PropertyChanged",
+	 on_neo_other_property_changed, nwi);
+
+   e_ctrl_contact_add(mdata.ctrl, nwi);
+
+   return nwi;
+}
+
+static Evas_Object *
+viewport_tag_added(Diversity_Tag *tag)
+{
+   Evas_Object *nwi;
+   double lon = 0.0, lat = 0.0, w = 0.0, h = 0.0;
+   unsigned int timestamp = 0;
+   char *desc = NULL;
+   int unread = 0;
+
+   diversity_object_geometry_get((void *) tag,
+	 &lon, &lat, &w, &h);
+   diversity_dbus_property_get((void *) tag,
+	 DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &timestamp);
+
+   diversity_tag_prop_get(tag, "description", &desc);
+   diversity_dbus_property_get((void *) tag,
+	 DIVERSITY_DBUS_IFACE_TAG, "Unread", &unread);
+
+   nwi = e_nav_world_item_location_add(mdata.nav,
+	 THEMEDIR, lon, lat, (void *) tag);
+
+   if (desc)
+     {
+	char *note;
+
+	note = strchr(desc, '\n');
+	if (note)
+	  {
+	     *note = '\0';
+	     note++;
+	  }
+
+	e_nav_world_item_location_name_set(nwi, desc);
+	if (note)
+	  e_nav_world_item_location_note_set(nwi, note);
+
+	free(desc);
+     }
+
+   e_nav_world_item_location_unread_set(nwi, unread);
+   e_nav_world_item_location_timestamp_set(nwi, (time_t) timestamp);
+
+   e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
+
+   return nwi;
+}
+
 static void
 viewport_object_added(void *data, DBusMessage *msg)
 {
+   Evas_Object *nwi;
+   Diversity_Object *obj;
+   Diversity_Object_Type type;
    const char *obj_path;
    DBusError error;
+
    dbus_error_init(&error);
    if (!dbus_message_get_args(msg, &error,
-			      DBUS_TYPE_OBJECT_PATH, &obj_path,
-			      DBUS_TYPE_INVALID))
+	    DBUS_TYPE_OBJECT_PATH, &obj_path,
+	    DBUS_TYPE_INVALID))
      {
-        printf("object added parse error: %s\n", error.message);
+	printf("object added parse error: %s\n", error.message);
 	dbus_error_free(&error);
-        return;
+
+	return;
      }
-   else 
+
+   if (e_ctrl_object_store_item_get(mdata.ctrl, obj_path))
      {
-        Diversity_Object *obj;
-        Evas_Object *nwi = NULL;
-        double lon, lat, width, height;
-	int type;
-        int secs = 0;
-	time_t timep;
+	printf("item %s already existed. ignore\n", obj_path);
 
-        if(e_ctrl_object_store_item_get(mdata.ctrl, obj_path))
-          {
-             printf("item  %s already existed. ignore\n", obj_path);
-             return;
-          }
-
-	obj = diversity_object_new(obj_path);
-	if (!obj)
-	  return;
-
-        diversity_object_geometry_get(obj, &lon, &lat, &width, &height);
-	diversity_dbus_property_get((Diversity_DBus *) obj, DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &secs);
-
-        timep = (time_t)secs;
-
-       	type = diversity_object_type_get(obj);  
-        if(type==DIVERSITY_OBJECT_TYPE_TAG) 
-          {
-             char *name = NULL;
-             char *description = NULL;
-             int unread;
-
-             nwi = e_nav_world_item_location_add(mdata.nav, THEMEDIR,
-				     lon, lat, obj);
-             diversity_tag_prop_get((Diversity_Tag *) obj, "description", &description); 
-	     diversity_dbus_property_get((Diversity_DBus *) obj,
-		   DIVERSITY_DBUS_IFACE_TAG, "Unread", &unread);
-             e_nav_world_item_location_unread_set(nwi, unread);
-
-             name = strsep(&description, "\n");
-             e_nav_world_item_location_name_set(nwi, name);
-             e_nav_world_item_location_note_set(nwi, description);
-             e_nav_world_item_location_timestamp_set(nwi, timep);
-             e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
-             e_ctrl_object_store_item_add(mdata.ctrl, (void *)(obj_path), (void *)nwi);           
-          }
-        else if(type==DIVERSITY_OBJECT_TYPE_BARD) 
-          {
-             char *name = NULL;
-             char *phone = NULL;
-             char *alias = NULL;
-             char *twitter = NULL;
-             int accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;
-
-             diversity_bard_prop_get((Diversity_Bard *) obj, "fullname", &name); 
-             diversity_bard_prop_get((Diversity_Bard *) obj, "phone", &phone); 
-             diversity_bard_prop_get((Diversity_Bard *) obj, "alias", &alias); 
-             diversity_bard_prop_get((Diversity_Bard *) obj, "twitter", &twitter); 
-
-             diversity_dbus_property_get(((Diversity_DBus *)obj), DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-
-             nwi = e_nav_world_item_neo_other_add(mdata.nav, THEMEDIR, lon, lat, obj);
-             e_nav_world_item_neo_other_name_set(nwi, name);
-             e_nav_world_item_neo_other_phone_set(nwi, phone);
-             e_nav_world_item_neo_other_alias_set(nwi, alias);
-             e_nav_world_item_neo_other_twitter_set(nwi, twitter);
-             e_ctrl_object_store_item_add(mdata.ctrl, (void *)obj_path, (void *)nwi);           
-
-             printf("Add a bard contact: name:%s, phone:%s, alias:%s, twitter:%s, lon:%f, lat:%f\n", name, phone, alias, twitter, lon, lat);
-             e_ctrl_contact_add(mdata.ctrl, nwi);
-
-             diversity_dbus_signal_connect((Diversity_DBus *) obj,
-                  DIVERSITY_DBUS_IFACE_OBJECT, "PropertyChanged", on_neo_other_property_changed, nwi);            
-          }
-#if 0
-        else if(type==DIVERSITY_OBJECT_TYPE_AP) 
-	  {
-	     char *ssid;
-	     int flags, accuracy;
-
-             diversity_dbus_property_get(((Diversity_DBus *) obj),
-		   DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-	     /* XXX */
-             if (accuracy == DIVERSITY_OBJECT_ACCURACY_NONE) return;  
-
-	     lon += width / 2;
-	     lat += height / 2;
-             nwi = e_nav_world_item_ap_add(mdata.nav, THEMEDIR, lon, -lat);
-	     e_nav_world_item_ap_range_set(nwi, width / 2);
-
-	     diversity_dbus_property_get((Diversity_DBus *) obj,
-		   DIVERSITY_DBUS_IFACE_AP, "Ssid", &ssid);
-	     diversity_dbus_property_get((Diversity_DBus *) obj,
-		   DIVERSITY_DBUS_IFACE_AP, "Flags", &flags);
-
-	     e_nav_world_item_ap_essid_set(nwi, ssid);
-	     if (flags)
-	       e_nav_world_item_ap_key_type_set(nwi,
-		     E_NAV_ITEM_AP_KEY_TYPE_WEP);
-
-	     free(ssid);
-	  }
-#endif
-        else
-          printf("other kind of object added\n");
-
-	nwi = e_nav_world_neo_me_get(mdata.nav);
-	if (nwi)
-	  e_nav_world_item_raise(nwi);
+	return;
      }
+
+   obj = diversity_object_new(obj_path);
+   if (!obj)
+     return;
+
+   type = diversity_object_type_get(obj);
+   switch (type)
+     {
+      case DIVERSITY_OBJECT_TYPE_AP:
+	 nwi = viewport_ap_added((Diversity_Ap *) obj);
+	 break;
+      case DIVERSITY_OBJECT_TYPE_BARD:
+	 nwi = viewport_bard_added((Diversity_Bard *) obj);
+	 break;
+      case DIVERSITY_OBJECT_TYPE_TAG:
+	 nwi = viewport_tag_added((Diversity_Tag *) obj);
+	 break;
+      default:
+	 nwi = NULL;
+	 break;
+     }
+
+   if (!nwi)
+     {
+	/* XXX use type-specific destroy function */
+	diversity_object_destroy(obj);
+
+	return;
+     }
+
+   e_ctrl_object_store_item_add(mdata.ctrl, (void *) obj_path, (void *) nwi);
+
+   nwi = e_nav_world_neo_me_get(mdata.nav);
+   if (nwi)
+     e_nav_world_item_raise(nwi);
 }
 
 static void
 viewport_object_removed(void *data, DBusMessage *msg)
 {
    const char *obj_path;
-   Evas_Object *world_item;
+   Evas_Object *nwi;
    DBusError error;
+
    dbus_error_init(&error);
    if (!dbus_message_get_args(msg, &error,
-			      DBUS_TYPE_OBJECT_PATH, &obj_path,
-			      DBUS_TYPE_INVALID))
+	    DBUS_TYPE_OBJECT_PATH, &obj_path,
+	    DBUS_TYPE_INVALID))
      {
-        printf("object removed parse error: %s\n", error.message);
+	printf("object removed parse error: %s\n", error.message);
 	dbus_error_free(&error);
-        return;
-     }
-   else 
-     {
-        printf("object deleted: %s \n", obj_path);
-        world_item = e_ctrl_object_store_item_get(mdata.ctrl, obj_path);
-        if(world_item) 
-          {
-	     /* item type? */
-	     e_ctrl_contact_delete(mdata.ctrl, world_item);
 
-             e_ctrl_object_store_item_remove(mdata.ctrl, obj_path);
-             e_nav_world_item_delete(mdata.nav, world_item);
-             evas_object_del(world_item);
-          }
-        else 
-          printf("Can not find object %s in hash\n", obj_path);
+	return;
+     }
+
+   nwi = e_ctrl_object_store_item_get(mdata.ctrl, obj_path);
+   if (nwi)
+     {
+	/* XXX item type? */
+	e_ctrl_contact_delete(mdata.ctrl, nwi);
+
+	e_ctrl_object_store_item_remove(mdata.ctrl, obj_path);
+	e_nav_world_item_delete(mdata.nav, nwi);
+
+	/* XXX destroy the backing proxy? */
+	evas_object_del(nwi);
      }
 }
 
