@@ -134,6 +134,13 @@ e_nav_tileset_add(Evas_Object *nav, E_Nav_Tileset_Format format, const char *dir
      }
 
    sd->tman = tileman_new(evas_object_evas_get(nav), format, dir);
+   if (!sd->tman)
+     {
+	evas_object_del(obj);
+
+	return NULL;
+     }
+
    sd->tilesize = tileman_tile_size_get(sd->tman);
    tileman_levels_list(sd->tman, &sd->max_level, &sd->min_level);
 
