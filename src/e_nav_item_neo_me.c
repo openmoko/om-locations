@@ -28,6 +28,7 @@
 #include "e_ctrl.h"
 
 typedef struct _Neo_Me_Data Neo_Me_Data;
+typedef struct _Location_Save_Data Location_Save_Data;
 
 struct _Neo_Me_Data
 {
@@ -39,9 +40,21 @@ struct _Neo_Me_Data
    Diversity_Bard         *self;
 };
 
+struct _Location_Save_Data
+{
+   double lon;
+   double lat;
+};
+
 static void
 dialog_exit(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
+   Location_Save_Data *lsd;
+
+   lsd = evas_object_data_get(obj, "lsd");
+   if (lsd)
+     free(lsd);
+
    e_dialog_deactivate(obj);
 }
 
@@ -53,8 +66,8 @@ location_new(void *data, Evas_Object *obj, Evas_Object *src_obj)
    const char *path;
    const char *name, *note;
    char *description;
-   double lat, lon;
    Evas_Object *nav, *location;
+   Location_Save_Data *lsd;
 
    name = e_dialog_textblock_text_get(obj, _("Edit title"));
    note = e_dialog_textblock_text_get(obj, _("Edit message"));
@@ -62,9 +75,17 @@ location_new(void *data, Evas_Object *obj, Evas_Object *src_obj)
    if (!description) return ;
    sprintf(description, "%s%c%s", name, '\n', note);
 
-   e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
+   lsd = evas_object_data_get(obj, "lsd");
+   if (!lsd)
+     {
+	e_dialog_deactivate(obj);
+	return;
+     }
+
    Diversity_World *world = (Diversity_World*)e_nav_world_get();
-   tag = diversity_world_tag_add(world, lon, lat, description);
+   tag = diversity_world_tag_add(world, lsd->lon, lsd->lat, description);
+   free(lsd);
+
    if(!tag) 
      {
         printf("New location error \n");
@@ -84,7 +105,14 @@ location_new(void *data, Evas_Object *obj, Evas_Object *src_obj)
 static void 
 location_save_dialog_show(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
+   Location_Save_Data *lsd;
+
    e_flyingmenu_deactivate(obj);
+
+   lsd = malloc(sizeof(*lsd));
+   if (!lsd)
+     return;
+
    Evas_Object *od = e_dialog_add(evas_object_evas_get(obj));
    e_dialog_theme_source_set(od, THEMEDIR);  
    e_dialog_source_object_set(od, src_obj);  
@@ -95,6 +123,9 @@ location_save_dialog_show(void *data, Evas_Object *obj, Evas_Object *src_obj)
    e_dialog_textblock_add(od, _("Edit message"), message, 100, 80, obj);
    e_dialog_button_add(od, _("Save"), location_new, od);
    e_dialog_button_add(od, _("Cancel"), dialog_exit, od);
+
+   e_nav_world_item_geometry_get(src_obj, &lsd->lon, &lsd->lat, NULL, NULL);
+   evas_object_data_set(od, "lsd", lsd);
    
    evas_object_show(od);
    e_dialog_activate(od);
