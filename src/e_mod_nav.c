@@ -41,7 +41,6 @@ static struct _E_Module_Data {
      Evas_Object          *ctrl;
      Evas_Object          *nav;
      Evas_Object          *tileset; /* owned by nav */
-     Evas_Object          *neo_me;
 
      Diversity_World      *world;
      Diversity_Bard       *self;
@@ -52,7 +51,6 @@ static struct _E_Module_Data {
 } mdata;
 
 
-static void _e_mod_neo_me_init();
 static void on_neo_other_geometry_changed(void *data, DBusMessage *msg);
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void position_search_timer_start();
@@ -186,8 +184,9 @@ viewport_object_added(void *data, DBusMessage *msg)
         else
           printf("other kind of object added\n");
 
-        if (mdata.neo_me)
-	  e_nav_world_item_raise(mdata.neo_me);
+	nwi = e_nav_world_neo_me_get(mdata.nav);
+	if (nwi)
+	  e_nav_world_item_raise(nwi);
      }
 }
 
@@ -292,104 +291,90 @@ on_neo_other_property_changed(void *data, DBusMessage *msg)
      e_nav_world_item_neo_other_twitter_set(neo_other_obj, value);
 }
 
-/* 
- * neo_me geometry changed cb function 
- */
 static void
-on_geometry_changed(void *data, DBusMessage *msg)
+on_neo_me_geometry_changed(void *data, DBusMessage *msg)
 {
-   Evas_Object *nwi;
+   Evas_Object *neo_me;
    DBusError err;
    double lon, lat;
-   double dummy1, dummy2;
-   int follow;
-   Evas_Coord w, h; 
+   double w, h;
 
    dbus_error_init(&err);
-   dbus_message_get_args(msg, &err, DBUS_TYPE_DOUBLE, &lon, DBUS_TYPE_DOUBLE, &lat,
-       DBUS_TYPE_DOUBLE, &dummy1, DBUS_TYPE_DOUBLE, &dummy2, DBUS_TYPE_INVALID);
-   if (dbus_error_is_set(&err)) {
-      printf("Error: %s - %s\n", err.name, err.message);
-      return;
-   }
 
-   if (!mdata.neo_me)
-     _e_mod_neo_me_init(); 
+   neo_me = e_nav_world_neo_me_get(mdata.nav);
+   if (!neo_me)
+     return;
 
-   nwi = mdata.neo_me;
+   if (!dbus_message_get_args(msg, &err,
+	    DBUS_TYPE_DOUBLE, &lon,
+	    DBUS_TYPE_DOUBLE, &lat,
+	    DBUS_TYPE_DOUBLE, &w,
+	    DBUS_TYPE_DOUBLE, &h,
+	    DBUS_TYPE_INVALID))
+     {
+	printf("Error: %s - %s\n", err.name, err.message);
+	dbus_error_free(&err);
 
-   evas_object_geometry_get(edje_object_part_object_get(nwi, "phone"), NULL, NULL, &w, &h);
-   e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
-   e_nav_world_item_update(nwi);
+	return;
+     }
 
-   follow = e_ctrl_follow_get(mdata.ctrl);
-   if (follow) {
+   e_nav_world_item_geometry_get(neo_me, NULL, NULL, &w, &h);
+   e_nav_world_item_geometry_set(neo_me, lon, lat, w, h);
+   e_nav_world_item_update(neo_me);
+
+   if (e_ctrl_follow_get(mdata.ctrl))
      e_nav_coord_set(mdata.nav, lon, lat, 0.0);
-   }
 }
 
-/* 
- * neo_me property changed cb function 
- */
 static void
-on_property_changed(void *data, DBusMessage *msg)
+on_neo_me_property_changed(void *data, DBusMessage *msg)
 {
-   Evas_Object *nwi;
-   int accuracy = 0;
-   static int fixed = 0;
-   double lon, lat;
-   double dummy1, dummy2;
+   Evas_Object *neo_me;
+   int fixed;
 
+   neo_me = e_nav_world_neo_me_get(mdata.nav);
+   if (!neo_me)
+     return;
+
+   fixed = DIVERSITY_OBJECT_ACCURACY_NONE;
    diversity_dbus_property_get(((Diversity_DBus *) mdata.self),
-	 DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
+	 DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy", &fixed);
 
-   if (!mdata.neo_me && accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)
-     {
-        diversity_object_geometry_get((Diversity_Object *) mdata.self,
-                                      &lon, &lat, &dummy1, &dummy2);
-        _e_mod_neo_me_init();
-     }
+   fixed = (fixed != DIVERSITY_OBJECT_ACCURACY_NONE);
+   e_nav_world_item_neo_me_fixed_set(neo_me, fixed);
 
-   if (!mdata.neo_me) return;
-
-   nwi = mdata.neo_me;
-     
-   if( fixed && accuracy == DIVERSITY_OBJECT_ACCURACY_NONE )
-     {
-        e_nav_world_item_neo_me_fixed_set(nwi, 0);   
-        fixed = 0;
-     }
-   else if ( !fixed && accuracy != DIVERSITY_OBJECT_ACCURACY_NONE )
-     {
-        e_nav_world_item_neo_me_fixed_set(nwi, 1);
-        fixed = 1;
-        position_search_timer_stop();
-     }
+   if (mdata.fix_timer && fixed)
+     position_search_timer_stop();
 }
 
-static int 
+static int
 handle_gps(void *data)
 {
+   Evas_Object *neo_me;
    int gps_state;
+
+   neo_me = e_nav_world_neo_me_get(mdata.nav);
+   if (!neo_me)
+     return FALSE;
+
    gps_state = check_gps_state();
-   if(!gps_state)
+
+   if (!gps_state)
      {
         Evas_Object *alert_dialog;
-    
+
         alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
 	e_alert_transient_for_set(alert_dialog, mdata.nav);
         e_alert_title_set(alert_dialog, _("GPS is off"), _("Turn on GPS?"));
         e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
         e_alert_button_add(alert_dialog, _("Yes"), alert_gps_turn_on, alert_dialog);
         e_alert_button_add(alert_dialog, _("No"), alert_gps_cancel, alert_dialog);
-        e_alert_activate(alert_dialog); 
+        e_alert_activate(alert_dialog);
         evas_object_show(alert_dialog);
      }
-   else
-     {
-        if(!e_nav_world_item_neo_me_fixed_get(mdata.neo_me))
-          position_search_timer_start();
-     }
+   else if (!e_nav_world_item_neo_me_fixed_get(neo_me))
+     position_search_timer_start();
+
    return FALSE;
 }
 
@@ -488,25 +473,29 @@ position_search_timer_stop()
 static int
 _e_nav_cb_timer_pos_search_pause(void *data)
 {
+   Evas_Object *neo_me;
    Evas_Object *alert_dialog;
-   int fix_status;
-    
+   int fixed = 0;
+
+   neo_me = e_nav_world_neo_me_get(mdata.nav);
+   if (neo_me)
+     fixed = e_nav_world_item_neo_me_fixed_get(neo_me);
+
    alert_dialog = e_alert_add(evas_object_evas_get(mdata.nav));
    e_alert_transient_for_set(alert_dialog, mdata.nav);
-   fix_status = e_nav_world_item_neo_me_fixed_get(mdata.neo_me);
-   if(fix_status)
+   if (fixed)
      {
-        e_alert_title_set(alert_dialog, _("GPS FIX"), _("Your approximate location"));
-        e_alert_title_color_set(alert_dialog, 0, 255, 0, 255);
-        e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
+	e_alert_title_set(alert_dialog, _("GPS FIX"), _("Your approximate location"));
+	e_alert_title_color_set(alert_dialog, 0, 255, 0, 255);
+	e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
      }
    else
      {
-        e_alert_title_set(alert_dialog, _("ERROR"), _("Unable to locate a fix"));
-        e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
-        e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
+	e_alert_title_set(alert_dialog, _("ERROR"), _("Unable to locate a fix"));
+	e_alert_title_color_set(alert_dialog, 255, 0, 0, 255);
+	e_alert_button_add(alert_dialog, _("OK"), alert_exit, alert_dialog);
      }
-   e_alert_activate(alert_dialog); 
+   e_alert_activate(alert_dialog);
    evas_object_show(alert_dialog);
 
    mdata.fix_timer = NULL;
@@ -533,21 +522,21 @@ _dbus_atlas_proxy_get(void)
    return proxy;
 }
 
-/* 
- * Create neo_me evas object on map 
- */
-static void
+static Evas_Object *
 _e_mod_neo_me_init()
 {
-   Evas_Object *nwi;
-   double neo_me_lat, neo_me_lon;
+   Evas_Object *neo_me;
+   double lon, lat;
 
-   if (mdata.neo_me) return;
+   lon = dn_config_float_get(mdata.cfg, "neo_me_lon");
+   lat = dn_config_float_get(mdata.cfg, "neo_me_lat");
 
-   neo_me_lat = dn_config_float_get(mdata.cfg, "neo_me_lat");
-   neo_me_lon = dn_config_float_get(mdata.cfg, "neo_me_lon");
-   nwi = e_nav_world_item_neo_me_add(mdata.nav, THEMEDIR,
-				     neo_me_lon, neo_me_lat, mdata.self);
+   neo_me = e_nav_world_item_neo_me_add(mdata.nav,
+	 THEMEDIR, lon, lat, mdata.self);
+   if (!neo_me)
+     return NULL;
+
+   e_nav_world_item_neo_me_name_set(neo_me, _("Me"));
 
    if (mdata.self)
      {
@@ -558,13 +547,24 @@ _e_mod_neo_me_init()
 	      DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
 
 	if (accuracy != DIVERSITY_OBJECT_ACCURACY_NONE)
-	  e_nav_world_item_neo_me_fixed_set(nwi, 1);
+	  {
+	     double w, h;
+
+	     diversity_object_geometry_get(
+		   (Diversity_Object *) mdata.self,
+		   &lon, &lat, &w, &h);
+	     e_nav_world_item_geometry_get(neo_me,
+		   NULL, NULL, &w, &h);
+
+	     e_nav_world_item_geometry_set(neo_me,
+		   lon, lat, w, h);
+	     e_nav_world_item_neo_me_fixed_set(neo_me, 1);
+
+	     e_nav_world_item_update(neo_me);
+	  }
      }
 
-   e_nav_world_item_neo_me_name_set(nwi, _("Me"));
-   e_nav_world_item_neo_me_activate(nwi);
-
-   mdata.neo_me = nwi;
+   return neo_me;
 }
 
 static void
@@ -643,10 +643,10 @@ _e_mod_nav_dbus_init(void)
 
 	     diversity_dbus_signal_connect((Diversity_DBus *) mdata.self,
 		   DIVERSITY_DBUS_IFACE_OBJECT,
-		   "GeometryChanged", on_geometry_changed, NULL);
+		   "GeometryChanged", on_neo_me_geometry_changed, NULL);
 	     diversity_dbus_signal_connect((Diversity_DBus *) mdata.self,
 		   DIVERSITY_DBUS_IFACE_OBJECT,
-		   "PropertyChanged", on_property_changed, NULL);
+		   "PropertyChanged", on_neo_me_property_changed, NULL);
 	  }
 
 	diversity_equipment_destroy(eqp);
@@ -669,6 +669,7 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg)
    double lon, lat;
    int span;
    int standalone;
+   Evas_Object *neo_me;
 
    if (mdata.nav)
      return;
@@ -734,8 +735,13 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg)
 	  }
      }
 
-   _e_mod_neo_me_init();
-   e_nav_world_item_geometry_get(mdata.neo_me, &lon, &lat, NULL, NULL);
+   neo_me = _e_mod_neo_me_init();
+   if (neo_me)
+     {
+	e_nav_world_item_neo_me_activate(neo_me);
+	e_nav_world_item_geometry_get(neo_me,
+	      &lon, &lat, NULL, NULL);
+     }
 
    e_nav_coord_set(mdata.nav, lon, lat, 0.0);
    e_nav_span_set(mdata.nav, span, 0.0);
@@ -763,6 +769,7 @@ _e_mod_nav_update(Evas *evas)
 void
 _e_mod_nav_shutdown(void)
 {
+   Evas_Object *neo_me;
    double lon, lat;
    int span;
 
@@ -777,9 +784,13 @@ _e_mod_nav_shutdown(void)
    dn_config_float_set(mdata.cfg, "lat", lat);
    dn_config_int_set(mdata.cfg, "span", span);
 
-   e_nav_world_item_geometry_get(mdata.neo_me, &lon, &lat, NULL, NULL);
-   dn_config_float_set(mdata.cfg, "neo_me_lon", lon);
-   dn_config_float_set(mdata.cfg, "neo_me_lat", lat);
+   neo_me = e_nav_world_neo_me_get(mdata.nav);
+   if (neo_me)
+     {
+	e_nav_world_item_geometry_get(neo_me, &lon, &lat, NULL, NULL);
+	dn_config_float_set(mdata.cfg, "neo_me_lon", lon);
+	dn_config_float_set(mdata.cfg, "neo_me_lat", lat);
+     }
 
    if (mdata.tileset)
      {
@@ -792,7 +803,6 @@ _e_mod_nav_shutdown(void)
 	     e_dbus_proxy_destroy(atlas);
 	  }
      }
-   evas_object_del(mdata.neo_me);
 
    _e_mod_nav_dbus_shutdown();
 
