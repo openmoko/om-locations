@@ -56,7 +56,8 @@ e_nav_theme_init(const char *theme)
 	     if (theme_name && dot)
 	       {
 		  dot = strrchr(theme_name, '.');
-		  *((char *) dot) = '\0';
+		  if (dot)
+		    *((char *) dot) = '\0';
 	       }
 	  }
 	else
