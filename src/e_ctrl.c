@@ -183,6 +183,24 @@ e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc)
    e_nav_list_object_remove(sd->listview, loc);
 }
 
+void
+e_ctrl_taglist_freeze(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   e_nav_list_freeze(sd->listview);
+}
+
+void
+e_ctrl_taglist_thaw(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   sd = evas_object_smart_data_get(obj);
+   e_nav_list_thaw(sd->listview);
+}
+
 static void
 _e_nav_panel_cb_mouse_down(void *data, Evas_Object *panel, const char *emission, const char *source)
 {

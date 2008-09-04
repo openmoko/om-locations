@@ -181,6 +181,8 @@ e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
 
    SMART_CHECK(obj, ;);
 
+   e_nav_list_freeze(sd->contact_list);
+
    e_nav_list_clear(sd->contact_list);
 
    for (l = contacts; l; l = l->next)
@@ -189,6 +191,8 @@ e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
 
 	e_nav_list_object_add(sd->contact_list, bard);
      }
+
+   e_nav_list_thaw(sd->contact_list);
 }
 
 /* internal calls */

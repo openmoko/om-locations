@@ -42,6 +42,8 @@ void                e_ctrl_message_text_del(Evas_Object *obj, unsigned int msg_i
 void                e_ctrl_taglist_tag_add(Evas_Object *obj, Evas_Object *loc);
 void                e_ctrl_taglist_tag_set(Evas_Object *obj, Evas_Object *loc);
 void                e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc);
+void                e_ctrl_taglist_freeze(Evas_Object *obj);
+void                e_ctrl_taglist_thaw(Evas_Object *obj);
 
 void                e_ctrl_contact_add(Evas_Object *obj, Evas_Object *bard);
 void                e_ctrl_contact_delete(Evas_Object *obj, Evas_Object *bard);

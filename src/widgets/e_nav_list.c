@@ -40,6 +40,8 @@ struct _E_Smart_Data
    Etk_Widget      *embed;
    Etk_Widget      *tree;
    Etk_Tree_Col    *col;
+   
+   int frozen;
 
    Evas_List       *callbacks;
 
@@ -228,7 +230,9 @@ e_nav_list_sort_set(Evas_Object *li, int (*func)(void *data, Evas_Object *li, Ev
    if (sd->sort_cb)
      {
 	etk_tree_col_sort_set(sd->col, _list_compare, sd);
-	etk_tree_col_sort(sd->col, TRUE);
+
+	if (!sd->frozen)
+	  etk_tree_col_sort(sd->col, TRUE);
      }
    else
      {
@@ -324,7 +328,9 @@ e_nav_list_object_add(Evas_Object *li, Evas_Object *obj)
    if (tree_row)
      {
 	etk_tree_row_data_set(tree_row, obj);
-	etk_tree_col_sort(sd->col, TRUE);
+
+	if (!sd->frozen)
+	  etk_tree_col_sort(sd->col, TRUE);
      }
 }
 
@@ -363,7 +369,9 @@ e_nav_list_object_update(Evas_Object *li, Evas_Object *obj)
      return;
 
    etk_tree_row_fields_set(row, FALSE, sd->col, obj, NULL);
-   etk_tree_col_sort(sd->col, TRUE);
+
+   if (!sd->frozen)
+     etk_tree_col_sort(sd->col, TRUE);
 }
 
 void
@@ -387,6 +395,28 @@ e_nav_list_clear(Evas_Object *li)
    SMART_CHECK(li, ;);
 
    etk_tree_clear(ETK_TREE(sd->tree));
+}
+
+void e_nav_list_freeze(Evas_Object *li)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+
+   sd->frozen = 1;
+   etk_tree_freeze(ETK_TREE(sd->tree));
+}
+
+void e_nav_list_thaw(Evas_Object *li)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+
+   etk_tree_thaw(ETK_TREE(sd->tree));
+   sd->frozen = 0;
+
+   etk_tree_col_sort(sd->col, TRUE);
 }
 
 /* internal calls */

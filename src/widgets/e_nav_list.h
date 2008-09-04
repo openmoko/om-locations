@@ -47,4 +47,7 @@ void            e_nav_list_object_remove(Evas_Object *li, Evas_Object *obj);
 void            e_nav_list_object_update(Evas_Object *li, Evas_Object *obj);
 void            e_nav_list_clear(Evas_Object *li);
 
+void            e_nav_list_freeze(Evas_Object *li);
+void            e_nav_list_thaw(Evas_Object *li);
+
 #endif /* E_NAV_LIST_H */
