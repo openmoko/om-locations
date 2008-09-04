@@ -80,6 +80,7 @@ int                 diversity_dbus_property_set(Diversity_DBus *dbus, Diversity_
 int                 diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, const char *prop, void *val);
 
 void               *diversity_object_new(const char *path);
+void               *diversity_object_new_with_type(const char *path, Diversity_Object_Type type);
 void                diversity_object_destroy(Diversity_Object *obj);
 void                diversity_object_geometry_set(Diversity_Object *obj, double lon, double lat, double width, double height);
 void                diversity_object_geometry_get(Diversity_Object *obj, double *lon, double *lat, double *width, double *height);
@@ -103,6 +104,10 @@ Diversity_Viewport *diversity_viewport_new(const char *path);
 void                diversity_viewport_destroy(Diversity_Viewport *view);
 void                diversity_viewport_start(Diversity_Viewport *view);
 void                diversity_viewport_stop(Diversity_Viewport *view);
+void                diversity_viewport_rule_set(Diversity_Viewport *view, Diversity_Object_Type type, unsigned int mask, unsigned value);
+
+/* the returned value should be freed with dbus_free_string_array */
+char **             diversity_viewport_objects_list(Diversity_Viewport *view);
 
 Diversity_Ap       *diversity_ap_new(const char *path);
 void                diversity_ap_destroy(Diversity_Ap *ap);
