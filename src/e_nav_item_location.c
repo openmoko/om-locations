@@ -232,14 +232,9 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
 }
 
 static void
-_e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+_e_nav_world_item_cb_mouse_down(void *data, Evas_Object *item, const char *emission, const char *source)
 {
-   Evas_Object *item;
    Location_Data *locd;
-
-   item = (Evas_Object *) data;
-   if (!item)
-     return;
 
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd)
@@ -285,10 +280,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
    edje_object_part_text_set(o, "e.text.name", _("No Title"));
    edje_object_signal_callback_add(o, "MENU_ACTIVATE", "e.text.name", cb_menu_activate, (void *)theme_dir);
 
-   evas_object_event_callback_add(edje_object_part_object_get(o, "e.image.location"),
-                                  EVAS_CALLBACK_MOUSE_DOWN,
-				  _e_nav_world_item_cb_mouse_down,
-				  o);
+   edje_object_signal_callback_add(o, "mouse,down,*", "e.image.location", _e_nav_world_item_cb_mouse_down, NULL);
    edje_object_size_min_calc(o, &w, &h);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
