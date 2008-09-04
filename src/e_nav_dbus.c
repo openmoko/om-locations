@@ -436,7 +436,7 @@ on_geometry_changed(void *data, DBusMessage *msg)
 }
 #endif
 
-static void *
+void *
 diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
 {
    E_DBus_Connection *connection;
@@ -677,7 +677,7 @@ diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view
 	 	DIVERSITY_DBUS_IFACE_WORLD);
    if (!proxy) return ok;
 
-   path = diversity_dbus_path_get((Diversity_DBus *) world);
+   path = diversity_dbus_path_get((Diversity_DBus *) view);
    ok = e_dbus_proxy_simple_call(proxy,
 			    "ViewportRemove", NULL,
 			    DBUS_TYPE_OBJECT_PATH, &path,
@@ -861,6 +861,59 @@ diversity_viewport_stop(Diversity_Viewport *view)
 	printf("failed to start viewport: %s\n", error.message);
 	dbus_error_free(&error);
      }
+}
+
+void
+diversity_viewport_rule_set(Diversity_Viewport *view, Diversity_Object_Type type, unsigned int mask, unsigned value)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) view,
+	 	DIVERSITY_DBUS_IFACE_VIEWPORT);
+   if (!proxy) return;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "SetRule", &error,
+				 DBUS_TYPE_INT32, &type,
+				 DBUS_TYPE_UINT32, &mask,
+				 DBUS_TYPE_UINT32, &value,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to set viewport rule: %s\n", error.message);
+	dbus_error_free(&error);
+     }
+}
+
+char **
+diversity_viewport_objects_list(Diversity_Viewport *view)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+   char **obj_pathes;
+   int count;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) view,
+	 	DIVERSITY_DBUS_IFACE_VIEWPORT);
+   if (!proxy) return NULL;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "ListObjects", &error,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH,
+				 &obj_pathes, &count,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to list viewport objects: %s\n", error.message);
+	dbus_error_free(&error);
+
+	obj_pathes = NULL;
+     }
+
+   return obj_pathes;
 }
 
 Diversity_Ap *
