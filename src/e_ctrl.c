@@ -183,60 +183,51 @@ e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc)
    e_nav_list_object_remove(sd->listview, loc);
 }
 
-static void   
-_e_nav_list_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+static void
+_e_nav_panel_cb_mouse_down(void *data, Evas_Object *panel, const char *emission, const char *source)
 {
-   E_Smart_Data *sd; 
-   sd = evas_object_smart_data_get(data);
-   if(!sd) {
-       printf("sd is NULL\n");
-       return;
-   }
-   evas_object_show(sd->listview);
-   evas_object_hide(sd->map_overlay);
-
-   evas_object_hide(sd->nav);
-}
-
-static void   
-_e_nav_refresh_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   E_Smart_Data *sd; 
+   E_Smart_Data *sd;
    Evas_Object *neo_me;
 
    sd = evas_object_smart_data_get(data);
-   if (!sd)
-     return;
 
-   sd->follow = 1;
+   switch (source[0])
+     {
+      case 's': /* star */
+	 break;
+      case 'r': /* refresh */
+	 sd->follow = 1;
 
-   neo_me = e_nav_world_neo_me_get(sd->nav);
-   if (neo_me)
-     e_nav_world_item_focus(neo_me);
+	 neo_me = e_nav_world_neo_me_get(sd->nav);
+	 if (neo_me)
+	   e_nav_world_item_focus(neo_me);
 
-   evas_object_show(sd->nav);
+	 /* fall through */
+      case 'm': /* map */
+	 evas_object_show(sd->nav);
 
-   evas_object_hide(sd->listview);
-   evas_object_show(sd->map_overlay);
-}
+	 evas_object_hide(sd->listview);
+	 evas_object_show(sd->map_overlay);
 
-static void
-_e_nav_map_button_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   E_Smart_Data *sd;
-   sd = evas_object_smart_data_get(data);
+	 break;
+      case 'l': /* list */
+	 evas_object_show(sd->listview);
+	 evas_object_hide(sd->map_overlay);
 
-   evas_object_show(sd->nav);
+	 evas_object_hide(sd->nav);
 
-   evas_object_hide(sd->listview);
-   evas_object_show(sd->map_overlay);
+	 break;
+      default:
+	 printf("%s %s\n", emission, source);
+
+	 break;
+     }
 }
 
 void
 e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
 {
    E_Smart_Data *sd;
-   Evas_Object *star, *map, *refresh, *list; 
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
@@ -276,22 +267,15 @@ e_ctrl_theme_source_set(Evas_Object *obj, const char *custom_dir)
    edje_object_part_text_set(sd->panel_buttons, "refresh_text", _("REFRESH"));
    edje_object_part_text_set(sd->panel_buttons, "map_text", _("MAP"));
    edje_object_part_text_set(sd->panel_buttons, "list_text", _("LIST"));
+
+   edje_object_signal_callback_add(sd->panel_buttons,
+	 "mouse,up,*", "*_button",
+	 _e_nav_panel_cb_mouse_down, sd->obj);
+
    evas_object_smart_member_add(sd->panel_buttons, obj);
    evas_object_move(sd->panel_buttons, sd->x, sd->y);
    evas_object_resize(sd->panel_buttons, sd->w, sd->h);
    evas_object_clip_set(sd->panel_buttons, sd->clip);
-
-   star = edje_object_part_object_get(sd->panel_buttons, "star_button"); 
-   map = edje_object_part_object_get(sd->panel_buttons, "map_button"); 
-   refresh = edje_object_part_object_get(sd->panel_buttons, "refresh_button"); 
-   list = edje_object_part_object_get(sd->panel_buttons, "list_button"); 
-
-   evas_object_event_callback_add(map, EVAS_CALLBACK_MOUSE_UP,
-				  _e_nav_map_button_cb_mouse_down, obj);
-   evas_object_event_callback_add(refresh, EVAS_CALLBACK_MOUSE_UP,
-				  _e_nav_refresh_button_cb_mouse_down, obj);
-   evas_object_event_callback_add(list, EVAS_CALLBACK_MOUSE_UP,
-				  _e_nav_list_button_cb_mouse_down, obj);
    evas_object_show(sd->panel_buttons);
 }
 
