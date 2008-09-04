@@ -1105,6 +1105,7 @@ group {
          effect: SOFT_SHADOW;
          mouse_events: 1;
          description { state: "default" 0.0;
+	    fixed: 1 1;
             rel1 {
                to: "e.image.location";
                relative: 0.7 0.25;
@@ -1136,6 +1137,7 @@ group {
          effect: SOFT_SHADOW;
          mouse_events: 1;
          description { state: "default" 0.0;
+	    fixed: 1 1;
             rel1 {
                to: "e.text.name";
                relative: 0.0 1.0;

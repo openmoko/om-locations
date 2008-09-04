@@ -273,7 +273,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
 {
    Evas_Object *o;
    Location_Data *locd;
-   int x, y, w, h;
+   Evas_Coord w, h;
 
    /* FIXME: allocate extra data struct for AP properites and attach to the
     * evas object */
@@ -289,7 +289,7 @@ e_nav_world_item_location_add(Evas_Object *nav, const char *theme_dir, double lo
                                   EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
 				  o);
-   evas_object_geometry_get(edje_object_part_object_get(o, "e.image.location"), &x, &y, &w, &h);
+   edje_object_size_min_calc(o, &w, &h);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
    e_nav_world_item_geometry_set(o, lon, lat, w, h);

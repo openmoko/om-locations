@@ -74,7 +74,7 @@ e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon,
 {
    Evas_Object *o;
    Neo_Me_Data *neod;
-   int x, y, w, h;
+   Evas_Coord w, h;
 
    /* FIXME: allocate extra data struct for AP properites and attach to the
     * evas object */
@@ -87,7 +87,7 @@ e_nav_world_item_neo_me_add(Evas_Object *nav, const char *theme_dir, double lon,
    evas_object_event_callback_add(o, EVAS_CALLBACK_MOUSE_DOWN,
 				  _e_nav_world_item_cb_mouse_down,
 				  theme_dir);
-   evas_object_geometry_get(edje_object_part_object_get(o, "phone"), &x, &y, &w, &h);
+   edje_object_size_min_calc(o, &w, &h);
    e_nav_world_item_add(nav, o);
    e_nav_world_item_type_set(o, E_NAV_WORLD_ITEM_TYPE_ITEM);
    e_nav_world_item_geometry_set(o, lon, lat, w, h);
