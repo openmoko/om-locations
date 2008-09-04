@@ -627,6 +627,17 @@ e_dbus_proxy_simple_call(E_DBus_Proxy *proxy, const char *method, DBusError *err
       char *str;
     } *val;
 
+    if (type == DBUS_TYPE_ARRAY)
+    {
+	    type = va_arg(args, int);
+	    val = va_arg(args, void *);
+	    val = va_arg(args, void *);
+
+	    type = va_arg(args, int);
+
+	    continue;
+    }
+
     val = va_arg(args, void *);
     if (val)
     {
