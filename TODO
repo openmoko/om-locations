@@ -1,5 +1,9 @@
 * rename diversity/diversity_nav to om-locations
 * tileset performance
-* theme handling
 * dialog and alert should share code..
+* a button bar widget so be used by entry, list, dialog, and alert widgets
+* comparing to gobjects, evas objects have only weak references.  make use of
+  it to make, say e_nav, contact list, and tag list work more independently
+* world items are backed by diversity objects.  destroy the objects while
+  items are deleted?
 * clean up the code
