@@ -53,8 +53,8 @@ static struct _E_Module_Data {
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void gps_search_stop();
 
-static Evas_Object *
-viewport_ap_added(Diversity_Ap *ap)
+static void
+viewport_ap_update(Evas_Object *nwi)
 {
 #if 0
    Evas_Object *nwi;
@@ -94,25 +94,24 @@ viewport_ap_added(Diversity_Ap *ap)
      e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_WEP);
 
    return nwi;
-#else
-   return NULL;
 #endif
 }
 
-static Evas_Object *
-viewport_bard_added(Diversity_Bard *bard)
+static void
+viewport_bard_update(Evas_Object *nwi)
 {
-   Evas_Object *nwi;
+   Diversity_Bard *bard;
    char *name = NULL;
    char *phone = NULL;
+
+   bard = e_nav_world_item_neo_other_bard_get(nwi);
+   if (!bard)
+     return;
 
    diversity_bard_prop_get(bard, "fullname", &name);
    diversity_bard_prop_get(bard, "phone", &phone);
 
-   printf("new contact %s: %s\n", name, phone);
-
-   nwi = e_nav_world_item_neo_other_add(mdata.nav,
-	 THEMEDIR, 0.0, 0.0, (void *) bard);
+   //printf("update contact %s: %s\n", name, phone);
 
    if (name)
      {
@@ -130,19 +129,21 @@ viewport_bard_added(Diversity_Bard *bard)
 	 DIVERSITY_DBUS_IFACE_OBJECT, "PropertyChanged",
 	 on_neo_other_property_changed, nwi);
 
-   e_ctrl_contact_add(mdata.ctrl, nwi);
-
-   return nwi;
+   return;
 }
 
-static Evas_Object *
-viewport_tag_added(Diversity_Tag *tag)
+static void
+viewport_tag_update(Evas_Object *nwi)
 {
-   Evas_Object *nwi;
+   Diversity_Tag *tag;
    double lon = 0.0, lat = 0.0, w = 0.0, h = 0.0;
    unsigned int timestamp = 0;
    char *desc = NULL;
    int unread = 0;
+
+   tag = e_nav_world_item_location_tag_get(nwi);
+   if (!tag)
+     return;
 
    diversity_object_geometry_get((void *) tag,
 	 &lon, &lat, &w, &h);
@@ -152,9 +153,6 @@ viewport_tag_added(Diversity_Tag *tag)
    diversity_tag_prop_get(tag, "description", &desc);
    diversity_dbus_property_get((void *) tag,
 	 DIVERSITY_DBUS_IFACE_TAG, "Unread", &unread);
-
-   nwi = e_nav_world_item_location_add(mdata.nav,
-	 THEMEDIR, lon, lat, (void *) tag);
 
    if (desc)
      {
@@ -177,59 +175,59 @@ viewport_tag_added(Diversity_Tag *tag)
    e_nav_world_item_location_unread_set(nwi, unread);
    e_nav_world_item_location_timestamp_set(nwi, (time_t) timestamp);
 
-   e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
-
-   return nwi;
+   e_nav_world_item_geometry_get(nwi, NULL, NULL, &w, &h);
+   e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
+   e_nav_world_item_update(nwi);
 }
 
-static void
-viewport_object_added(void *data, DBusMessage *msg)
+static Evas_Object *
+viewport_item_add(Diversity_Object *obj)
 {
    Evas_Object *nwi;
-   Diversity_Object *obj;
-   Diversity_Object_Type type;
-   const char *obj_path;
-   DBusError error;
-
-   dbus_error_init(&error);
-   if (!dbus_message_get_args(msg, &error,
-	    DBUS_TYPE_OBJECT_PATH, &obj_path,
-	    DBUS_TYPE_INVALID))
-     {
-	printf("object added parse error: %s\n", error.message);
-	dbus_error_free(&error);
-
-	return;
-     }
-
-   if (e_ctrl_object_store_item_get(mdata.ctrl, obj_path))
-     {
-	printf("item %s already existed. ignore\n", obj_path);
-
-	return;
-     }
-
-   obj = diversity_object_new(obj_path);
-   if (!obj)
-     return;
+   int type;
 
    type = diversity_object_type_get(obj);
    switch (type)
      {
       case DIVERSITY_OBJECT_TYPE_AP:
-	 nwi = viewport_ap_added((Diversity_Ap *) obj);
+	 nwi = NULL;
+	 viewport_ap_update(nwi);
 	 break;
       case DIVERSITY_OBJECT_TYPE_BARD:
-	 nwi = viewport_bard_added((Diversity_Bard *) obj);
+	 nwi = e_nav_world_item_neo_other_add(mdata.nav,
+	       THEMEDIR, 0.0, 0.0, (void *) obj);
+	 viewport_bard_update(nwi);
+	 e_ctrl_contact_add(mdata.ctrl, nwi);
 	 break;
       case DIVERSITY_OBJECT_TYPE_TAG:
-	 nwi = viewport_tag_added((Diversity_Tag *) obj);
+	 nwi = e_nav_world_item_location_add(mdata.nav,
+	       THEMEDIR, 0.0, 0.0, (void *) obj);
+	 viewport_tag_update(nwi);
+	 e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
 	 break;
       default:
 	 nwi = NULL;
 	 break;
      }
 
+   return nwi;
+}
+
+static void
+viewport_object_add(const char *obj_path, int type)
+{
+   Diversity_Object *obj;
+   Evas_Object *nwi;
+
+   if (e_ctrl_object_store_item_get(mdata.ctrl, obj_path))
+     return;
+
+   if (type >= 0)
+     obj = diversity_object_new_with_type(obj_path, type);
+   else
+     obj = diversity_object_new(obj_path);
+
+   nwi = viewport_item_add(obj);
    if (!nwi)
      {
 	/* XXX use type-specific destroy function */
@@ -246,7 +244,27 @@ viewport_object_added(void *data, DBusMessage *msg)
 }
 
 static void
-viewport_object_removed(void *data, DBusMessage *msg)
+on_viewport_object_added(void *data, DBusMessage *msg)
+{
+   const char *obj_path;
+   DBusError error;
+
+   dbus_error_init(&error);
+   if (!dbus_message_get_args(msg, &error,
+	    DBUS_TYPE_OBJECT_PATH, &obj_path,
+	    DBUS_TYPE_INVALID))
+     {
+	printf("object added parse error: %s\n", error.message);
+	dbus_error_free(&error);
+
+	return;
+     }
+
+   viewport_object_add(obj_path, -1);
+}
+
+static void
+on_viewport_object_removed(void *data, DBusMessage *msg)
 {
    const char *obj_path;
    Evas_Object *nwi;
@@ -656,12 +674,12 @@ _e_mod_nav_dbus_init(void)
    diversity_dbus_signal_connect((Diversity_DBus *) mdata.worldview, 
 	 DIVERSITY_DBUS_IFACE_VIEWPORT, 
 	 "ObjectAdded", 
-	 viewport_object_added,
+	 on_viewport_object_added,
 	 NULL); 
    diversity_dbus_signal_connect((Diversity_DBus *) mdata.worldview, 
 	 DIVERSITY_DBUS_IFACE_VIEWPORT, 
 	 "ObjectRemoved", 
-	 viewport_object_removed,
+	 on_viewport_object_removed,
 	 NULL); 
 
    eqp = diversity_bard_equipment_get(mdata.self, "nmea");
@@ -688,6 +706,38 @@ _e_mod_nav_dbus_init(void)
 	  }
 
 	diversity_equipment_destroy(eqp);
+     }
+
+   /* add tags before the UI is shown */
+   /* XXX ugly!! */
+   if (1)
+     {
+	Diversity_Viewport *view;
+	char **obj_pathes, **p;
+
+	printf("retrieving tags\n");
+
+	view = diversity_world_viewport_add(mdata.world, -180.0, -90.0, 180.0, 90.0);
+	diversity_viewport_rule_set(view, DIVERSITY_OBJECT_TYPE_TAG, 0, 0);
+	diversity_viewport_start(view);
+
+	obj_pathes = diversity_viewport_objects_list(view);
+	if (obj_pathes)
+	  {
+	     printf("importing tags\n");
+
+	     e_ctrl_taglist_freeze(mdata.ctrl);
+
+	     for (p = obj_pathes; *p; p++)
+	       viewport_object_add(*p, DIVERSITY_OBJECT_TYPE_TAG);
+
+	     e_ctrl_taglist_thaw(mdata.ctrl);
+
+	     dbus_free_string_array(obj_pathes);
+	  }
+
+	printf("tags imported\n");
+	diversity_world_viewport_remove(mdata.world, view);
      }
 
    diversity_viewport_start(mdata.worldview);
