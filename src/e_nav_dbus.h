@@ -68,7 +68,7 @@ typedef enum {
      DIVERSITY_OBJECT_ACCURACY_EXACT,
 }Diversity_Object_Accuracy;
 
-int                 e_nav_dbus_init(void);
+int                 e_nav_dbus_init(void (*notify)(void *data), void *data);
 void                e_nav_dbus_shutdown(void);
 E_DBus_Connection  *e_nav_dbus_connection_get(void);
 

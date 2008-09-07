@@ -624,11 +624,12 @@ _e_mod_neo_me_init()
 }
 
 static void
-_e_mod_nav_dbus_shutdown(void)
+_e_mod_nav_dbus_shutdown(int quick)
 {
    if (mdata.worldview)
      {
-	diversity_viewport_stop(mdata.worldview);
+	if (!quick)
+	  diversity_viewport_stop(mdata.worldview);
 	diversity_viewport_destroy(mdata.worldview);
 
 	mdata.worldview = NULL;
@@ -641,7 +642,8 @@ _e_mod_nav_dbus_shutdown(void)
      }
    if (mdata.world)
      {
-	diversity_world_snapshot(mdata.world);
+	if (!quick)
+	  diversity_world_snapshot(mdata.world);
 	diversity_world_destroy(mdata.world);
 
 	mdata.world = NULL;
@@ -650,12 +652,38 @@ _e_mod_nav_dbus_shutdown(void)
    e_nav_dbus_shutdown();
 }
 
+static void
+on_daemon_dead_confirm(void *data, Evas_Object *obj)
+{
+   e_alert_deactivate(obj);
+
+   _e_mod_nav_dbus_shutdown(1);
+   _e_mod_nav_shutdown();
+   ecore_main_loop_quit();
+}
+
+static void
+on_daemon_dead(void *data)
+{
+   Evas_Object *ad;
+
+   ad = e_alert_add(evas_object_evas_get(mdata.nav));
+   e_alert_transient_for_set(ad, mdata.nav);
+   e_alert_title_color_set(ad, 255, 0, 0, 255);
+   e_alert_title_set(ad, _("ERROR"), _("DBus connection closed"));
+
+   e_alert_button_add(ad, _("Exit"), on_daemon_dead_confirm, NULL);
+
+   e_alert_activate(ad);
+   evas_object_show(ad);
+}
+
 static int
 _e_mod_nav_dbus_init(void)
 {
    Diversity_Equipment *eqp;
 
-   if (!e_nav_dbus_init())
+   if (!e_nav_dbus_init(on_daemon_dead, NULL))
      return 0;
 
    mdata.world = diversity_world_new();
@@ -745,7 +773,7 @@ _e_mod_nav_dbus_init(void)
    return 1;
 
 fail:
-   _e_mod_nav_dbus_shutdown();
+   _e_mod_nav_dbus_shutdown(1);
 
    return 0;
 }
@@ -892,7 +920,7 @@ _e_mod_nav_shutdown(void)
 	  }
      }
 
-   _e_mod_nav_dbus_shutdown();
+   _e_mod_nav_dbus_shutdown(0);
 
    /* FIXME xxx_ctrl in e_nav_item_location.c */
    //evas_object_del(mdata.ctrl);
