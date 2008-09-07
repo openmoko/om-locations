@@ -83,34 +83,70 @@ struct _Diversity_Tag
    Diversity_Object obj;
 };
 
-static E_DBus_Connection *e_conn = NULL;
-static int initialized = -1;
+static struct {
+     int initialized;
+
+     E_DBus_Connection *e_conn;
+
+     E_DBus_Proxy *alive_proxy;
+     void (*alive_notify)(void * data);
+     void *alive_data;
+} ddata = { -1, 0, };
 
 #define DIVERSITY_DBUS_BUS			DBUS_BUS_SESSION
 #define DIVERSITY_DBUS_SERVICE			"org.openmoko.Diversity"
 #define DIVERSITY_DBUS_PATH			"/org/openmoko/Diversity"
 #define DIVERSITY_WORLD_DBUS_PATH 		"/org/openmoko/Diversity/world"
 
-int
-e_nav_dbus_init(void)
+static void
+alive_check(void *data, DBusMessage *message)
 {
-   if (initialized != -1)
-     return initialized;
+   const char *name, *old_owner, *new_owner;
 
-   initialized = 0;
+   if (!dbus_message_get_args(message, NULL,
+			      DBUS_TYPE_STRING, &name,
+			      DBUS_TYPE_STRING, &old_owner,
+			      DBUS_TYPE_STRING, &new_owner,
+			      DBUS_TYPE_INVALID))
+     return;
+
+   if (*new_owner == '\0' && strcmp(name, DIVERSITY_DBUS_SERVICE) == 0)
+     ddata.alive_notify(ddata.alive_data);
+}
+
+int
+e_nav_dbus_init(void (*notify)(void *data), void *data)
+{
+   if (ddata.initialized != -1)
+     return ddata.initialized;
+
+   ddata.initialized = 0;
 
    if (!e_dbus_init())
      return 0;
 
-   e_conn = e_dbus_bus_get(DIVERSITY_DBUS_BUS);
-   if (!e_conn)
+   ddata.e_conn = e_dbus_bus_get(DIVERSITY_DBUS_BUS);
+   if (!ddata.e_conn)
      {
 	e_dbus_shutdown();
 
 	return 0;
      }
 
-   initialized = 1;
+   if (notify)
+     {
+	ddata.alive_proxy = e_dbus_proxy_new_for_name(ddata.e_conn,
+	      DBUS_SERVICE_DBUS,
+	      DBUS_PATH_DBUS,
+	      DBUS_INTERFACE_DBUS);
+
+	e_dbus_proxy_connect_signal(ddata.alive_proxy, "NameOwnerChanged", alive_check, NULL);
+
+	ddata.alive_notify = notify;
+	ddata.alive_data = data;
+     }
+
+   ddata.initialized = 1;
 
    return 1;
 }
@@ -118,21 +154,27 @@ e_nav_dbus_init(void)
 void
 e_nav_dbus_shutdown(void)
 {
-   if (e_conn)
+   if (ddata.alive_proxy)
      {
-	e_dbus_connection_close(e_conn);
-	e_conn = NULL;
+	e_dbus_proxy_destroy(ddata.alive_proxy);
+	ddata.alive_proxy = NULL;
+     }
+
+   if (ddata.e_conn)
+     {
+	e_dbus_connection_close(ddata.e_conn);
+	ddata.e_conn = NULL;
 
 	e_dbus_shutdown();
      }
 
-   initialized = -1;
+   ddata.initialized = -1;
 }
 
 E_DBus_Connection *
 e_nav_dbus_connection_get(void)
 {
-   return e_conn;
+   return ddata.e_conn;
 }
 
 static Diversity_DBus *

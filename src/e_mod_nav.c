@@ -444,6 +444,32 @@ on_property_changed(void *data, DBusMessage *msg)
      }
 }
 
+static void
+on_daemon_dead_confirm(void *data, Evas_Object *obj, Evas_Object *src_obj)
+{
+   e_alert_deactivate(obj);
+
+   _e_mod_nav_shutdown();
+   ecore_main_loop_quit();
+}
+
+static void
+on_daemon_dead(void *data)
+{
+   Evas_Object *ad;
+
+   ad = e_alert_add(evas_object_evas_get(nav));
+   e_alert_theme_source_set(ad, THEMEDIR);
+   e_alert_source_object_set(ad, nav);
+   e_alert_title_set(ad, _("ERROR"), _("DBus connection closed"));
+   e_alert_title_color_set(ad, 255, 0, 0, 255);
+
+   e_alert_button_add(ad, _("Exit"), on_daemon_dead_confirm, NULL);
+
+   evas_object_show(ad);
+   e_alert_activate(ad);
+}
+
 void
 _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg_local)
 {
@@ -458,7 +484,7 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg_local)
    theme_name = dn_config_string_get(cfg, "theme");
    e_nav_theme_init(theme_name);
 
-   e_nav_dbus_init();
+   e_nav_dbus_init(on_daemon_dead, NULL);
    world = diversity_world_new();
 
    nav = e_nav_add(evas, world);
