@@ -71,12 +71,12 @@ _e_nav_contact_cancel(void *data, Evas_Object *li)
 }
 
 static void
-_e_nav_contact_sel(void *data, Evas_Object *li, Evas_Object *bard)
+_e_nav_contact_sel(void *data, Evas_Object *li, E_Nav_List_Item *bard)
 {
    E_Smart_Data *sd = data;
    const char *name;
 
-   name = e_nav_world_item_neo_other_name_get(bard);
+   name = e_nav_world_item_neo_other_name_get((Evas_Object *) bard);
    e_nav_entry_text_set(sd->entry, name);
 
    evas_object_hide(sd->contact_list);
@@ -84,15 +84,15 @@ _e_nav_contact_sel(void *data, Evas_Object *li, Evas_Object *bard)
 }
 
 static int
-_e_nav_contact_sort(void *data, Evas_Object *bard1, Evas_Object *bard2)
+_e_nav_contact_sort(void *data, E_Nav_List_Item *bard1, E_Nav_List_Item *bard2)
 {
    const char *p1, *p2;
 
-   p1 = e_nav_world_item_neo_other_name_get(bard1);
+   p1 = e_nav_world_item_neo_other_name_get((Evas_Object *) bard1);
    if (!p1)
      return -1;
 
-   p2 = e_nav_world_item_neo_other_name_get(bard2);
+   p2 = e_nav_world_item_neo_other_name_get((Evas_Object *) bard2);
    if (!p2)
      return 1;
 
@@ -187,9 +187,9 @@ e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
 
    for (l = contacts; l; l = l->next)
      {
-	Evas_Object *bard = l->data;
+	E_Nav_List_Item *bard = l->data;
 
-	e_nav_list_object_add(sd->contact_list, bard);
+	e_nav_list_item_add(sd->contact_list, bard);
      }
 
    e_nav_list_thaw(sd->contact_list);

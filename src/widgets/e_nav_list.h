@@ -25,6 +25,9 @@
 
 #include <Evas.h>
 
+typedef struct _E_Nav_List_Item E_Nav_List_Item;
+
+/* see e_nav_tree_model.h */
 enum {
      E_NAV_LIST_TYPE_AP,
      E_NAV_LIST_TYPE_BARD,
@@ -34,17 +37,17 @@ enum {
 Evas_Object    *e_nav_list_add(Evas *e, int type);
 
 void            e_nav_list_title_set(Evas_Object *li, const char *title);
-void            e_nav_list_sort_set(Evas_Object *li, int (*func)(void *data, Evas_Object *obj1, Evas_Object *obj2), void *data);
+void            e_nav_list_sort_set(Evas_Object *li, int (*func)(void *data, E_Nav_List_Item *item1, E_Nav_List_Item *item2), void *data);
 
 void            e_nav_list_button_add(Evas_Object *li, const char *label, void (*func)(void *data, Evas_Object *li), void *data);
 void            e_nav_list_button_remove(Evas_Object *li, void (*func)(void *data, Evas_Object *li), void *data);
 
-void            e_nav_list_callback_add(Evas_Object *li, void (*func)(void *data, Evas_Object *li, Evas_Object *obj), void *data);
+void            e_nav_list_callback_add(Evas_Object *li, void (*func)(void *data, Evas_Object *li, E_Nav_List_Item *item), void *data);
 void            e_nav_list_callback_del(Evas_Object *li, void *func, void *data);
 
-void            e_nav_list_object_add(Evas_Object *li, Evas_Object *obj);
-void            e_nav_list_object_remove(Evas_Object *li, Evas_Object *obj);
-void            e_nav_list_object_update(Evas_Object *li, Evas_Object *obj);
+void            e_nav_list_item_add(Evas_Object *li, E_Nav_List_Item *item);
+void            e_nav_list_item_remove(Evas_Object *li, E_Nav_List_Item *item);
+void            e_nav_list_item_update(Evas_Object *li, E_Nav_List_Item *item);
 void            e_nav_list_clear(Evas_Object *li);
 
 void            e_nav_list_freeze(Evas_Object *li);

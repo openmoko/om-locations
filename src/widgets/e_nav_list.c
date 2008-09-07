@@ -40,12 +40,12 @@ struct _E_Smart_Data
    Etk_Widget      *embed;
    Etk_Widget      *tree;
    Etk_Tree_Col    *col;
-   
+
    int frozen;
 
    Evas_List       *callbacks;
 
-   int            (*sort_cb)(void *data, Evas_Object *obj1, Evas_Object *obj2);
+   int            (*sort_cb)(void *data, E_Nav_List_Item *item1, E_Nav_List_Item *item2);
    void            *sort_data;
 
    void           (*button_cb)(void *data, Evas_Object *li);
@@ -55,7 +55,7 @@ struct _E_Smart_Data
 
 struct _List_Row_Callback
 {
-   void (*func)(void *data, Evas_Object *li, Evas_Object *obj);
+   void (*func)(void *data, Evas_Object *li, E_Nav_List_Item *item);
    void *data;
 };
 
@@ -77,28 +77,24 @@ static int
 _list_compare(Etk_Tree_Col *col, Etk_Tree_Row *row1, Etk_Tree_Row *row2, void *data)
 {
    E_Smart_Data *sd = data;
-   Evas_Object *obj1, *obj2;
+   E_Nav_List_Item *item1, *item2;
 
-   obj1 = etk_tree_row_data_get(row1);
-   if (!row1 || !obj1)
+   item1 = etk_tree_row_data_get(row1);
+   if (!row1 || !item1)
      return 1;
 
-   obj2 = etk_tree_row_data_get(row2);
-   if (!row2 || !obj2)
+   item2 = etk_tree_row_data_get(row2);
+   if (!row2 || !item2)
      return -1;
 
-   return sd->sort_cb(sd->sort_data, obj1, obj2);
+   return sd->sort_cb(sd->sort_data, item1, item2);
 }
 
 static void
-_list_hide_cb(void *data, Evas *evas, Evas_Object *obj, void *event)
+_list_hide_cb(void *data, Evas *evas, Evas_Object *li, void *event)
 {
-   E_Smart_Data *sd;
+   E_Smart_Data *sd = data;
    Etk_Tree_Row *row;
-
-   sd = evas_object_smart_data_get(data);
-   if (!sd)
-     return;
 
    row = etk_tree_selected_row_get(ETK_TREE(sd->tree));
    if (row)
@@ -110,25 +106,25 @@ _list_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up 
 {
    Evas_Object *li = data;
    E_Smart_Data *sd;
-   Evas_Object *obj;
+   E_Nav_List_Item *item;
    Evas_List *l;
 
    SMART_CHECK(li, ETK_TRUE;);
 
-   obj = etk_tree_row_data_get(row);
+   item = etk_tree_row_data_get(row);
 
    for (l = sd->callbacks; l; l = l->next)
      {
 	List_Row_Callback *cb = l->data;
 
-	cb->func(cb->data, li, obj);
+	cb->func(cb->data, li, item);
      }
 
    return ETK_TRUE;
 }
 
 static void
-_list_button_clicked_cb(void *data, Evas_Object *obj, const char *emission, const char *source)
+_list_button_clicked_cb(void *data, Evas_Object *frame, const char *emission, const char *source)
 {
    E_Smart_Data *sd = data;
 
@@ -165,7 +161,7 @@ e_nav_list_add(Evas *e, int type)
 	 "mouse,clicked,*", "button.text", _list_button_clicked_cb, sd);
 
    evas_object_event_callback_add(sd->obj, EVAS_CALLBACK_HIDE,
-	 _list_hide_cb, li);
+	 _list_hide_cb, sd);
 
    sd->tree = etk_tree_new();
    etk_tree_headers_visible_set(ETK_TREE(sd->tree), 0);
@@ -218,7 +214,7 @@ e_nav_list_title_set(Evas_Object *li, const char *title)
 }
 
 void
-e_nav_list_sort_set(Evas_Object *li, int (*func)(void *data, Evas_Object *li, Evas_Object *obj), void *data)
+e_nav_list_sort_set(Evas_Object *li, int (*func)(void *data, E_Nav_List_Item *item1, E_Nav_List_Item *item2), void *data)
 {
    E_Smart_Data *sd;
 
@@ -272,7 +268,7 @@ e_nav_list_button_remove(Evas_Object *li, void (*func)(void *data, Evas_Object *
 }
 
 void
-e_nav_list_callback_add(Evas_Object *li, void (*func)(void *data, Evas_Object *li, Evas_Object *obj), void *data)
+e_nav_list_callback_add(Evas_Object *li, void (*func)(void *data, Evas_Object *li, E_Nav_List_Item *item), void *data)
 {
    E_Smart_Data *sd;
    List_Row_Callback *cb;
@@ -314,20 +310,20 @@ e_nav_list_callback_del(Evas_Object *li, void *func, void *data)
 }
 
 void
-e_nav_list_object_add(Evas_Object *li, Evas_Object *obj)
+e_nav_list_item_add(Evas_Object *li, E_Nav_List_Item *item)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *tree_row;
 
    SMART_CHECK(li, ;);
 
-   if (!obj)
+   if (!item)
      return;
 
-   tree_row = etk_tree_row_prepend(ETK_TREE(sd->tree), NULL, sd->col, obj, NULL);
+   tree_row = etk_tree_row_prepend(ETK_TREE(sd->tree), NULL, sd->col, item, NULL);
    if (tree_row)
      {
-	etk_tree_row_data_set(tree_row, obj);
+	etk_tree_row_data_set(tree_row, item);
 
 	if (!sd->frozen)
 	  etk_tree_col_sort(sd->col, TRUE);
@@ -354,35 +350,35 @@ _etk_tree_row_find_by_data(Etk_Tree *tree, void *data)
 }
 
 void
-e_nav_list_object_update(Evas_Object *li, Evas_Object *obj)
+e_nav_list_item_update(Evas_Object *li, E_Nav_List_Item *item)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *row;
 
    SMART_CHECK(li, ;);
 
-   if (!obj)
+   if (!item)
      return;
 
-   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), obj);
+   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), item);
    if (!row)
      return;
 
-   etk_tree_row_fields_set(row, FALSE, sd->col, obj, NULL);
+   etk_tree_row_fields_set(row, FALSE, sd->col, item, NULL);
 
    if (!sd->frozen)
      etk_tree_col_sort(sd->col, TRUE);
 }
 
 void
-e_nav_list_object_remove(Evas_Object *li, Evas_Object *obj)
+e_nav_list_item_remove(Evas_Object *li, E_Nav_List_Item *item)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *row;
 
    SMART_CHECK(li, ;);
 
-   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), obj);
+   row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), item);
    if (row)
      etk_tree_row_delete(row);
 }

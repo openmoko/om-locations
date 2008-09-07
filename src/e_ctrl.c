@@ -105,8 +105,9 @@ e_ctrl_add(Evas *e)
 }
 
 static void
-_e_nav_tag_sel(void *data, Evas_Object *tl, Evas_Object *loc)
+_e_nav_tag_sel(void *data, Evas_Object *tl, E_Nav_List_Item *item)
 {
+   Evas_Object *loc = (Evas_Object *) item;
    E_Smart_Data *sd; 
    int unread;
 
@@ -129,7 +130,7 @@ _e_nav_tag_sel(void *data, Evas_Object *tl, Evas_Object *loc)
 		"Unread", DBUS_TYPE_BOOLEAN, &unread);
 
 	e_nav_world_item_location_unread_set(loc, 0); 
-	e_nav_list_object_update(sd->listview, loc);
+	e_nav_list_item_update(sd->listview, item);
      }
 
    e_nav_world_item_location_details_set(loc, 1);
@@ -146,12 +147,12 @@ _e_nav_tag_sel(void *data, Evas_Object *tl, Evas_Object *loc)
 }
 
 static int
-_e_nav_tag_sort(void *data, Evas_Object *tag1, Evas_Object *tag2)
+_e_nav_tag_sort(void *data, E_Nav_List_Item *tag1, E_Nav_List_Item *tag2)
 {
    time_t t1, t2;
 
-   t1 = e_nav_world_item_location_timestamp_get(tag1);
-   t2 = e_nav_world_item_location_timestamp_get(tag2);
+   t1 = e_nav_world_item_location_timestamp_get((Evas_Object *) tag1);
+   t2 = e_nav_world_item_location_timestamp_get((Evas_Object *) tag2);
 
    return (t2 - t1);
 }
@@ -162,7 +163,7 @@ e_ctrl_taglist_tag_set(Evas_Object *obj, Evas_Object *loc)
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(obj);
-   e_nav_list_object_update(sd->listview, loc);
+   e_nav_list_item_update(sd->listview, (E_Nav_List_Item *) loc);
 }
 
 void
@@ -171,7 +172,7 @@ e_ctrl_taglist_tag_add(Evas_Object *obj, Evas_Object *loc)
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(obj);
-   e_nav_list_object_add(sd->listview, loc);
+   e_nav_list_item_add(sd->listview, (E_Nav_List_Item *) loc);
 }
 
 void
@@ -180,7 +181,7 @@ e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc)
    E_Smart_Data *sd;
 
    sd = evas_object_smart_data_get(obj);
-   e_nav_list_object_remove(sd->listview, loc);
+   e_nav_list_item_remove(sd->listview, (E_Nav_List_Item *) loc);
 }
 
 void

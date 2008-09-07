@@ -23,7 +23,10 @@
 
 #include "etk_tree.h"
 
+/* each row is a e_nav_item_neo_other */
 Etk_Tree_Model *e_nav_tree_model_bard_new(void);
+
+/* each row is a e_nav_item_location */
 Etk_Tree_Model *e_nav_tree_model_tag_new(void);
 
 #endif /* E_NAV_TREE_MODEL_H */

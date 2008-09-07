@@ -33,9 +33,11 @@ typedef struct _Object_Data Object_Data;
 typedef struct _Tag_Data Tag_Data;
 typedef struct _Bard_Data Bard_Data;
 
+typedef struct _Object Object;
+
 struct _Object_Data
 {
-   Evas_Object *obj;
+   Object *obj;
    Evas_Bool changed;
 };
 
@@ -64,12 +66,12 @@ static void
 _object_cell_data_set(Etk_Tree_Model *model, void *cell_data, va_list *args)
 {
    Object_Data *odata = cell_data;
-   Evas_Object *obj;
+   Object *obj;
 
    if (!odata || !args)
      return;
 
-   obj = va_arg(*args, Evas_Object *);
+   obj = va_arg(*args, Object *);
    odata->obj = obj;
    odata->changed = 1;
 }
@@ -78,12 +80,12 @@ static void
 _object_cell_data_get(Etk_Tree_Model *model, void *cell_data, va_list *args)
 {
    Object_Data *odata = cell_data;
-   Evas_Object **obj;
+   Object **obj;
 
    if (!odata || ! args)
      return;
 
-   obj = va_arg(*args, Evas_Object **);
+   obj = va_arg(*args, Object **);
    if (obj)
      *obj = odata->obj;
 }
@@ -115,7 +117,7 @@ _bard_update(Evas_Object *bard, Bard_Data *bdata)
 
    snprintf(text, sizeof(text),
 	 "<b><font_size=48>%s</></b>",
-	 e_nav_world_item_neo_other_name_get(bdata->data.obj));
+	 e_nav_world_item_neo_other_name_get((Evas_Object *) bdata->data.obj));
 
    edje_object_part_text_set(bard, "etk.text.label", text);
    edje_object_size_min_calc(bard, &bdata->w, &bdata->h);
@@ -213,7 +215,7 @@ _tag_update(Evas_Object *tag, Tag_Data *tdata)
 	 evas_object_data_get(tag, "e_nav_tag") == tdata)
      return;
 
-   _tag_style(text, sizeof(text), tdata->data.obj);
+   _tag_style(text, sizeof(text), (Evas_Object *) tdata->data.obj);
 
    edje_object_part_text_set(tag, "etk.text.label", text);
    edje_object_size_min_calc(tag, &tdata->w, &tdata->h);
