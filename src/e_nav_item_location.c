@@ -114,6 +114,7 @@ alert_location_delete_confirmed(void *data, Evas_Object *obj, Evas_Object *src_o
    ok = diversity_world_tag_remove(world, locd->tag);
    if(ok)
      {
+	diversity_tag_destroy(locd->tag);
         locd->tag = NULL;
      }
    e_alert_deactivate(obj);

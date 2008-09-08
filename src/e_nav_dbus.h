@@ -92,7 +92,7 @@ Diversity_World    *diversity_world_new(void);
 void                diversity_world_destroy(Diversity_World *world);
 Diversity_Viewport *diversity_world_viewport_add(Diversity_World *world, double lon1, double lat1, double lon2, double lat2);
 int                 diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view);
-Diversity_Tag      *diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description);
+char               *diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description);
 int                 diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag);
 Diversity_Bard     *diversity_world_get_self(Diversity_World *world);
 int                 diversity_world_snapshot(Diversity_World *world);

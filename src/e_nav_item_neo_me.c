@@ -62,9 +62,9 @@ static void
 location_new(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    if(!src_obj) return;
-   Diversity_Tag *tag;
    const char *name, *note;
    char *description;
+   char *obj_path;
    Location_Save_Data *lsd;
 
    name = e_dialog_textblock_text_get(obj, _("Edit title"));
@@ -81,15 +81,19 @@ location_new(void *data, Evas_Object *obj, Evas_Object *src_obj)
      }
 
    Diversity_World *world = (Diversity_World*)e_nav_world_get();
-   tag = diversity_world_tag_add(world, lsd->lon, lsd->lat, description);
+   obj_path = diversity_world_tag_add(world, lsd->lon, lsd->lat, description);
    free(lsd);
 
    e_dialog_deactivate(obj);
 
-   if(!tag) 
+   if(!obj_path) 
      {
         printf("New location error \n");
         return;
+     }
+   else
+     {
+	free(obj_path);
      }
 }
 
