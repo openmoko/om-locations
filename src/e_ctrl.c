@@ -642,26 +642,26 @@ e_ctrl_message_text_del(Evas_Object *obj, unsigned int msg_id)
 }
 
 void
-e_ctrl_contact_add(Evas_Object *obj, Evas_Object *bard)
+e_ctrl_contact_add(Evas_Object *obj, E_Nav_Card *card)
 {
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, ;);
 
-   sd->contacts = evas_list_prepend(sd->contacts, bard);
+   sd->contacts = evas_list_prepend(sd->contacts, card);
 }
 
 void
-e_ctrl_contact_delete(Evas_Object *obj, Evas_Object *bard)
+e_ctrl_contact_delete(Evas_Object *obj, E_Nav_Card *card)
 {
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, ;);
 
-   sd->contacts = evas_list_remove(sd->contacts, bard);
+   sd->contacts = evas_list_remove(sd->contacts, card);
 }
 
-Evas_Object *
+E_Nav_Card *
 e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name)
 {
    E_Smart_Data *sd;
@@ -671,17 +671,17 @@ e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name)
 
    for (l = sd->contacts; l; l = l->next)
      {
-	Evas_Object *bard = l->data;
-	const char *n = e_nav_world_item_neo_other_name_get(bard);
+	E_Nav_Card *card = l->data;
+	const char *n = e_nav_card_name_get(card);
 
 	if (n && name && n[0] == name[0] && strcmp(n, name) == 0)
-	  return bard;
+	  return card;
      }
 
    return NULL;
 }
 
-Evas_Object *
+E_Nav_Card *
 e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number)
 {
    E_Smart_Data *sd;
@@ -691,11 +691,11 @@ e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number)
 
    for (l = sd->contacts; l; l = l->next)
      {
-	Evas_Object *bard = l->data;
-	const char *p = e_nav_world_item_neo_other_phone_get(bard);
+	E_Nav_Card *card = l->data;
+	const char *p = e_nav_card_phone_get(card);
 
 	if (p && number && p[0] == number[0] && strcmp(p, number) == 0)
-	  return bard;
+	  return card;
      }
 
    return NULL;

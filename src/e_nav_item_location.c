@@ -155,7 +155,7 @@ location_send(Evas_Object *item, const char *to)
 {
    Location_Data *locd;
    Diversity_Equipment *eqp;
-   Evas_Object *bard;
+   E_Nav_Card *card;
    const char *error = NULL;
 
    locd = evas_object_data_get(item, "nav_world_item_location_data");
@@ -164,22 +164,22 @@ location_send(Evas_Object *item, const char *to)
    if (!locd || !to || !eqp)
      return _("Unable to send SMS");
 
-   bard = e_ctrl_contact_get_by_name(xxx_ctrl, to);
-   if (!bard)
+   card = e_ctrl_contact_get_by_name(xxx_ctrl, to);
+   if (!card)
      {
 	to = trim_leading_space(to);
-	bard = e_ctrl_contact_get_by_name(xxx_ctrl, to);
-	if (!bard)
-	  bard = e_ctrl_contact_get_by_number(xxx_ctrl, to);
+	card = e_ctrl_contact_get_by_name(xxx_ctrl, to);
+	if (!card)
+	  card = e_ctrl_contact_get_by_number(xxx_ctrl, to);
      }
 
-   if (bard || is_phone_number(to))
+   if (card || is_phone_number(to))
      {
 	int ok;
 
-	if (bard)
+	if (card)
 	  ok = diversity_sms_tag_share((Diversity_Sms *) eqp,
-		e_nav_world_item_neo_other_bard_get(bard),
+		e_nav_card_bard_get(card),
 		locd->tag);
 	else
 	  ok = diversity_sms_tag_send((Diversity_Sms *) eqp,

@@ -181,9 +181,8 @@ e_nav_list_add(Evas *e, int type)
    sd->col = etk_tree_col_new(ETK_TREE(sd->tree), NULL, 455, 0.0);
    switch (type)
      {
-      case E_NAV_LIST_TYPE_AP:
-      case E_NAV_LIST_TYPE_BARD:
-	 model = e_nav_tree_model_bard_new();
+      case E_NAV_LIST_TYPE_CARD:
+	 model = e_nav_tree_model_card_new();
 	 break;
       case E_NAV_LIST_TYPE_TAG:
       default:

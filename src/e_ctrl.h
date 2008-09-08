@@ -45,10 +45,10 @@ void                e_ctrl_taglist_tag_delete(Evas_Object *obj, Evas_Object *loc
 void                e_ctrl_taglist_freeze(Evas_Object *obj);
 void                e_ctrl_taglist_thaw(Evas_Object *obj);
 
-void                e_ctrl_contact_add(Evas_Object *obj, Evas_Object *bard);
-void                e_ctrl_contact_delete(Evas_Object *obj, Evas_Object *bard);
-Evas_Object        *e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name);
-Evas_Object        *e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number);
+void                e_ctrl_contact_add(Evas_Object *obj, E_Nav_Card *card);
+void                e_ctrl_contact_delete(Evas_Object *obj, E_Nav_Card *card);
+E_Nav_Card         *e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name);
+E_Nav_Card         *e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number);
 /* the list is owned by e_ctrl */
 Evas_List          *e_ctrl_contact_list(Evas_Object *obj);
 

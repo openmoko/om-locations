@@ -29,8 +29,7 @@ typedef struct _E_Nav_List_Item E_Nav_List_Item;
 
 /* see e_nav_tree_model.h */
 enum {
-     E_NAV_LIST_TYPE_AP,
-     E_NAV_LIST_TYPE_BARD,
+     E_NAV_LIST_TYPE_CARD,
      E_NAV_LIST_TYPE_TAG,
 };
 

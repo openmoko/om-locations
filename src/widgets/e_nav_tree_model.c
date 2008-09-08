@@ -31,7 +31,7 @@
 
 typedef struct _Object_Data Object_Data;
 typedef struct _Tag_Data Tag_Data;
-typedef struct _Bard_Data Bard_Data;
+typedef struct _Card_Data Card_Data;
 
 typedef struct _Object Object;
 
@@ -47,7 +47,7 @@ struct _Tag_Data
    int w, h;
 };
 
-struct _Bard_Data
+struct _Card_Data
 {
    Object_Data data;
    int w, h;
@@ -91,7 +91,7 @@ _object_cell_data_get(Etk_Tree_Model *model, void *cell_data, va_list *args)
 }
 
 static void
-_bard_objects_create(Etk_Tree_Model *model, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL], Evas *evas)
+_card_objects_create(Etk_Tree_Model *model, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL], Evas *evas)
 {
    Evas_Object *cell;
 
@@ -107,37 +107,37 @@ _bard_objects_create(Etk_Tree_Model *model, Evas_Object *cell_objects[ETK_TREE_M
 }
 
 static void
-_bard_update(Evas_Object *bard, Bard_Data *bdata)
+_card_update(Evas_Object *card, Card_Data *cdata)
 {
    char text[1024];
 
-   if (!bdata->data.changed &&
-	 evas_object_data_get(bard, "e_nav_bard") == bdata)
+   if (!cdata->data.changed &&
+	 evas_object_data_get(card, "e_nav_card") == cdata)
      return;
 
    snprintf(text, sizeof(text),
 	 "<b><font_size=48>%s</></b>",
-	 e_nav_world_item_neo_other_name_get((Evas_Object *) bdata->data.obj));
+	 e_nav_card_name_get((E_Nav_Card *) cdata->data.obj));
 
-   edje_object_part_text_set(bard, "etk.text.label", text);
-   edje_object_size_min_calc(bard, &bdata->w, &bdata->h);
+   edje_object_part_text_set(card, "etk.text.label", text);
+   edje_object_size_min_calc(card, &cdata->w, &cdata->h);
 
-   evas_object_data_set(bard, "e_nav_bard", bdata);
-   bdata->data.changed = 0;
+   evas_object_data_set(card, "e_nav_card", cdata);
+   cdata->data.changed = 0;
 }
 
 static Etk_Bool
-_bard_render(Etk_Tree_Model *model, Etk_Tree_Row *row, Etk_Geometry geometry, void *cell_data, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL], Evas *evas)
+_card_render(Etk_Tree_Model *model, Etk_Tree_Row *row, Etk_Geometry geometry, void *cell_data, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL], Evas *evas)
 {
-   Bard_Data *bdata = cell_data;
+   Card_Data *cdata = cell_data;
    Evas_Object * cell = cell_objects[0];
 
-   if (!bdata || !cell)
+   if (!cdata || !cell)
      return ETK_FALSE;
 
-   _bard_update(cell, bdata);
+   _card_update(cell, cdata);
 
-   evas_object_move(cell, geometry.x, geometry.y + ((geometry.h - bdata->h) / 2));
+   evas_object_move(cell, geometry.x, geometry.y + ((geometry.h - cdata->h) / 2));
    evas_object_resize(cell, geometry.w, geometry.h);
    evas_object_show(cell);
 
@@ -145,17 +145,17 @@ _bard_render(Etk_Tree_Model *model, Etk_Tree_Row *row, Etk_Geometry geometry, vo
 }
 
 static int
-_bard_width_get(Etk_Tree_Model *model, void *cell_data, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL])
+_card_width_get(Etk_Tree_Model *model, void *cell_data, Evas_Object *cell_objects[ETK_TREE_MAX_OBJECTS_PER_MODEL])
 {
-   Bard_Data *bdata = cell_data;
+   Card_Data *cdata = cell_data;
    Evas_Object * cell = cell_objects[0];
 
    if (!cell)
       return 0;
 
-   _bard_update(cell, bdata);
+   _card_update(cell, cdata);
 
-   return bdata->w;
+   return cdata->w;
 }
 
 static void
@@ -256,7 +256,7 @@ _tag_width_get(Etk_Tree_Model *model, void *cell_data, Evas_Object *cell_objects
    return tdata->w;
 }
 
-Etk_Tree_Model *e_nav_tree_model_bard_new(void)
+Etk_Tree_Model *e_nav_tree_model_card_new(void)
 {
    Etk_Tree_Model *model;
 
@@ -264,13 +264,13 @@ Etk_Tree_Model *e_nav_tree_model_bard_new(void)
    if (!model)
      return NULL;
 
-   model->cell_data_size = sizeof(Bard_Data);
+   model->cell_data_size = sizeof(Card_Data);
    model->cell_data_free = _object_cell_data_free;
    model->cell_data_set = _object_cell_data_set;
    model->cell_data_get = _object_cell_data_get;
-   model->objects_create = _bard_objects_create;
-   model->render = _bard_render;
-   model->width_get = _bard_width_get;
+   model->objects_create = _card_objects_create;
+   model->render = _card_render;
+   model->width_get = _card_width_get;
    model->cache_remove = NULL;
 
    return model;

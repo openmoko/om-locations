@@ -71,12 +71,12 @@ _e_nav_contact_cancel(void *data, Evas_Object *li)
 }
 
 static void
-_e_nav_contact_sel(void *data, Evas_Object *li, E_Nav_List_Item *bard)
+_e_nav_contact_sel(void *data, Evas_Object *li, E_Nav_List_Item *card)
 {
    E_Smart_Data *sd = data;
    const char *name;
 
-   name = e_nav_world_item_neo_other_name_get((Evas_Object *) bard);
+   name = e_nav_card_name_get((E_Nav_Card *) card);
    e_nav_entry_text_set(sd->entry, name);
 
    evas_object_hide(sd->contact_list);
@@ -84,15 +84,15 @@ _e_nav_contact_sel(void *data, Evas_Object *li, E_Nav_List_Item *bard)
 }
 
 static int
-_e_nav_contact_sort(void *data, E_Nav_List_Item *bard1, E_Nav_List_Item *bard2)
+_e_nav_contact_sort(void *data, E_Nav_List_Item *card1, E_Nav_List_Item *card2)
 {
    const char *p1, *p2;
 
-   p1 = e_nav_world_item_neo_other_name_get((Evas_Object *) bard1);
+   p1 = e_nav_card_name_get((E_Nav_Card *) card1);
    if (!p1)
      return -1;
 
-   p2 = e_nav_world_item_neo_other_name_get((Evas_Object *) bard2);
+   p2 = e_nav_card_name_get((E_Nav_Card *) card2);
    if (!p2)
      return 1;
 
@@ -120,7 +120,7 @@ e_contact_editor_callbacks_set(Evas_Object *obj, void (*positive_func)(void *dat
    e_nav_entry_button_add(sd->entry, _("Add Contact"), on_add_contact, sd);
 
    sd->contact_list = e_nav_list_add(evas_object_evas_get(obj),
-	 E_NAV_LIST_TYPE_BARD);
+	 E_NAV_LIST_TYPE_CARD);
    e_nav_list_title_set(sd->contact_list, _("Select a contact"));
    e_nav_list_sort_set(sd->contact_list, _e_nav_contact_sort, NULL);
    e_nav_list_button_add(sd->contact_list, _("Cancel"), _e_nav_contact_cancel, sd);

@@ -53,10 +53,10 @@ static struct _E_Module_Data {
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void gps_search_stop();
 
+#if 0
 static void
 viewport_ap_update(Evas_Object *nwi)
 {
-#if 0
    Evas_Object *nwi;
    double lon = 0.0, lat = 0.0, w = 0.0, h = 0.0;
    int accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;
@@ -94,17 +94,17 @@ viewport_ap_update(Evas_Object *nwi)
      e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_WEP);
 
    return nwi;
-#endif
 }
+#endif
 
 static void
-viewport_bard_update(Evas_Object *nwi)
+viewport_card_update(E_Nav_Card *card)
 {
    Diversity_Bard *bard;
    char *name = NULL;
    char *phone = NULL;
 
-   bard = e_nav_world_item_neo_other_bard_get(nwi);
+   bard = e_nav_card_bard_get(card);
    if (!bard)
      return;
 
@@ -115,19 +115,19 @@ viewport_bard_update(Evas_Object *nwi)
 
    if (name)
      {
-	e_nav_world_item_neo_other_name_set(nwi, name);
+	e_nav_card_name_set(card, name);
 	free(name);
      }
 
    if (phone)
      {
-	e_nav_world_item_neo_other_phone_set(nwi, phone);
+	e_nav_card_phone_set(card, phone);
 	free(phone);
      }
 
    diversity_dbus_signal_connect((Diversity_DBus *) bard,
 	 DIVERSITY_DBUS_IFACE_OBJECT, "PropertyChanged",
-	 on_neo_other_property_changed, nwi);
+	 on_neo_other_property_changed, card);
 
    return;
 }
@@ -180,70 +180,95 @@ viewport_tag_update(Evas_Object *nwi)
    e_nav_world_item_update(nwi);
 }
 
-static Evas_Object *
+static int
 viewport_item_add(Diversity_Object *obj)
 {
-   Evas_Object *nwi;
+   void *item = NULL;
    int type;
 
    type = diversity_object_type_get(obj);
    switch (type)
      {
       case DIVERSITY_OBJECT_TYPE_AP:
-	 nwi = NULL;
-	 viewport_ap_update(nwi);
 	 break;
       case DIVERSITY_OBJECT_TYPE_BARD:
-	 nwi = e_nav_world_item_neo_other_add(mdata.nav,
-	       THEMEDIR, 0.0, 0.0, (void *) obj);
-	 viewport_bard_update(nwi);
-	 e_ctrl_contact_add(mdata.ctrl, nwi);
+	   {
+	      E_Nav_Card *card;
+
+	      card = e_nav_card_new();
+	      e_nav_card_bard_set(card, (Diversity_Bard *) obj);
+	      viewport_card_update(card);
+
+	      e_ctrl_contact_add(mdata.ctrl, card);
+
+	      item = card;
+	   }
 	 break;
       case DIVERSITY_OBJECT_TYPE_TAG:
-	 nwi = e_nav_world_item_location_add(mdata.nav,
-	       THEMEDIR, 0.0, 0.0, (void *) obj);
-	 viewport_tag_update(nwi);
-	 e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
+	   {
+	      Evas_Object *nwi;
+
+	      nwi = e_nav_world_item_location_add(mdata.nav,
+		    THEMEDIR, 0.0, 0.0, (void *) obj);
+	      viewport_tag_update(nwi);
+
+	      e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
+
+	      item = nwi;
+	   }
 	 break;
       default:
-	 nwi = NULL;
 	 break;
      }
 
-   return nwi;
+   if (item)
+     diversity_object_data_set(obj, item);
+
+   return (item != NULL);
 }
 
 static void
 viewport_item_remove(Diversity_Object *obj)
 {
-   Evas_Object *nwi;
+   void *item;
    int type;
 
-   nwi = diversity_object_data_get(obj);
+   item = diversity_object_data_get(obj);
+   if (!item)
+     return;
+
    type = diversity_object_type_get(obj);
 
    switch (type)
      {
       case DIVERSITY_OBJECT_TYPE_BARD:
-	 e_ctrl_contact_delete(mdata.ctrl, nwi);
+	   {
+	      E_Nav_Card *card = item;
+
+	      e_ctrl_contact_delete(mdata.ctrl, card);
+	      e_nav_card_destroy(card);
+	   }
 	 break;
       case DIVERSITY_OBJECT_TYPE_TAG:
-	 e_ctrl_taglist_tag_delete(mdata.ctrl, nwi);
+	   {
+	      Evas_Object *nwi = item;
+
+	      e_ctrl_taglist_tag_delete(mdata.ctrl, nwi);
+	      e_nav_world_item_delete(mdata.nav, nwi);
+	      evas_object_del(nwi);
+	   }
       default:
 	 break;
      }
 
-   e_nav_world_item_delete(mdata.nav, nwi);
-   evas_object_del(nwi);
-
-   diversity_object_destroy(obj);
+   diversity_object_data_set(obj, NULL);
 }
 
 static void
 viewport_object_add(const char *obj_path, int type)
 {
    Diversity_Object *obj;
-   Evas_Object *nwi;
+   Evas_Object *neo_me;
 
    if (e_ctrl_object_store_item_get(mdata.ctrl, obj_path))
      return;
@@ -253,20 +278,18 @@ viewport_object_add(const char *obj_path, int type)
    else
      obj = diversity_object_new(obj_path);
 
-   nwi = viewport_item_add(obj);
-   if (!nwi)
+   if (!viewport_item_add(obj))
      {
 	diversity_object_destroy(obj);
 
 	return;
      }
 
-   diversity_object_data_set(obj, nwi);
    e_ctrl_object_store_item_add(mdata.ctrl, obj_path, obj);
 
-   nwi = e_nav_world_neo_me_get(mdata.nav);
-   if (nwi)
-     e_nav_world_item_raise(nwi);
+   neo_me = e_nav_world_neo_me_get(mdata.nav);
+   if (neo_me)
+     e_nav_world_item_raise(neo_me);
 }
 
 static void
@@ -309,46 +332,48 @@ on_viewport_object_removed(void *data, DBusMessage *msg)
 
    obj = e_ctrl_object_store_item_remove(mdata.ctrl, obj_path);
    if (obj)
-     viewport_item_remove(obj);
+     {
+	viewport_item_remove(obj);
+	diversity_object_destroy(obj);
+     }
 }
 
 static void
 on_neo_other_property_changed(void *data, DBusMessage *msg)
 {
-   Evas_Object *neo_other_obj;
-   DBusMessageIter args;
-   DBusMessageIter subargs;
-   void *name;
-   void *value;
+   E_Nav_Card *card = data;
+   DBusMessageIter iter;
+   DBusMessageIter subiter;
+   const char *name, *value;
    int type;
 
-   /* Parse the dbus signal message, get property name and value */
-   if (!dbus_message_iter_init(msg, &args))
+   if (!dbus_message_iter_init(msg, &iter))
      return;
-   if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&args))
-     return;
-   dbus_message_iter_get_basic(&args, &name);
-   if(!dbus_message_iter_has_next(&args)) return;
-   dbus_message_iter_next(&args);
-   if(dbus_message_iter_get_arg_type(&args) != DBUS_TYPE_VARIANT)
-     return;
-   dbus_message_iter_recurse(&args, &subargs);
-   type = dbus_message_iter_get_arg_type(&subargs);
-   if (!dbus_type_is_basic(type))
-     return;
-   dbus_message_iter_get_basic(&subargs, &value); 
 
-   if(!data) return;
-   neo_other_obj = data;
+   type = dbus_message_iter_get_arg_type(&iter);
+   if (type != DBUS_TYPE_STRING)
+     return;
 
-   if(!strcasecmp(name, "fullname"))
-     e_nav_world_item_neo_other_name_set(neo_other_obj, value);
-   if(!strcasecmp(name, "phone"))
-     e_nav_world_item_neo_other_phone_set(neo_other_obj, value);
-   if(!strcasecmp(name, "alias"))
-     e_nav_world_item_neo_other_alias_set(neo_other_obj, value);
-   if(!strcasecmp(name, "twitter"))
-     e_nav_world_item_neo_other_twitter_set(neo_other_obj, value);
+   dbus_message_iter_get_basic(&iter, &name);
+
+   if (!dbus_message_iter_next(&iter))
+     return;
+
+   type = dbus_message_iter_get_arg_type(&iter);
+   if (type != DBUS_TYPE_VARIANT)
+     return;
+
+   dbus_message_iter_recurse(&iter, &subiter);
+   type = dbus_message_iter_get_arg_type(&subiter);
+   if (type != DBUS_TYPE_STRING)
+     return;
+
+   dbus_message_iter_get_basic(&subiter, &value); 
+
+   if (strcasecmp(name, "fullname") == 0)
+     e_nav_card_name_set(card, value);
+   else if (strcasecmp(name, "phone") == 0)
+     e_nav_card_phone_set(card, value);
 }
 
 static void
