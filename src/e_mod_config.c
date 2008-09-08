@@ -218,6 +218,7 @@ dn_config_save(Diversity_Nav_Config *cfg)
 
         write(fd, data, len);  
      }
+   ecore_list_destroy(keys);
 
    /* release the lock */
    dn_config_file_unlock(fd);
