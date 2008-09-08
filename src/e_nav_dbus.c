@@ -507,7 +507,25 @@ diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
 void
 diversity_object_destroy(Diversity_Object *obj)
 {
-   diversity_dbus_destroy((Diversity_DBus *) obj);
+   switch (obj->type)
+     {
+     case DIVERSITY_OBJECT_TYPE_OBJECT:
+     default:
+	diversity_dbus_destroy((Diversity_DBus *) obj);
+	break;
+     case DIVERSITY_OBJECT_TYPE_VIEWPORT:
+	diversity_viewport_destroy((Diversity_Viewport *) obj);
+	break;
+     case DIVERSITY_OBJECT_TYPE_TAG:
+	diversity_tag_destroy((Diversity_Tag *) obj);
+	break;
+     case DIVERSITY_OBJECT_TYPE_BARD:
+	diversity_bard_destroy((Diversity_Bard *) obj);
+	break;
+     case DIVERSITY_OBJECT_TYPE_AP:
+	diversity_ap_destroy((Diversity_Ap *) obj);
+	break;
+     }
 }
 
 void *
@@ -839,6 +857,7 @@ diversity_viewport_new(const char *path)
 void
 diversity_viewport_destroy(Diversity_Viewport *view)
 {
+   view->obj.type = DIVERSITY_OBJECT_TYPE_OBJECT;
    diversity_object_destroy((Diversity_Object *) view);
 }
 
@@ -951,6 +970,7 @@ diversity_ap_new(const char *path)
 void
 diversity_ap_destroy(Diversity_Ap *ap)
 {
+   ap->obj.type = DIVERSITY_OBJECT_TYPE_OBJECT;
    diversity_object_destroy((Diversity_Object *) ap);
 }
 
@@ -968,6 +988,7 @@ diversity_bard_new(const char *path)
 void
 diversity_bard_destroy(Diversity_Bard *bard)
 {
+   bard->obj.type = DIVERSITY_OBJECT_TYPE_OBJECT;
    diversity_object_destroy((Diversity_Object *) bard);
 }
 
@@ -1090,6 +1111,7 @@ diversity_tag_new(const char *path)
 void
 diversity_tag_destroy(Diversity_Tag *tag)
 {
+   tag->obj.type = DIVERSITY_OBJECT_TYPE_OBJECT;
    diversity_object_destroy((Diversity_Object *) tag);
 }
 
