@@ -752,12 +752,16 @@ void
 e_nav_tileset_monitor_del(Evas_Object *obj, const char *dn)
 {
    E_Smart_Data *sd;
+   Ecore_File_Monitor *mon;
    Evas_List *l;
 
    SMART_CHECK(obj, ;);
 
-   if (!ecore_hash_remove(sd->mons, dn))
+   mon = ecore_hash_remove(sd->mons, dn);
+   if (!mon)
      return;
+
+   ecore_file_monitor_del(mon);
 
    //printf("del mon %s\n", dn);
 
