@@ -148,6 +148,7 @@ main(int argc, char **argv)
    dn_config_save(cfg);
    dn_config_destroy(cfg);
 
+   etk_shutdown();
    edje_shutdown();
    ecore_evas_shutdown();
    ecore_shutdown();
