@@ -55,5 +55,7 @@ Evas_List          *e_ctrl_contact_list(Evas_Object *obj);
 void                e_ctrl_object_store_item_add(Evas_Object *obj, const char *obj_path, void *item);
 void               *e_ctrl_object_store_item_get(Evas_Object *obj, const char *obj_path);
 void               *e_ctrl_object_store_item_remove(Evas_Object *obj, const char *obj_path);
+/* the list should be freed */
+Ecore_List         *e_ctrl_object_store_keys(Evas_Object *obj);
 
 #endif

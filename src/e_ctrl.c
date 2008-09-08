@@ -736,7 +736,17 @@ e_ctrl_object_store_item_remove(Evas_Object *obj, const char *obj_path)
 {
    E_Smart_Data *sd;
 
-   SMART_CHECK(obj, ;);
+   SMART_CHECK(obj, NULL;);
 
    return ecore_hash_remove(sd->objectStore, obj_path);
+}
+
+Ecore_List *
+e_ctrl_object_store_keys(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, NULL;);
+
+   return ecore_hash_keys(sd->objectStore);
 }

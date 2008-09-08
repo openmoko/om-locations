@@ -293,6 +293,19 @@ viewport_object_add(const char *obj_path, int type)
 }
 
 static void
+viewport_object_remove(const char *obj_path)
+{
+   Diversity_Object *obj;
+
+   obj = e_ctrl_object_store_item_remove(mdata.ctrl, obj_path);
+   if (!obj)
+     return;
+
+   viewport_item_remove(obj);
+   diversity_object_destroy(obj);
+}
+
+static void
 on_viewport_object_added(void *data, DBusMessage *msg)
 {
    const char *obj_path;
@@ -315,7 +328,6 @@ on_viewport_object_added(void *data, DBusMessage *msg)
 static void
 on_viewport_object_removed(void *data, DBusMessage *msg)
 {
-   Diversity_Object *obj;
    const char *obj_path;
    DBusError error;
 
@@ -330,12 +342,7 @@ on_viewport_object_removed(void *data, DBusMessage *msg)
 	return;
      }
 
-   obj = e_ctrl_object_store_item_remove(mdata.ctrl, obj_path);
-   if (obj)
-     {
-	viewport_item_remove(obj);
-	diversity_object_destroy(obj);
-     }
+   viewport_object_remove(obj_path);
 }
 
 static void
@@ -928,6 +935,8 @@ void
 _e_mod_nav_shutdown(void)
 {
    Evas_Object *neo_me;
+   Ecore_List *obj_list;
+   const char *obj_path;
    double lon, lat;
    int span;
 
@@ -961,6 +970,14 @@ _e_mod_nav_shutdown(void)
 	     e_dbus_proxy_destroy(atlas);
 	  }
      }
+
+   obj_list = e_ctrl_object_store_keys(mdata.ctrl);
+   ecore_list_first_goto(obj_list);
+
+   while ((obj_path = ecore_list_next(obj_list)))
+     viewport_object_remove(obj_path);
+
+   ecore_list_destroy(obj_list);
 
    _e_mod_nav_dbus_shutdown(0);
 
