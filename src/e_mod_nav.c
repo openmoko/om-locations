@@ -214,6 +214,32 @@ viewport_item_add(Diversity_Object *obj)
 }
 
 static void
+viewport_item_remove(Diversity_Object *obj)
+{
+   Evas_Object *nwi;
+   int type;
+
+   nwi = diversity_object_data_get(obj);
+   type = diversity_object_type_get(obj);
+
+   switch (type)
+     {
+      case DIVERSITY_OBJECT_TYPE_BARD:
+	 e_ctrl_contact_delete(mdata.ctrl, nwi);
+	 break;
+      case DIVERSITY_OBJECT_TYPE_TAG:
+	 e_ctrl_taglist_tag_delete(mdata.ctrl, nwi);
+      default:
+	 break;
+     }
+
+   e_nav_world_item_delete(mdata.nav, nwi);
+   evas_object_del(nwi);
+
+   diversity_object_destroy(obj);
+}
+
+static void
 viewport_object_add(const char *obj_path, int type)
 {
    Diversity_Object *obj;
@@ -230,13 +256,13 @@ viewport_object_add(const char *obj_path, int type)
    nwi = viewport_item_add(obj);
    if (!nwi)
      {
-	/* XXX use type-specific destroy function */
 	diversity_object_destroy(obj);
 
 	return;
      }
 
-   e_ctrl_object_store_item_add(mdata.ctrl, (void *) obj_path, (void *) nwi);
+   diversity_object_data_set(obj, nwi);
+   e_ctrl_object_store_item_add(mdata.ctrl, obj_path, obj);
 
    nwi = e_nav_world_neo_me_get(mdata.nav);
    if (nwi)
@@ -266,8 +292,8 @@ on_viewport_object_added(void *data, DBusMessage *msg)
 static void
 on_viewport_object_removed(void *data, DBusMessage *msg)
 {
+   Diversity_Object *obj;
    const char *obj_path;
-   Evas_Object *nwi;
    DBusError error;
 
    dbus_error_init(&error);
@@ -281,18 +307,9 @@ on_viewport_object_removed(void *data, DBusMessage *msg)
 	return;
      }
 
-   nwi = e_ctrl_object_store_item_get(mdata.ctrl, obj_path);
-   if (nwi)
-     {
-	/* XXX item type? */
-	e_ctrl_contact_delete(mdata.ctrl, nwi);
-
-	e_ctrl_object_store_item_remove(mdata.ctrl, obj_path);
-	e_nav_world_item_delete(mdata.nav, nwi);
-
-	/* XXX destroy the backing proxy? */
-	evas_object_del(nwi);
-     }
+   obj = e_ctrl_object_store_item_remove(mdata.ctrl, obj_path);
+   if (obj)
+     viewport_item_remove(obj);
 }
 
 static void

@@ -250,8 +250,6 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
    if(!obj) return;
 
-   e_ctrl_taglist_tag_delete(xxx_ctrl, obj);
-
    locd = evas_object_data_get(obj, "nav_world_item_location_data");
    if (!locd) return;
    if (locd->name) evas_stringshare_del(locd->name);
