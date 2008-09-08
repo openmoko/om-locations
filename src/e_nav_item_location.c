@@ -673,7 +673,7 @@ static void
 action_create(Action_Data *act_data)
 {
    const char *title = NULL, *msg;
-   Diversity_Tag *tag = NULL;
+   char *obj_path = NULL;
 
    if (act_data->dialog)
      {
@@ -685,11 +685,13 @@ action_create(Action_Data *act_data)
 	      _("Edit message"));
 	form_description(desc, sizeof(desc), title, msg);
 
-	tag = diversity_world_tag_add(act_data->world,
+	obj_path = diversity_world_tag_add(act_data->world,
 	      act_data->lon, act_data->lat, desc);
      }
 
-   if (!tag)
+   if (obj_path)
+     free(obj_path);
+   else
      printf("failed to add tag %s\n", title);
 
    action_next(act_data, ACTION_STATE_END);
@@ -747,9 +749,7 @@ action_delete(Action_Data *act_data)
    locd = evas_object_data_get(act_data->loc, "nav_world_item_location_data");
    if (locd)
      {
-	if (diversity_world_tag_remove(act_data->world, locd->tag))
-	  locd->tag = NULL;
-	else
+	if (!diversity_world_tag_remove(act_data->world, locd->tag))
 	  printf("failed to delete tag %s\n", locd->name);
      }
 

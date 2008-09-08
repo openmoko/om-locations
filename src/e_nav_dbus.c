@@ -720,11 +720,10 @@ diversity_world_viewport_remove(Diversity_World *world, Diversity_Viewport *view
    return ok;
 }
 
-Diversity_Tag *
+char *
 diversity_world_tag_add(Diversity_World *world, double lon, double lat, const char *description)
 {
    E_DBus_Proxy *proxy;
-   Diversity_Tag *tag;
    DBusError error;
    char *path;
 
@@ -751,10 +750,7 @@ diversity_world_tag_add(Diversity_World *world, double lon, double lat, const ch
 	return NULL;
      }
 
-   tag = diversity_tag_new(path);
-   free(path);
-
-   return tag;
+   return path;
 }
 
 int
@@ -776,10 +772,6 @@ diversity_world_tag_remove(Diversity_World *world, Diversity_Tag *tag)
 			    DBUS_TYPE_OBJECT_PATH, &path,
 			    DBUS_TYPE_INVALID,
 			    DBUS_TYPE_INVALID);
-   if(ok)
-     {
-        diversity_tag_destroy(tag);
-     }
 
    return ok;
 }
