@@ -49,8 +49,7 @@ struct _Diversity_Object
 {
    Diversity_DBus dbus;
    Diversity_Object_Type type;
-   double lon, lat;
-   double width, height;
+   void *user_data;
 };
 
 struct _Diversity_World
@@ -462,22 +461,6 @@ diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, co
    return ret;
 }
 
-#if 0
-static void
-on_geometry_changed(void *data, DBusMessage *msg)
-{
-   Diversity_Object *obj = data;
-
-   if (!dbus_message_get_args(msg, NULL,
-			      DBUS_TYPE_DOUBLE, &obj->lon,
-			      DBUS_TYPE_DOUBLE, &obj->lat,
-			      DBUS_TYPE_DOUBLE, &obj->width,
-			      DBUS_TYPE_DOUBLE, &obj->height,
-			      DBUS_TYPE_INVALID))
-     return;
-}
-#endif
-
 void *
 diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
 {
@@ -517,14 +500,6 @@ diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
    if (!obj) return NULL;
 
    obj->type = type;
-
-#if 0
-   diversity_dbus_signal_connect((Diversity_DBus *) obj,
-				 DIVERSITY_DBUS_IFACE_OBJECT,
-				"GeometryChanged",
-				on_geometry_changed,
-				obj);
-#endif
 
    return obj;
 }
@@ -631,6 +606,18 @@ diversity_object_type_get(Diversity_Object *obj)
      return DIVERSITY_OBJECT_TYPE_OBJECT;
 
    return obj->type;
+}
+
+void
+diversity_object_data_set(Diversity_Object *obj, void *data)
+{
+   obj->user_data = data;
+}
+
+void *
+diversity_object_data_get(Diversity_Object *obj)
+{
+   return obj->user_data;
 }
 
 Diversity_World *
