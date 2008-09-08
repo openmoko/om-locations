@@ -461,7 +461,7 @@ diversity_dbus_property_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface, co
    return ret;
 }
 
-void *
+static void *
 diversity_object_new_with_type(const char *path, Diversity_Object_Type type)
 {
    E_DBus_Connection *connection;

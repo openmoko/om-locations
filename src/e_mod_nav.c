@@ -272,10 +272,21 @@ viewport_object_add(const char *obj_path, int type)
    if (e_ctrl_object_store_item_get(mdata.ctrl, obj_path))
      return;
 
-   if (type >= 0)
-     obj = diversity_object_new_with_type(obj_path, type);
-   else
-     obj = diversity_object_new(obj_path);
+   switch (type)
+     {
+     case DIVERSITY_OBJECT_TYPE_TAG:
+	obj = (Diversity_Object *) diversity_tag_new(obj_path);
+	break;
+     case DIVERSITY_OBJECT_TYPE_BARD:
+	obj = (Diversity_Object *) diversity_bard_new(obj_path);
+	break;
+     case DIVERSITY_OBJECT_TYPE_AP:
+	obj = (Diversity_Object *) diversity_ap_new(obj_path);
+	break;
+     default:
+	obj = diversity_object_new(obj_path);
+	break;
+     }
 
    if (!viewport_item_add(obj))
      {
