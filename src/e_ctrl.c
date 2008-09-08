@@ -712,31 +712,31 @@ e_ctrl_contact_list(Evas_Object *obj)
 }
 
 void
-e_ctrl_object_store_item_add(Evas_Object *obj, void *path, void *item)
+e_ctrl_object_store_item_add(Evas_Object *obj, const char *obj_path, void *item)
 {
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, ;);
 
-   ecore_hash_set(sd->objectStore, strdup(path), item);
+   ecore_hash_set(sd->objectStore, strdup(obj_path), item);
 }
 
-Evas_Object *
+void *
 e_ctrl_object_store_item_get(Evas_Object *obj, const char *obj_path)
 {
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, NULL;);
 
-   return (Evas_Object *)ecore_hash_get(sd->objectStore, obj_path);
+   return ecore_hash_get(sd->objectStore, obj_path);
 }
 
-void
+void *
 e_ctrl_object_store_item_remove(Evas_Object *obj, const char *obj_path)
 {
    E_Smart_Data *sd;
 
    SMART_CHECK(obj, ;);
 
-   ecore_hash_remove(sd->objectStore, obj_path);
+   return ecore_hash_remove(sd->objectStore, obj_path);
 }

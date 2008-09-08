@@ -52,8 +52,8 @@ Evas_Object        *e_ctrl_contact_get_by_number(Evas_Object *obj, const char *n
 /* the list is owned by e_ctrl */
 Evas_List          *e_ctrl_contact_list(Evas_Object *obj);
 
-void                e_ctrl_object_store_item_add(Evas_Object *obj, void *path, void *item);
-Evas_Object        *e_ctrl_object_store_item_get(Evas_Object *obj, const char *obj_path);
-void                e_ctrl_object_store_item_remove(Evas_Object *obj, const char *obj_path);
+void                e_ctrl_object_store_item_add(Evas_Object *obj, const char *obj_path, void *item);
+void               *e_ctrl_object_store_item_get(Evas_Object *obj, const char *obj_path);
+void               *e_ctrl_object_store_item_remove(Evas_Object *obj, const char *obj_path);
 
 #endif
