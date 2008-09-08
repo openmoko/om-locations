@@ -38,6 +38,7 @@ static char *get_time_diff_string(time_t time_then);
 
 typedef struct _Location_Data Location_Data;
 static Evas_Object *xxx_ctrl;
+static Diversity_Equipment *xxx_sms;
 
 struct _Location_Data
 {
@@ -136,6 +137,9 @@ get_phone_equip(Evas_Object *nav)
    Diversity_Equipment *eqp;
    Evas_Object *neo_me;
 
+   if (xxx_sms)
+     return xxx_sms;
+
    if (!nav)
      return NULL;
 
@@ -146,6 +150,8 @@ get_phone_equip(Evas_Object *nav)
    eqp = e_nav_world_item_neo_me_equipment_get(neo_me, "qtopia");
    if (!eqp)
      eqp = e_nav_world_item_neo_me_equipment_get(neo_me, "phonekit");
+
+   xxx_sms = eqp;
 
    return eqp;
 }
