@@ -415,6 +415,7 @@ _e_ctrl_smart_del(Evas_Object *obj)
    evas_object_del(sd->clip);
    evas_object_del(sd->map_overlay);
    evas_object_del(sd->panel_buttons);
+   evas_object_del(sd->listview);
    evas_object_del(sd->msgboard);
    free(sd);
 }
