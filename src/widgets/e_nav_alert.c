@@ -325,6 +325,8 @@ _e_alert_smart_del(Evas_Object *obj)
    if(sd->title_object) evas_object_del(sd->title_object);
 
    evas_object_del(sd->clip);
+
+   free(sd);
 }
                     
 static void
