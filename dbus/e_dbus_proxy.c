@@ -460,7 +460,7 @@ e_dbus_proxy_end_call(E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call, DBusMessage 
   if (!proxy || !call)
     return 0;
 
-  pending = ecore_hash_get(proxy->pending_calls, call);
+  pending = ecore_hash_remove(proxy->pending_calls, call);
   if (!pending)
     return 0;
 
@@ -484,12 +484,10 @@ e_dbus_proxy_end_call(E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call, DBusMessage 
 
     dbus_error_free(&error);
     dbus_message_unref(tmp_reply);
-#else
-    dbus_pending_call_unref(pending);
 #endif
   }
 
-  ecore_hash_remove(proxy->pending_calls, call);
+  dbus_pending_call_unref(pending);
 
   return 1;
 }
