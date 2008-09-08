@@ -822,6 +822,7 @@ diversity_world_get_self(Diversity_World *world)
      }
 
    self = diversity_bard_new(path);
+   free(path);
 
    return self;
 }
