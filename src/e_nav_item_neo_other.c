@@ -273,3 +273,84 @@ e_nav_world_item_neo_other_path_get(Evas_Object *item)
    return diversity_dbus_path_get((Diversity_DBus *)bard);
 }
 
+struct _E_Nav_Card {
+   Diversity_Bard   *bard;
+   char             *name;
+   char             *phone;
+};
+
+E_Nav_Card *
+e_nav_card_new(void)
+{
+   E_Nav_Card *card;
+
+   card = malloc(sizeof(*card));
+   if (!card)
+     return NULL;
+
+   card->bard = NULL;
+   card->name = NULL;
+   card->phone = NULL;
+
+   return card;
+}
+
+void
+e_nav_card_destroy(E_Nav_Card *card)
+{
+   if (card->name)
+     free(card->name);
+
+   if (card->phone)
+     free(card->phone);
+
+   free(card);
+}
+
+void
+e_nav_card_bard_set(E_Nav_Card *card, Diversity_Bard *bard)
+{
+   card->bard = bard;
+}
+
+Diversity_Bard *
+e_nav_card_bard_get(E_Nav_Card *card)
+{
+   return card->bard;
+}
+
+void
+e_nav_card_name_set(E_Nav_Card *card, const char *name)
+{
+   if (card->name)
+     free(card->name);
+
+   if (name)
+     card->name = strdup(name);
+   else
+     card->name = NULL;
+}
+
+const char *
+e_nav_card_name_get(E_Nav_Card *card)
+{
+   return card->name;
+}
+
+void
+e_nav_card_phone_set(E_Nav_Card *card, const char *phone)
+{
+   if (card->phone)
+     free(card->phone);
+
+   if (phone)
+     card->phone = strdup(phone);
+   else
+     card->phone = NULL;
+}
+
+const char *
+e_nav_card_phone_get(E_Nav_Card *card)
+{
+   return card->phone;
+}

@@ -37,4 +37,17 @@ int                     e_nav_world_item_neo_other_accuracy_get(Evas_Object *ite
 Diversity_Bard         *e_nav_world_item_neo_other_bard_get(Evas_Object *item);
 const char             *e_nav_world_item_neo_other_path_get(Evas_Object *item);
 
+/* hey, these should be in another file */
+
+typedef struct _E_Nav_Card E_Nav_Card;
+
+E_Nav_Card         *e_nav_card_new(void);
+void                e_nav_card_destroy(E_Nav_Card *card);
+void                e_nav_card_bard_set(E_Nav_Card *card, Diversity_Bard *bard);
+Diversity_Bard     *e_nav_card_bard_get(E_Nav_Card *card);
+void                e_nav_card_name_set(E_Nav_Card *card, const char *name);
+const char         *e_nav_card_name_get(E_Nav_Card *card);
+void                e_nav_card_phone_set(E_Nav_Card *card, const char *phone);
+const char         *e_nav_card_phone_get(E_Nav_Card *card);
+
 #endif
