@@ -254,7 +254,6 @@ viewport_item_remove(Diversity_Object *obj)
 	      Evas_Object *nwi = item;
 
 	      e_ctrl_taglist_tag_delete(mdata.ctrl, nwi);
-	      e_nav_world_item_delete(mdata.nav, nwi);
 	      evas_object_del(nwi);
 	   }
       default:
