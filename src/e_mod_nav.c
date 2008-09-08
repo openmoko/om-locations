@@ -980,8 +980,7 @@ _e_mod_nav_shutdown(void)
 
    _e_mod_nav_dbus_shutdown(0);
 
-   /* FIXME xxx_ctrl in e_nav_item_location.c */
-   //evas_object_del(mdata.ctrl);
+   evas_object_del(mdata.ctrl);
 
    evas_object_del(mdata.nav);
    mdata.nav = NULL;
