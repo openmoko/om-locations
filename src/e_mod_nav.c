@@ -31,7 +31,7 @@
 #include "e_nav_dbus.h"
 #include "e_nav_tileset.h"
 #include "e_ctrl.h"
-#include "widgets/e_nav_alert.h"
+#include "widgets/e_nav_dialog.h"
 
 typedef struct _E_Module_Data E_Module_Data;
 
@@ -505,7 +505,7 @@ gps_state_set(int state)
 static void
 gps_search_confirm(void *data, Evas_Object *obj)
 {
-   e_alert_deactivate(obj);
+   e_dialog_deactivate(obj);
    gps_search_stop();
 }
 
@@ -520,22 +520,23 @@ gps_search_timeout(void *data)
    if (neo_me)
      fixed = e_nav_world_item_neo_me_fixed_get(neo_me);
 
-   ad = e_alert_add(evas_object_evas_get(mdata.nav));
-   e_alert_transient_for_set(ad, mdata.nav);
+   ad = e_dialog_add(evas_object_evas_get(mdata.nav));
+   e_dialog_type_set(ad, E_NAV_DIALOG_TYPE_ALERT);
+   e_dialog_transient_for_set(ad, mdata.nav);
    if (fixed)
      {
-	e_alert_title_set(ad, _("GPS FIX"), _("Your approximate location"));
-	e_alert_title_color_set(ad, 0, 255, 0, 255);
+	e_dialog_title_set(ad, _("GPS FIX"), _("Your approximate location"));
+	e_dialog_title_color_set(ad, 0, 255, 0, 255);
      }
    else
      {
-	e_alert_title_set(ad, _("ERROR"), _("Unable to locate a fix"));
-	e_alert_title_color_set(ad, 255, 0, 0, 255);
+	e_dialog_title_set(ad, _("ERROR"), _("Unable to locate a fix"));
+	e_dialog_title_color_set(ad, 255, 0, 0, 255);
      }
 
-   e_alert_button_add(ad, _("OK"), gps_search_confirm, NULL);
+   e_dialog_button_add(ad, _("OK"), gps_search_confirm, NULL);
 
-   e_alert_activate(ad);
+   e_dialog_activate(ad);
    evas_object_show(ad);
 
    mdata.fix_timer = NULL;
@@ -573,7 +574,7 @@ gps_search_start(void)
 static void
 gps_check_yes(void *data, Evas_Object *obj)
 {
-   e_alert_deactivate(obj);
+   e_dialog_deactivate(obj);
 
    if (gps_state_set(GPS_STATE_ON) == GPS_STATE_ON)
      gps_search_start();
@@ -582,7 +583,7 @@ gps_check_yes(void *data, Evas_Object *obj)
 static void
 gps_check_no(void *data, Evas_Object *obj)
 {
-   e_alert_deactivate(obj);
+   e_dialog_deactivate(obj);
 }
 
 static int
@@ -605,14 +606,15 @@ gps_check(void *data)
      {
 	Evas_Object *ad;
 
-	ad = e_alert_add(evas_object_evas_get(mdata.nav));
-	e_alert_transient_for_set(ad, mdata.nav);
-	e_alert_title_set(ad, _("GPS is off"), _("Turn on GPS?"));
-	e_alert_title_color_set(ad, 255, 0, 0, 255);
-	e_alert_button_add(ad, _("Yes"), gps_check_yes, NULL);
-	e_alert_button_add(ad, _("No"), gps_check_no, NULL);
+	ad = e_dialog_add(evas_object_evas_get(mdata.nav));
+	e_dialog_type_set(ad, E_NAV_DIALOG_TYPE_ALERT);
+	e_dialog_transient_for_set(ad, mdata.nav);
+	e_dialog_title_set(ad, _("GPS is off"), _("Turn on GPS?"));
+	e_dialog_title_color_set(ad, 255, 0, 0, 255);
+	e_dialog_button_add(ad, _("Yes"), gps_check_yes, NULL);
+	e_dialog_button_add(ad, _("No"), gps_check_no, NULL);
 
-	e_alert_activate(ad);
+	e_dialog_activate(ad);
 	evas_object_show(ad);
      }
 
@@ -715,7 +717,7 @@ _e_mod_nav_dbus_shutdown(void)
 static void
 on_daemon_dead_confirm(void *data, Evas_Object *obj)
 {
-   e_alert_deactivate(obj);
+   e_dialog_deactivate(obj);
 
    mdata.daemon_dead = 1;
 
@@ -728,15 +730,16 @@ on_daemon_dead(void *data)
 {
    Evas_Object *ad;
 
-   ad = e_alert_add(evas_object_evas_get(mdata.nav));
-   e_alert_transient_for_set(ad, mdata.nav);
-   e_alert_title_color_set(ad, 255, 0, 0, 255);
+   ad = e_dialog_add(evas_object_evas_get(mdata.nav));
+   e_dialog_type_set(ad, E_NAV_DIALOG_TYPE_ALERT);
+   e_dialog_transient_for_set(ad, mdata.nav);
+   e_dialog_title_color_set(ad, 255, 0, 0, 255);
    /* actually, dbus connection is still opened */
-   e_alert_title_set(ad, _("ERROR"), _("DBus connection closed"));
+   e_dialog_title_set(ad, _("ERROR"), _("DBus connection closed"));
 
-   e_alert_button_add(ad, _("Exit"), on_daemon_dead_confirm, NULL);
+   e_dialog_button_add(ad, _("Exit"), on_daemon_dead_confirm, NULL);
 
-   e_alert_activate(ad);
+   e_dialog_activate(ad);
    evas_object_show(ad);
 }
 

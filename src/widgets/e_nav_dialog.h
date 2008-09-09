@@ -23,15 +23,25 @@
 #ifndef E_NAV_DIALOG_H
 #define E_NAV_DIALOG_H
 
-/* object management */
+enum {
+     E_NAV_DIALOG_TYPE_NORMAL,
+     E_NAV_DIALOG_TYPE_ALERT,
+};
+
 Evas_Object    *e_dialog_add(Evas *e);
+void            e_dialog_type_set(Evas_Object *obj, int type);
+
 void            e_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent);
 Evas_Object    *e_dialog_transient_for_get(Evas_Object *obj);
-void            e_dialog_activate(Evas_Object *obj);
-void            e_dialog_deactivate(Evas_Object *obj);
-void            e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data);
+
 void            e_dialog_title_set(Evas_Object *obj, const char *title, const char *message);
+void            e_dialog_title_color_set(Evas_Object *obj, int r, int g, int b, int a);
+
+void            e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data);
 void            e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Evas_Coord size, size_t length_limit, void *data);
 const char     *e_dialog_textblock_text_get(Evas_Object *obj, const char *label);
+
+void            e_dialog_activate(Evas_Object *obj);
+void            e_dialog_deactivate(Evas_Object *obj);
 
 #endif /* E_NAV_DIALOG_H */

@@ -24,7 +24,6 @@
 #include "e_nav_item_neo_me.h"
 #include "e_flyingmenu.h"
 #include "widgets/e_nav_dialog.h"
-#include "widgets/e_nav_alert.h"
 #include "widgets/e_nav_contact_editor.h"
 #include "e_ctrl.h"
 #include <time.h>
@@ -657,7 +656,7 @@ action_finish(Action_Data *act_data)
 
    if (act_data->alert)
      {
-	e_alert_deactivate(act_data->alert);
+	e_dialog_deactivate(act_data->alert);
 	act_data->alert = NULL;
      }
 
@@ -906,7 +905,7 @@ action_show_alert(Action_Data *act_data)
 
    if (!oa)
      {
-	oa = e_alert_add(act_data->evas);
+	oa = e_dialog_add(act_data->evas);
 	if (!oa)
 	  {
 	     action_next(act_data, ACTION_STATE_END);
@@ -914,7 +913,8 @@ action_show_alert(Action_Data *act_data)
 	     return;
 	  }
 
-	e_alert_transient_for_set(oa, act_data->nav);
+	e_dialog_type_set(oa, E_NAV_DIALOG_TYPE_ALERT);
+	e_dialog_transient_for_set(oa, act_data->nav);
 
 	act_data->alert = oa;
      }
@@ -922,33 +922,33 @@ action_show_alert(Action_Data *act_data)
    switch (act_data->state)
      {
       case ACTION_STATE_DELETE:
-	 e_alert_title_set(oa, _("DELETE"), _("Are you sure?"));
-	 e_alert_title_color_set(oa, 255, 0, 0, 255);
+	 e_dialog_title_set(oa, _("DELETE"), _("Are you sure?"));
+	 e_dialog_title_color_set(oa, 255, 0, 0, 255);
 
-	 e_alert_button_add(oa, _("Yes"),
+	 e_dialog_button_add(oa, _("Yes"),
 	       (void *) action_delete, act_data);
-	 e_alert_button_add(oa, _("No"),
+	 e_dialog_button_add(oa, _("No"),
 	       (void *) action_to_end, act_data);
 	 break;
       case ACTION_STATE_REPORT:
       default:
 	 if (act_data->send_error)
 	   {
-	      e_alert_title_set(oa, _("ERROR"), act_data->send_error);
-	      e_alert_title_color_set(oa, 255, 0, 0, 255);
+	      e_dialog_title_set(oa, _("ERROR"), act_data->send_error);
+	      e_dialog_title_color_set(oa, 255, 0, 0, 255);
 	   }
 	 else
 	   {
-	      e_alert_title_set(oa, _("SUCCESS"), _("Tag sent"));
-	      e_alert_title_color_set(oa, 0, 255, 0, 255);
+	      e_dialog_title_set(oa, _("SUCCESS"), _("Tag sent"));
+	      e_dialog_title_color_set(oa, 0, 255, 0, 255);
 	   }
 
-	 e_alert_button_add(oa, _("OK"),
+	 e_dialog_button_add(oa, _("OK"),
 	       (void *) action_to_end, act_data);
 	 break;
      }
 
-   e_alert_activate(oa);
+   e_dialog_activate(oa);
    evas_object_show(oa);
 }
 
