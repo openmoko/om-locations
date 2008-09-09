@@ -300,10 +300,10 @@ e_dbus_proxy_send(E_DBus_Proxy *proxy, DBusMessage *message, dbus_uint32_t *seri
       return 0;
   }
 
-  if (!dbus_message_set_path (message, proxy->path))
+  if (!dbus_message_set_path(message, proxy->path))
     return 0;
 
-  if (!dbus_message_set_interface (message, proxy->interface))
+  if (!dbus_message_set_interface(message, proxy->interface))
     return 0;
 
   if (!dbus_connection_send(proxy->manager->connection, message, serial))
