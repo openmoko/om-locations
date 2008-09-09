@@ -447,11 +447,27 @@ job_cancel(Tileman *tman, E_Smart_Data *sd)
      return;
 
    if (tman->proxy)
-     e_dbus_proxy_simple_call(tman->proxy, "CancelTile",
-	   NULL,
-	   DBUS_TYPE_UINT32, &sd->id,
-	   DBUS_TYPE_INVALID,
-	   DBUS_TYPE_INVALID);
+     {
+	DBusMessage *message;
+
+	message = e_dbus_proxy_new_method_call(tman->proxy, "CancelTile");
+	if (message)
+	  {
+	     if (!dbus_message_append_args(message,
+		      DBUS_TYPE_UINT32, &sd->id,
+		      DBUS_TYPE_INVALID))
+	       {
+		  dbus_message_unref(message);
+		  message = NULL;
+	       }
+	  }
+
+	if (message)
+	  {
+	     e_dbus_proxy_call_no_reply(tman->proxy, message);
+	     dbus_message_unref(message);
+	  }
+     }
 
    //printf("job %u cancelled\n", sd->id);
 
