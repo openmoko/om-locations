@@ -54,6 +54,86 @@ static struct _E_Module_Data {
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
 static void gps_search_stop();
 
+static int
+viewport_variant_get(DBusMessage *message, void *val)
+{
+   DBusMessageIter iter, subiter;
+   DBusError error;
+   int type;
+
+   dbus_error_init(&error);
+   if (dbus_set_error_from_message(&error, message))
+     {
+	dbus_error_free(&error);
+
+	return 0;
+     }
+
+   dbus_message_iter_init(message, &iter);
+   if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
+     return 0;
+
+   dbus_message_iter_recurse(&iter, &subiter);
+   type = dbus_message_iter_get_arg_type(&subiter);
+   if (!dbus_type_is_basic(type))
+     return 0;
+
+   dbus_message_iter_get_basic(&subiter, val);
+
+   return 1;
+}
+
+static DBusMessage *
+viewport_property_call_new(E_DBus_Proxy *proxy, Diversity_DBus_IFace iface, const char *prop)
+{
+   DBusMessage *message;
+   DBusMessageIter iter;
+   const char *iface_name;
+
+   switch (iface)
+     {
+      case DIVERSITY_DBUS_IFACE_OBJECT:
+	 iface_name = "org.openmoko.Diversity.Object";
+	 break;
+      case DIVERSITY_DBUS_IFACE_BARD:
+	 iface_name = "org.openmoko.Diversity.Bard";
+	 break;
+      case DIVERSITY_DBUS_IFACE_TAG:
+	 iface_name = "org.openmoko.Diversity.Tag";
+	 break;
+      default:
+	 return NULL;
+
+	 break;
+     }
+
+   message = e_dbus_proxy_new_method_call(proxy, "Get");
+   if (!message)
+     return NULL;
+
+   dbus_message_iter_init_append(message, &iter);
+
+   dbus_message_iter_append_basic(&iter,
+	 DBUS_TYPE_STRING, &iface_name);
+   dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
+
+   return message;
+}
+
+enum {
+     VIEWPORT_CARD_FULLNAME = 0,
+     VIEWPORT_CARD_PHONE,
+     N_VIEWPORT_CARD_CALLS
+};
+
+enum {
+     VIEWPORT_TAG_TIMESTAMP = 0,
+     VIEWPORT_TAG_UNREAD,
+     VIEWPORT_TAG_GEOMETRY,
+     VIEWPORT_TAG_DESCRIPTION,
+     N_VIEWPORT_TAG_CALLS
+};
+
 #if 0
 static void
 viewport_ap_update(Evas_Object *nwi)
@@ -99,91 +179,233 @@ viewport_ap_update(Evas_Object *nwi)
 #endif
 
 static void
-viewport_card_update(E_Nav_Card *card)
+viewport_item_bard_add_fini(void *data, E_Nav_DBus_Batch *bat)
 {
-   Diversity_Bard *bard;
-   char *name = NULL;
-   char *phone = NULL;
+   Diversity_Object *bard = data;
+   E_Nav_Card *card;
+   DBusMessage *reply;
+   const char *fullname;
+   const char *phone;
 
-   bard = e_nav_card_bard_get(card);
-   if (!bard)
-     return;
-
-   diversity_bard_prop_get(bard, "fullname", &name);
-   diversity_bard_prop_get(bard, "phone", &phone);
-
-   //printf("update contact %s: %s\n", name, phone);
-
-   if (name)
+   if (e_nav_dbus_batch_replied_get(bat) != N_VIEWPORT_CARD_CALLS)
      {
-	e_nav_card_name_set(card, name);
-	free(name);
+	printf("failed to add card to %p\n", bard);
+
+	e_nav_dbus_batch_destroy(bat);
+
+	return;
      }
 
-   if (phone)
-     {
-	e_nav_card_phone_set(card, phone);
-	free(phone);
-     }
+   card = e_nav_card_new();
+
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_CARD_FULLNAME);
+   if (viewport_variant_get(reply, &fullname))
+     e_nav_card_name_set(card, fullname);
+
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_CARD_PHONE);
+   if (viewport_variant_get(reply, &phone))
+     e_nav_card_phone_set(card, phone);
+
+   e_nav_dbus_batch_destroy(bat);
+
+   e_nav_card_bard_set(card, (Diversity_Bard *) bard);
+   diversity_object_data_set(bard, card);
 
    diversity_dbus_signal_connect((Diversity_DBus *) bard,
 	 DIVERSITY_DBUS_IFACE_OBJECT, "PropertyChanged",
 	 on_neo_other_property_changed, card);
 
-   return;
+   e_ctrl_contact_add(mdata.ctrl, card);
+}
+
+static E_Nav_DBus_Batch *
+viewport_item_bard_add(Diversity_Object *bard)
+{
+   E_Nav_DBus_Batch *bat;
+   E_DBus_Proxy *proxy;
+   DBusMessage *message;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) bard,
+	 DIVERSITY_DBUS_IFACE_PROPERTIES);
+   if (!proxy)
+     return NULL;
+
+   bat = e_nav_dbus_batch_new(N_VIEWPORT_CARD_CALLS, 0.0, 0.0,
+	 viewport_item_bard_add_fini, bard);
+   if (!bat)
+     return NULL;
+
+   message = viewport_property_call_new(proxy,
+	 DIVERSITY_DBUS_IFACE_BARD, "fullname");
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_CARD_FULLNAME, proxy, message);
+   dbus_message_unref(message);
+
+   message = viewport_property_call_new(proxy,
+	 DIVERSITY_DBUS_IFACE_BARD, "phone");
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_CARD_PHONE, proxy, message);
+   dbus_message_unref(message);
+
+   return bat;
 }
 
 static void
-viewport_tag_update(Evas_Object *nwi)
+viewport_item_tag_add_fini(void *data, E_Nav_DBus_Batch *bat)
 {
-   Diversity_Tag *tag;
-   double lon = 0.0, lat = 0.0, w = 0.0, h = 0.0;
-   unsigned int timestamp = 0;
+   Diversity_Object *tag = data;
+   Evas_Object *nwi;
+   DBusMessage *reply;
+   DBusError error;
+   unsigned int timestamp;
+   int unread;
+   double lon, lat, w, h;
    char *desc = NULL;
-   int unread = 0;
 
-   tag = e_nav_world_item_location_tag_get(nwi);
-   if (!tag)
-     return;
+   if (e_nav_dbus_batch_replied_get(bat) != N_VIEWPORT_TAG_CALLS)
+     {
+	printf("failed to add tag to %p\n", tag);
 
-   diversity_object_geometry_get((void *) tag,
-	 &lon, &lat, &w, &h);
-   diversity_dbus_property_get((void *) tag,
-	 DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp",  &timestamp);
+	e_nav_dbus_batch_destroy(bat);
 
-   diversity_tag_prop_get(tag, "description", &desc);
-   diversity_dbus_property_get((void *) tag,
-	 DIVERSITY_DBUS_IFACE_TAG, "Unread", &unread);
+	return;
+     }
 
-   if (desc)
+   nwi = e_nav_world_item_location_add(mdata.nav,
+	 THEMEDIR, 0.0, 0.0, tag);
+
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_TAG_TIMESTAMP);
+   if (viewport_variant_get(reply, &timestamp))
+     e_nav_world_item_location_timestamp_set(nwi, (time_t) timestamp);
+
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_TAG_UNREAD);
+   if (viewport_variant_get(reply, &unread))
+     e_nav_world_item_location_unread_set(nwi, unread);
+
+   dbus_error_init(&error);
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_TAG_GEOMETRY);
+   if (dbus_message_get_args(reply, &error,
+	    DBUS_TYPE_DOUBLE, &lon,
+	    DBUS_TYPE_DOUBLE, &lat,
+	    DBUS_TYPE_DOUBLE, &w,
+	    DBUS_TYPE_DOUBLE, &h,
+	    DBUS_TYPE_INVALID))
+     {
+	e_nav_world_item_geometry_get(nwi, NULL, NULL, &w, &h);
+
+	e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
+	e_nav_world_item_update(nwi);
+     }
+   else
+     {
+	printf("failed to get geometry: %s\n", error.message);
+	dbus_error_free(&error);
+     }
+
+   dbus_error_init(&error);
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_TAG_DESCRIPTION);
+   if (dbus_message_get_args(reply, &error,
+	    DBUS_TYPE_STRING, &desc,
+	    DBUS_TYPE_INVALID))
      {
 	char *note;
 
-	note = strchr(desc, '\n');
-	if (note)
+	if (desc)
+	  desc = strdup(desc);
+
+	if (desc)
 	  {
-	     *note = '\0';
-	     note++;
+	     note = strchr(desc, '\n');
+	     if (note)
+	       *note++ = '\0';
+
+	     e_nav_world_item_location_name_set(nwi, desc);
+	     if (note)
+	       e_nav_world_item_location_note_set(nwi, note);
+
+	     free(desc);
 	  }
-
-	e_nav_world_item_location_name_set(nwi, desc);
-	if (note)
-	  e_nav_world_item_location_note_set(nwi, note);
-
-	free(desc);
+     }
+   else
+     {
+	printf("failed to get description: %s\n", error.message);
+	dbus_error_free(&error);
      }
 
-   e_nav_world_item_location_unread_set(nwi, unread);
-   e_nav_world_item_location_timestamp_set(nwi, (time_t) timestamp);
+   e_nav_dbus_batch_destroy(bat);
 
-   e_nav_world_item_geometry_get(nwi, NULL, NULL, &w, &h);
-   e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
-   e_nav_world_item_update(nwi);
+   diversity_object_data_set(tag, nwi);
+   e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
+}
+
+static E_Nav_DBus_Batch *
+viewport_item_tag_add(Diversity_Object *tag)
+{
+   E_Nav_DBus_Batch *bat;
+   E_DBus_Proxy *proxy;
+   DBusMessage *message;
+   const char *desc;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) tag,
+	 DIVERSITY_DBUS_IFACE_PROPERTIES);
+   if (!proxy)
+     return NULL;
+
+   bat = e_nav_dbus_batch_new(N_VIEWPORT_TAG_CALLS, 0.0, 0.0,
+	 viewport_item_tag_add_fini, tag);
+
+   message = viewport_property_call_new(proxy,
+	 DIVERSITY_DBUS_IFACE_OBJECT, "Timestamp");
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_TAG_TIMESTAMP, proxy, message);
+   dbus_message_unref(message);
+
+   message = viewport_property_call_new(proxy,
+	 DIVERSITY_DBUS_IFACE_TAG, "Unread");
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_TAG_UNREAD, proxy, message);
+   dbus_message_unref(message);
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) tag,
+	 DIVERSITY_DBUS_IFACE_OBJECT);
+   if (!proxy)
+     {
+	e_nav_dbus_batch_destroy(bat);
+
+	return NULL;
+     }
+
+   message = e_dbus_proxy_new_method_call(proxy, "GeometryGet");
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_TAG_GEOMETRY, proxy, message);
+   dbus_message_unref(message);
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) tag,
+	 DIVERSITY_DBUS_IFACE_TAG);
+   if (!proxy)
+     {
+	e_nav_dbus_batch_destroy(bat);
+
+	return NULL;
+     }
+
+   desc  = "description";
+
+   message = e_dbus_proxy_new_method_call(proxy, "Get");
+   if (!dbus_message_append_args(message,
+	    DBUS_TYPE_STRING, &desc,
+	    DBUS_TYPE_INVALID))
+     {
+	e_nav_dbus_batch_destroy(bat);
+
+	return NULL;
+     }
+
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_TAG_DESCRIPTION, proxy, message);
+   dbus_message_unref(message);
+
+   return bat;
 }
 
 static int
-viewport_item_add(Diversity_Object *obj)
+viewport_item_add(Diversity_Object *obj, int sync)
 {
+   E_Nav_DBus_Batch *bat = NULL;
    void *item = NULL;
    int type;
 
@@ -193,37 +415,27 @@ viewport_item_add(Diversity_Object *obj)
       case DIVERSITY_OBJECT_TYPE_AP:
 	 break;
       case DIVERSITY_OBJECT_TYPE_BARD:
-	   {
-	      E_Nav_Card *card;
-
-	      card = e_nav_card_new();
-	      e_nav_card_bard_set(card, (Diversity_Bard *) obj);
-	      viewport_card_update(card);
-
-	      e_ctrl_contact_add(mdata.ctrl, card);
-
-	      item = card;
-	   }
+	 bat = viewport_item_bard_add(obj);
 	 break;
       case DIVERSITY_OBJECT_TYPE_TAG:
-	   {
-	      Evas_Object *nwi;
-
-	      nwi = e_nav_world_item_location_add(mdata.nav,
-		    THEMEDIR, 0.0, 0.0, (void *) obj);
-	      viewport_tag_update(nwi);
-
-	      e_ctrl_taglist_tag_add(mdata.ctrl, nwi);
-
-	      item = nwi;
-	   }
+	 bat = viewport_item_tag_add(obj);
 	 break;
       default:
 	 break;
      }
 
-   if (item)
-     diversity_object_data_set(obj, item);
+   if (!sync)
+     {
+	printf("async item add is not supported\n");
+
+	sync = 1;
+     }
+
+   if (sync)
+     {
+	e_nav_dbus_batch_block(bat);
+	item = diversity_object_data_get(obj);
+     }
 
    return (item != NULL);
 }
@@ -265,7 +477,7 @@ viewport_item_remove(Diversity_Object *obj)
 }
 
 static void
-viewport_object_add(const char *obj_path, int type)
+viewport_object_add(const char *obj_path, int type, int sync)
 {
    Diversity_Object *obj;
    Evas_Object *neo_me;
@@ -289,7 +501,7 @@ viewport_object_add(const char *obj_path, int type)
 	break;
      }
 
-   if (!viewport_item_add(obj))
+   if (!viewport_item_add(obj, sync))
      {
 	diversity_object_destroy(obj);
 
@@ -333,7 +545,7 @@ on_viewport_object_added(void *data, DBusMessage *msg)
 	return;
      }
 
-   viewport_object_add(obj_path, -1);
+   viewport_object_add(obj_path, -1, 1);
 }
 
 static void
@@ -822,7 +1034,7 @@ _e_mod_nav_dbus_init(void)
 	     e_ctrl_taglist_freeze(mdata.ctrl);
 
 	     for (p = obj_pathes; *p; p++)
-	       viewport_object_add(*p, DIVERSITY_OBJECT_TYPE_TAG);
+	       viewport_object_add(*p, DIVERSITY_OBJECT_TYPE_TAG, 1);
 
 	     e_ctrl_taglist_thaw(mdata.ctrl);
 
