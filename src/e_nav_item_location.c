@@ -650,13 +650,13 @@ action_finish(Action_Data *act_data)
 {
    if (act_data->dialog)
      {
-	e_dialog_deactivate(act_data->dialog);
+	e_nav_dialog_deactivate(act_data->dialog);
 	act_data->dialog = NULL;
      }
 
    if (act_data->alert)
      {
-	e_dialog_deactivate(act_data->alert);
+	e_nav_dialog_deactivate(act_data->alert);
 	act_data->alert = NULL;
      }
 
@@ -682,9 +682,9 @@ action_create(Action_Data *act_data)
      {
 	char desc[LOCATION_DESCRIPTION_LEN + 1];
 
-	title = e_dialog_textblock_text_get(act_data->dialog,
+	title = e_nav_dialog_textblock_text_get(act_data->dialog,
 	      _("Edit title"));
-	msg = e_dialog_textblock_text_get(act_data->dialog,
+	msg = e_nav_dialog_textblock_text_get(act_data->dialog,
 	      _("Edit message"));
 	form_description(desc, sizeof(desc), title, msg);
 
@@ -707,9 +707,9 @@ action_save(Action_Data *act_data)
 
    if (act_data->dialog)
      {
-	title = e_dialog_textblock_text_get(act_data->dialog,
+	title = e_nav_dialog_textblock_text_get(act_data->dialog,
 	      _("Edit title"));
-	msg = e_dialog_textblock_text_get(act_data->dialog,
+	msg = e_nav_dialog_textblock_text_get(act_data->dialog,
 	      _("Edit message"));
 
 	location_save(act_data->loc, title, msg);
@@ -768,7 +768,7 @@ action_show_dialog(Action_Data *act_data)
    od = act_data->dialog;
    if (!od)
      {
-	od = e_dialog_add(act_data->evas);
+	od = e_nav_dialog_add(act_data->evas);
 	if (!od)
 	  {
 	     action_next(act_data, ACTION_STATE_END);
@@ -776,7 +776,7 @@ action_show_dialog(Action_Data *act_data)
 	     return;
 	  }
 
-	e_dialog_transient_for_set(od, act_data->nav);
+	e_nav_dialog_transient_for_set(od, act_data->nav);
 
 	act_data->dialog = od;
      }
@@ -802,7 +802,7 @@ action_show_dialog(Action_Data *act_data)
 	 break;
      }
 
-   e_dialog_title_set(act_data->dialog, title, msg);
+   e_nav_dialog_title_set(act_data->dialog, title, msg);
 
    if (act_data->loc)
      {
@@ -815,36 +815,36 @@ action_show_dialog(Action_Data *act_data)
 	msg = NULL;
      }
 
-   e_dialog_textblock_add(act_data->dialog, _("Edit title"), title,
+   e_nav_dialog_textblock_add(act_data->dialog, _("Edit title"), title,
 	 40, LOCATION_TITLE_LEN, NULL);
-   e_dialog_textblock_add(act_data->dialog, _("Edit message"), msg,
+   e_nav_dialog_textblock_add(act_data->dialog, _("Edit message"), msg,
 	 100, LOCATION_MESSAGE_LEN, NULL);
 
    switch (act_data->state)
      {
       case ACTION_STATE_CREATE:
-	 e_dialog_button_add(act_data->dialog, _("Save"),
+	 e_nav_dialog_button_add(act_data->dialog, _("Save"),
 	       (void *) action_create, act_data);
-	 e_dialog_button_add(act_data->dialog, _("Cancel"),
+	 e_nav_dialog_button_add(act_data->dialog, _("Cancel"),
 	       (void *) action_to_end, act_data);
 	 break;
       case ACTION_STATE_EDIT:
-	 e_dialog_button_add(act_data->dialog, _("Save"),
+	 e_nav_dialog_button_add(act_data->dialog, _("Save"),
 	       (void *) action_save, act_data);
-	 e_dialog_button_add(act_data->dialog, _("Cancel"),
+	 e_nav_dialog_button_add(act_data->dialog, _("Cancel"),
 	       (void *) action_to_end, act_data);
-	 e_dialog_button_add(act_data->dialog, _("Delete"),
+	 e_nav_dialog_button_add(act_data->dialog, _("Delete"),
 	       (void *) action_to_delete, act_data);
 	 break;
       case ACTION_STATE_SEND:
-	 e_dialog_button_add(act_data->dialog, _("Send"),
+	 e_nav_dialog_button_add(act_data->dialog, _("Send"),
 	       (void *) action_to_editor, act_data);
-	 e_dialog_button_add(act_data->dialog, _("Cancel"),
+	 e_nav_dialog_button_add(act_data->dialog, _("Cancel"),
 	       (void *) action_to_end, act_data);
 	 break;
      }
 
-   e_dialog_activate(act_data->dialog);
+   e_nav_dialog_activate(act_data->dialog);
    evas_object_show(act_data->dialog);
 }
 
@@ -857,9 +857,9 @@ action_show_editor(Action_Data *act_data)
      {
 	const char *title, *msg;
 
-	title = e_dialog_textblock_text_get(act_data->dialog,
+	title = e_nav_dialog_textblock_text_get(act_data->dialog,
 	      _("Edit title"));
-	msg = e_dialog_textblock_text_get(act_data->dialog,
+	msg = e_nav_dialog_textblock_text_get(act_data->dialog,
 	      _("Edit message"));
 
 	location_save(act_data->loc, title, msg);
@@ -905,7 +905,7 @@ action_show_alert(Action_Data *act_data)
 
    if (!oa)
      {
-	oa = e_dialog_add(act_data->evas);
+	oa = e_nav_dialog_add(act_data->evas);
 	if (!oa)
 	  {
 	     action_next(act_data, ACTION_STATE_END);
@@ -913,8 +913,8 @@ action_show_alert(Action_Data *act_data)
 	     return;
 	  }
 
-	e_dialog_type_set(oa, E_NAV_DIALOG_TYPE_ALERT);
-	e_dialog_transient_for_set(oa, act_data->nav);
+	e_nav_dialog_type_set(oa, E_NAV_DIALOG_TYPE_ALERT);
+	e_nav_dialog_transient_for_set(oa, act_data->nav);
 
 	act_data->alert = oa;
      }
@@ -922,33 +922,33 @@ action_show_alert(Action_Data *act_data)
    switch (act_data->state)
      {
       case ACTION_STATE_DELETE:
-	 e_dialog_title_set(oa, _("DELETE"), _("Are you sure?"));
-	 e_dialog_title_color_set(oa, 255, 0, 0, 255);
+	 e_nav_dialog_title_set(oa, _("DELETE"), _("Are you sure?"));
+	 e_nav_dialog_title_color_set(oa, 255, 0, 0, 255);
 
-	 e_dialog_button_add(oa, _("Yes"),
+	 e_nav_dialog_button_add(oa, _("Yes"),
 	       (void *) action_delete, act_data);
-	 e_dialog_button_add(oa, _("No"),
+	 e_nav_dialog_button_add(oa, _("No"),
 	       (void *) action_to_end, act_data);
 	 break;
       case ACTION_STATE_REPORT:
       default:
 	 if (act_data->send_error)
 	   {
-	      e_dialog_title_set(oa, _("ERROR"), act_data->send_error);
-	      e_dialog_title_color_set(oa, 255, 0, 0, 255);
+	      e_nav_dialog_title_set(oa, _("ERROR"), act_data->send_error);
+	      e_nav_dialog_title_color_set(oa, 255, 0, 0, 255);
 	   }
 	 else
 	   {
-	      e_dialog_title_set(oa, _("SUCCESS"), _("Tag sent"));
-	      e_dialog_title_color_set(oa, 0, 255, 0, 255);
+	      e_nav_dialog_title_set(oa, _("SUCCESS"), _("Tag sent"));
+	      e_nav_dialog_title_color_set(oa, 0, 255, 0, 255);
 	   }
 
-	 e_dialog_button_add(oa, _("OK"),
+	 e_nav_dialog_button_add(oa, _("OK"),
 	       (void *) action_to_end, act_data);
 	 break;
      }
 
-   e_dialog_activate(oa);
+   e_nav_dialog_activate(oa);
    evas_object_show(oa);
 }
 

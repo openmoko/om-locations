@@ -79,32 +79,32 @@ struct _E_Smart_Data
    E_Nav_Drop_Data *drop;
 };
 
-static void _e_dialog_smart_init(void);
-static void _e_dialog_smart_add(Evas_Object *obj);
-static void _e_dialog_smart_del(Evas_Object *obj);
-static void _e_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
-static void _e_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
-static void _e_dialog_smart_show(Evas_Object *obj);
-static void _e_dialog_smart_hide(Evas_Object *obj);
-static void _e_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
-static void _e_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
-static void _e_dialog_smart_clip_unset(Evas_Object *obj);
+static void _e_nav_dialog_smart_init(void);
+static void _e_nav_dialog_smart_add(Evas_Object *obj);
+static void _e_nav_dialog_smart_del(Evas_Object *obj);
+static void _e_nav_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
+static void _e_nav_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h);
+static void _e_nav_dialog_smart_show(Evas_Object *obj);
+static void _e_nav_dialog_smart_hide(Evas_Object *obj);
+static void _e_nav_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a);
+static void _e_nav_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
+static void _e_nav_dialog_smart_clip_unset(Evas_Object *obj);
 
-static void _e_dialog_update(Evas_Object *obj);
-static void _e_alert_update(Evas_Object *obj);
+static void _e_nav_dialog_update(Evas_Object *obj);
+static void _e_nav_alert_update(Evas_Object *obj);
 
-#define SMART_NAME "e_dialog"
+#define SMART_NAME "e_nav_dialog"
 static Evas_Smart *_e_smart = NULL;
 
 Evas_Object *
-e_dialog_add(Evas *e)
+e_nav_dialog_add(Evas *e)
 {
-   _e_dialog_smart_init();
+   _e_nav_dialog_smart_init();
    return evas_object_smart_add(e, _e_smart);
 }
 
 void
-e_dialog_type_set(Evas_Object *obj, int type)
+e_nav_dialog_type_set(Evas_Object *obj, int type)
 {
    E_Smart_Data *sd;
    
@@ -127,7 +127,7 @@ e_dialog_type_set(Evas_Object *obj, int type)
 }
 
 static void
-_e_dialog_move_and_resize(Evas_Object *obj)
+_e_nav_dialog_move_and_resize(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_Coord x, y, w, h;
@@ -183,11 +183,11 @@ _e_dialog_move_and_resize(Evas_Object *obj)
 static void
 on_parent_del(void *data, Evas *evas, Evas_Object *parent, void *event)
 {
-   e_dialog_transient_for_set(data, NULL);
+   e_nav_dialog_transient_for_set(data, NULL);
 }
 
 void
-e_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent)
+e_nav_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent)
 {
    E_Smart_Data *sd;
 
@@ -198,9 +198,9 @@ e_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent)
 	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_DEL,
 	      on_parent_del);
 	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_MOVE,
-	      (void *) _e_dialog_move_and_resize);
+	      (void *) _e_nav_dialog_move_and_resize);
 	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_RESIZE,
-	      (void *) _e_dialog_move_and_resize);
+	      (void *) _e_nav_dialog_move_and_resize);
      }
 
    sd->parent = parent;
@@ -209,9 +209,9 @@ e_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent)
 	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_DEL,
 	      on_parent_del, obj);
 	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_MOVE,
-	      (void *) _e_dialog_move_and_resize, obj);
+	      (void *) _e_nav_dialog_move_and_resize, obj);
 	evas_object_event_callback_add(sd->parent, EVAS_CALLBACK_RESIZE,
-	      (void *) _e_dialog_move_and_resize, obj);
+	      (void *) _e_nav_dialog_move_and_resize, obj);
 
 	if (!sd->parent_mask)
 	  {
@@ -230,11 +230,11 @@ e_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent)
 	sd->parent_mask = NULL;
      }
 
-   _e_dialog_move_and_resize(obj);
+   _e_nav_dialog_move_and_resize(obj);
 }
 
 Evas_Object *
-e_dialog_transient_for_get(Evas_Object *obj)
+e_nav_dialog_transient_for_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
 
@@ -265,7 +265,7 @@ on_drop_done(void *data, Evas_Object *obj)
 }
 
 void
-e_dialog_activate(Evas_Object *obj)
+e_nav_dialog_activate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -275,11 +275,11 @@ e_dialog_activate(Evas_Object *obj)
      return;
 
    sd->drop = e_nav_drop_new(1.0, on_drop_done, sd);
-   _e_dialog_move_and_resize(obj);
+   _e_nav_dialog_move_and_resize(obj);
 }
 
 void
-e_dialog_deactivate(Evas_Object *obj)
+e_nav_dialog_deactivate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -293,7 +293,7 @@ e_dialog_deactivate(Evas_Object *obj)
 
 /* internal calls */
 static void
-_e_dialog_smart_init(void)
+_e_nav_dialog_smart_init(void)
 {
    if (_e_smart) return;
      {
@@ -301,15 +301,15 @@ _e_dialog_smart_init(void)
 	  {
 	     SMART_NAME,
 	       EVAS_SMART_CLASS_VERSION,
-	       _e_dialog_smart_add,
-	       _e_dialog_smart_del,
-	       _e_dialog_smart_move,
-	       _e_dialog_smart_resize,
-	       _e_dialog_smart_show,
-	       _e_dialog_smart_hide,
-	       _e_dialog_smart_color_set,
-	       _e_dialog_smart_clip_set,
-	       _e_dialog_smart_clip_unset,
+	       _e_nav_dialog_smart_add,
+	       _e_nav_dialog_smart_del,
+	       _e_nav_dialog_smart_move,
+	       _e_nav_dialog_smart_resize,
+	       _e_nav_dialog_smart_show,
+	       _e_nav_dialog_smart_hide,
+	       _e_nav_dialog_smart_color_set,
+	       _e_nav_dialog_smart_clip_set,
+	       _e_nav_dialog_smart_clip_unset,
 	       
 	       NULL /* data */
 	  };
@@ -331,7 +331,7 @@ _theme_source_set(E_Smart_Data *sd)
 }
 
 static void
-_e_dialog_smart_add(Evas_Object *obj)
+_e_nav_dialog_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -363,7 +363,7 @@ _e_dialog_smart_add(Evas_Object *obj)
 }
 
 static void
-_e_dialog_smart_del(Evas_Object *obj)
+_e_nav_dialog_smart_del(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -375,9 +375,9 @@ _e_dialog_smart_del(Evas_Object *obj)
 	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_DEL,
 	      on_parent_del);
 	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_MOVE,
-	      (void *) _e_dialog_move_and_resize);
+	      (void *) _e_nav_dialog_move_and_resize);
 	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_RESIZE,
-	      (void *) _e_dialog_move_and_resize);
+	      (void *) _e_nav_dialog_move_and_resize);
      }
 
    if (sd->parent_mask)
@@ -419,7 +419,7 @@ _e_dialog_smart_del(Evas_Object *obj)
 }
                     
 static void
-_e_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
+_e_nav_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
    
@@ -429,13 +429,13 @@ _e_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    sd->y = y;
 
    if (sd->type == E_NAV_DIALOG_TYPE_NORMAL)
-     _e_dialog_update(obj);
+     _e_nav_dialog_update(obj);
    else
-     _e_alert_update(obj);
+     _e_nav_alert_update(obj);
 }
 
 static void
-_e_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
+_e_nav_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    E_Smart_Data *sd;
    
@@ -445,13 +445,13 @@ _e_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    sd->h = h;
 
    if (sd->type == E_NAV_DIALOG_TYPE_NORMAL)
-     _e_dialog_update(obj);
+     _e_nav_dialog_update(obj);
    else
-     _e_alert_update(obj);
+     _e_nav_alert_update(obj);
 }
 
 static void
-_e_dialog_smart_show(Evas_Object *obj)
+_e_nav_dialog_smart_show(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -461,7 +461,7 @@ _e_dialog_smart_show(Evas_Object *obj)
 }
 
 static void
-_e_dialog_smart_hide(Evas_Object *obj)
+_e_nav_dialog_smart_hide(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -471,7 +471,7 @@ _e_dialog_smart_hide(Evas_Object *obj)
 }
 
 static void
-_e_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
+_e_nav_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 {
    E_Smart_Data *sd;
    
@@ -481,7 +481,7 @@ _e_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 }
 
 static void
-_e_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
+_e_nav_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 {
    E_Smart_Data *sd;
    
@@ -491,7 +491,7 @@ _e_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 }
 
 static void
-_e_dialog_smart_clip_unset(Evas_Object *obj)
+_e_nav_dialog_smart_clip_unset(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
@@ -514,7 +514,7 @@ _e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 }
 
 void
-e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data)
+e_nav_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data)
 {
    E_Smart_Data *sd;
    E_Button_Item *bi;
@@ -541,7 +541,7 @@ e_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *dat
 }
 
 void 
-e_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
+e_nav_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
 {
    E_Smart_Data *sd;
    
@@ -567,7 +567,7 @@ e_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
 }
 
 void
-e_dialog_title_color_set(Evas_Object *obj, int r, int g, int b, int a)
+e_nav_dialog_title_color_set(Evas_Object *obj, int r, int g, int b, int a)
 {
    E_Smart_Data *sd;
 
@@ -580,7 +580,7 @@ e_dialog_title_color_set(Evas_Object *obj, int r, int g, int b, int a)
 }
 
 static void
-e_dialog_textblock_text_set(void *obj, const char *input)
+e_nav_dialog_textblock_text_set(void *obj, const char *input)
 {
    E_TextBlock_Item *tbi = (E_TextBlock_Item*)obj;
    if(tbi->input) free((void*)tbi->input);
@@ -592,7 +592,7 @@ e_dialog_textblock_text_set(void *obj, const char *input)
 }
 
 const char *
-e_dialog_textblock_text_get(Evas_Object *obj, const char *label)
+e_nav_dialog_textblock_text_get(Evas_Object *obj, const char *label)
 {
    E_Smart_Data *sd;
    
@@ -621,7 +621,7 @@ on_entry_ok(void *data, Evas_Object *entry)
    SMART_CHECK(tbi->obj, ;);
 
    text = e_nav_entry_text_get(entry);
-   e_dialog_textblock_text_set(tbi, text);
+   e_nav_dialog_textblock_text_set(tbi, text);
 
    evas_object_del(entry);
 }
@@ -657,7 +657,7 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 }
 
 void 
-e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Evas_Coord size, size_t length_limit, void *data)
+e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Evas_Coord size, size_t length_limit, void *data)
 {
    E_Smart_Data *sd;
    Evas_Object *text_object;
@@ -708,7 +708,7 @@ e_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Ev
 }
 
 static void
-_e_dialog_update(Evas_Object *obj)
+_e_nav_dialog_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    int tbc;
@@ -800,7 +800,7 @@ _e_dialog_update(Evas_Object *obj)
 }
 
 static void
-_e_alert_update(Evas_Object *obj)
+_e_nav_alert_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
