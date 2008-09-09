@@ -23,6 +23,29 @@
 #include "e_nav_dbus.h"
 #include "e_dbus_proxy.h"
 
+typedef struct _E_Nav_DBus_Batch_Call E_Nav_DBus_Batch_Call;
+
+struct _E_Nav_DBus_Batch_Call {
+     E_DBus_Proxy *proxy;
+     E_DBus_Proxy_Call *id;
+     DBusMessage *reply;
+};
+
+struct _E_Nav_DBus_Batch {
+     int call_total;
+     int timeout;
+     double hard_timeout;
+     Ecore_Timer *hard_timer;
+     void (*cb)(void *data, E_Nav_DBus_Batch *bat);
+     void *cb_data;
+
+     int ignore_notify;
+     int call_ended;
+     int call_replied;
+
+     E_Nav_DBus_Batch_Call *calls;
+};
+
 static const char *diversity_ifaces[N_DIVERSITY_DBUS_IFACES] =
 {
    DBUS_INTERFACE_PROPERTIES,
@@ -174,6 +197,282 @@ E_DBus_Connection *
 e_nav_dbus_connection_get(void)
 {
    return ddata.e_conn;
+}
+
+static void
+batch_call_end(E_Nav_DBus_Batch *bat, int id, int cancel)
+{
+   E_Nav_DBus_Batch_Call *call = &bat->calls[id];
+
+   if (call->id)
+     {
+	if (cancel)
+	  {
+	     e_dbus_proxy_cancel_call(call->proxy, call->id);
+	  }
+	else
+	  {
+	     e_dbus_proxy_end_call(call->proxy, call->id, &call->reply);
+	     if (call->reply)
+	       bat->call_replied++;
+	  }
+
+	call->id = NULL;
+     }
+
+   bat->call_ended++;
+
+   if (bat->call_ended > bat->call_total)
+     {
+	printf("more calls ended than there are: %d != %d\n",
+	      bat->call_ended, bat->call_total);
+
+	bat->call_ended = bat->call_total;
+     }
+}
+
+static void
+batch_cancel(E_Nav_DBus_Batch *bat, int do_cb)
+{
+   int i;
+
+   bat->ignore_notify = 1;
+
+   for (i = 0; i < bat->call_total; i++)
+     {
+	E_Nav_DBus_Batch_Call *call = &bat->calls[i];
+
+	/* calls haven't begun or returned */
+	if (!call->proxy || call->id)
+	  batch_call_end(bat, i, 1);
+     }
+
+   if (bat->call_ended != bat->call_total)
+     printf("%d un-ended calls after cancellation\n",
+	   bat->call_total - bat->call_ended);
+
+   if (bat->hard_timer)
+     {
+	ecore_timer_del(bat->hard_timer);
+	bat->hard_timer = NULL;
+     }
+
+   if (do_cb)
+     bat->cb(bat->cb_data, bat);
+}
+
+static int
+on_batch_hard_timeout(void *data)
+{
+   E_Nav_DBus_Batch *bat = data;
+
+   printf("batch %p hard timeout\n", bat);
+
+   bat->hard_timer = NULL;
+   batch_cancel(bat, 1);
+
+   return 0;
+}
+
+static void
+batch_reset(E_Nav_DBus_Batch *bat, int reinit)
+{
+   int i;
+
+   batch_cancel(bat, 0);
+
+   for (i = 0; i < bat->call_total; i++)
+     {
+	E_Nav_DBus_Batch_Call *call = &bat->calls[i];
+
+	if (call->reply)
+	  dbus_message_unref(call->reply);
+     }
+
+   if (!reinit)
+     return;
+
+   if (bat->hard_timeout > 0.0)
+     bat->hard_timer = ecore_timer_add(bat->hard_timeout,
+	   on_batch_hard_timeout, bat);
+   else
+     bat->hard_timer = NULL;
+
+   bat->ignore_notify = 0;
+   bat->call_ended = 0;
+   bat->call_replied = 0;
+
+   memset(bat->calls, 0, bat->call_total * sizeof(*bat->calls));
+}
+
+E_Nav_DBus_Batch *
+e_nav_dbus_batch_new(int num_calls, double timeout, double hard_timeout, void (*cb)(void *data, E_Nav_DBus_Batch *bat), void *cb_data)
+{
+   E_Nav_DBus_Batch *bat;
+
+   bat = malloc(sizeof(*bat));
+   if (!bat)
+     return NULL;
+
+   bat->calls = calloc(num_calls, sizeof(*bat->calls));
+   if (!bat->calls)
+     {
+	free(bat);
+
+	return NULL;
+     }
+
+   bat->call_total = num_calls;
+
+   if (hard_timeout < 0.0)
+     hard_timeout = 0.0;
+
+   if (timeout > hard_timeout)
+     timeout = hard_timeout;
+   else if (timeout < 0.0)
+     timeout = 0.0;
+
+   bat->hard_timeout = hard_timeout;
+
+   if (hard_timeout > 0.0)
+     bat->hard_timer = ecore_timer_add(hard_timeout,
+	   on_batch_hard_timeout, bat);
+   else
+     bat->hard_timer = NULL;
+
+   if (timeout > 0.0)
+     bat->timeout = timeout * 1000;
+   else
+     bat->timeout = -1;
+
+   bat->cb = cb;
+   bat->cb_data = cb_data;
+
+   bat->ignore_notify = 0;
+   bat->call_ended = 0;
+   bat->call_replied = 0;
+
+   return bat;
+}
+
+void
+e_nav_dbus_batch_reset(E_Nav_DBus_Batch *bat, void *cb_data)
+{
+   batch_reset(bat, 1);
+   bat->cb_data = cb_data;
+}
+
+void
+e_nav_dbus_batch_destroy(E_Nav_DBus_Batch *bat)
+{
+   batch_reset(bat, 0);
+
+   free(bat->calls);
+   free(bat);
+}
+
+static void
+on_batch_reply(void *user_data, E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call_id)
+{
+   E_Nav_DBus_Batch *bat = user_data;
+   E_Nav_DBus_Batch_Call *call;
+   int i;
+
+   if (bat->ignore_notify)
+     return;
+
+   for (i = 0; i < bat->call_total; i++)
+     {
+	call = &bat->calls[i];
+
+	if (call->id == call_id)
+	  break;
+     }
+
+   if (i >= bat->call_total)
+     {
+	printf("strayed call %p %p\n", proxy, call_id);
+
+	return;
+     }
+
+   if (call->proxy != proxy)
+     {
+	printf("expect proxy %p, not %p\n", call->proxy, proxy);
+
+	return;
+     }
+
+   batch_call_end(bat, i, 0);
+
+   if (bat->call_ended == bat->call_total)
+     bat->cb(bat->cb_data, bat);
+}
+
+int
+e_nav_dbus_batch_call_begin(E_Nav_DBus_Batch *bat, int id, E_DBus_Proxy *proxy, DBusMessage *message)
+{
+   E_Nav_DBus_Batch_Call *call;
+   E_DBus_Proxy_Call *call_id;
+
+   if (id < 0 || id >= bat->call_total || !proxy || !message)
+     return 0;
+
+   call = &bat->calls[id];
+
+   call_id = e_dbus_proxy_begin_call_with_timeout(proxy, message,
+	 on_batch_reply, bat, NULL, bat->timeout);
+
+   call->proxy = proxy;
+   call->id = call_id;
+
+   if (!call_id)
+     batch_call_end(bat, id, 0);
+
+   return 1;
+}
+
+void
+e_nav_dbus_batch_block(E_Nav_DBus_Batch *bat)
+{
+   int i;
+
+   bat->ignore_notify = 1;
+
+   for (i = 0; i < bat->call_total; i++)
+     {
+	E_Nav_DBus_Batch_Call *call = &bat->calls[i];
+
+	/* calls haven't begun or returned */
+	if (!call->proxy || call->id)
+	  batch_call_end(bat, i, 0);
+     }
+
+   if (bat->call_ended != bat->call_total)
+     printf("%d un-ended calls after block\n",
+	   bat->call_total - bat->call_ended);
+
+   bat->cb(bat->cb_data, bat);
+}
+
+void
+e_nav_dbus_batch_cancel(E_Nav_DBus_Batch *bat)
+{
+   batch_cancel(bat, 0);
+}
+
+int
+e_nav_dbus_batch_replied_get(E_Nav_DBus_Batch *bat)
+{
+   return bat->call_replied;
+}
+
+DBusMessage *e_nav_dbus_batch_reply_get(E_Nav_DBus_Batch *bat, int id)
+{
+   if (id < 0 || id >= bat->call_total)
+     return NULL;
+
+   return bat->calls[id].reply;
 }
 
 static Diversity_DBus *

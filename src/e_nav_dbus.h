@@ -19,10 +19,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef E_NAV_DBUS_H 
+#ifndef E_NAV_DBUS_H
 #define E_NAV_DBUS_H
 
 #include "e_dbus_proxy.h"
+
+typedef struct _E_Nav_DBus_Batch E_Nav_DBus_Batch;
 
 typedef struct _Diversity_DBus Diversity_DBus;
 typedef struct _Diversity_Object Diversity_Object;
@@ -71,6 +73,15 @@ typedef enum {
 int                 e_nav_dbus_init(void (*notify)(void *data), void *data);
 void                e_nav_dbus_shutdown(void);
 E_DBus_Connection  *e_nav_dbus_connection_get(void);
+
+E_Nav_DBus_Batch   *e_nav_dbus_batch_new(int num_calls, double timeout, double hard_timeout, void (*cb)(void *data, E_Nav_DBus_Batch *bat), void *cb_data);
+void                e_nav_dbus_batch_reset(E_Nav_DBus_Batch *bat, void *cb_data);
+void                e_nav_dbus_batch_destroy(E_Nav_DBus_Batch *bat);
+int                 e_nav_dbus_batch_call_begin(E_Nav_DBus_Batch *bat, int id, E_DBus_Proxy *proxy, DBusMessage *message);
+void                e_nav_dbus_batch_block(E_Nav_DBus_Batch *bat);
+void                e_nav_dbus_batch_cancel(E_Nav_DBus_Batch *bat);
+int                 e_nav_dbus_batch_replied_get(E_Nav_DBus_Batch *bat);
+DBusMessage        *e_nav_dbus_batch_reply_get(E_Nav_DBus_Batch *bat, int id);
 
 const char         *diversity_dbus_path_get(Diversity_DBus *dbus);
 E_DBus_Proxy       *diversity_dbus_proxy_get(Diversity_DBus *dbus, Diversity_DBus_IFace iface);
