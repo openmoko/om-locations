@@ -493,6 +493,25 @@ e_dbus_proxy_end_call(E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call, DBusMessage 
 }
 
 EAPI void
+e_dbus_proxy_cancel_call(E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call)
+{
+  DBusPendingCall *pending;
+
+  if (!proxy || !call)
+    return;
+
+  pending = ecore_hash_remove(proxy->pending_calls, call);
+  if (!pending)
+    return;
+
+  dbus_pending_call_cancel(pending);
+
+  dbus_pending_call_unref(pending);
+
+  return;
+}
+
+EAPI void
 e_dbus_proxy_connect_signal(E_DBus_Proxy *proxy, const char *signal_name, E_DBus_Signal_Cb cb_signal, void *data)
 {
   E_DBus_Proxy_Signal_Signature *sig;
