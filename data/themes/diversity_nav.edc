@@ -220,6 +220,11 @@ group {
 	       offset: -10 0;
 	    }
          }
+         description {
+            state: "taglist" 0.0;
+	    inherit: "default" 0.0;
+	    rel2.offset: -10 -40;
+         }
       }
       part { name: "title";
          type: TEXT;
@@ -261,6 +266,13 @@ group {
          source: "e";
          action: STATE_SET "default" 0.0;
          target: "button_bar";
+      }
+      program {
+         name: "list.tag";
+         signal: "e,state,taglist";
+         source: "e";
+         action: STATE_SET "taglist" 0.0;
+         target: "swallow";
       }
    }
 }

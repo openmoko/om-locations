@@ -200,6 +200,9 @@ e_nav_list_add(Evas *e, int type)
    embed_obj = etk_embed_object_get(ETK_EMBED(sd->embed));
    edje_object_part_swallow(sd->frame, "swallow", embed_obj);
 
+   if (type == E_NAV_LIST_TYPE_TAG)
+     edje_object_signal_emit(sd->frame, "e,state,taglist", "e");
+
    return li;
 }
 
