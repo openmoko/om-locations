@@ -19,6 +19,7 @@
  */
 
 #include <e_dbus_proxy.h>
+#include <assert.h>
 #include "tileman.h"
 #include "e_nav_theme.h"
 
@@ -53,8 +54,10 @@ struct _E_Smart_Data
    Tileman *tman;
 
    int tz, tx, ty;
+
+   /* these members are used by job_ */
+   E_DBus_Proxy_Call *pending;
    unsigned int id;
-   double timestamp;
 };
 
 static void _tileman_tile_smart_init(void);
@@ -69,6 +72,7 @@ static void _tileman_tile_smart_clip_set(Evas_Object *obj, Evas_Object *clip);
 static void _tileman_tile_smart_clip_unset(Evas_Object *obj);
 
 static void on_job_completed(Tileman *tman, DBusMessage *message);
+static int job_busy(Tileman *tman, E_Smart_Data *sd);
 static int job_submit(Tileman *tman, E_Smart_Data *sd, int force);
 static void job_cancel(Tileman *tman, E_Smart_Data *sd);
 
@@ -149,6 +153,7 @@ tileman_proxy_set(Tileman *tman, E_DBus_Proxy *proxy)
    if (tman->proxy == proxy)
      return;
 
+   /* TODO cancel jobs */
    if (tman->proxy)
      e_dbus_proxy_disconnect_signal(tman->proxy, "TileCompleted",
 	   (E_DBus_Signal_Cb) on_job_completed, tman);
@@ -247,7 +252,7 @@ tileman_tile_reset(Evas_Object *tile, int z, int x, int y)
 
    SMART_CHECK(tile, ;);
 
-   if (sd->id)
+   if (job_busy(sd->tman, sd))
      job_cancel(sd->tman, sd);
 
    sd->tz = z;
@@ -304,19 +309,19 @@ tileman_tile_image_set(Evas_Object *tile, const char *path, const char *key)
 
    SMART_CHECK(tile, 0;);
 
-   if (sd->id)
+   if (job_busy(sd->tman, sd))
      evas_object_image_file_get(sd->img, &old_path, &old_key);
 
    evas_object_image_file_set(sd->img, path, key);
    err = evas_object_image_load_error_get(sd->img);
    if (err)
      {
-	if (sd->id)
+	if (job_busy(sd->tman, sd))
 	  evas_object_image_file_set(sd->img, old_path, old_key);
      }
    else
      {
-	if (sd->id)
+	if (job_busy(sd->tman, sd))
 	  job_cancel(sd->tman, sd);
 
 	evas_object_show(sd->img);
@@ -335,7 +340,7 @@ tileman_tile_download(Evas_Object *tile, int z, int x, int y)
 
    if (sd->tz == z && sd->tx == x && sd->ty == y)
      {
-	if (sd->id)
+	if (job_busy(sd->tman, sd))
 	  return 1;
      }
    else
@@ -361,7 +366,7 @@ tileman_tile_cancel(Evas_Object *tile)
 
    SMART_CHECK(tile, ;);
 
-   if (sd->id)
+   if (job_busy(sd->tman, sd))
      {
 	job_cancel(sd->tman, sd);
 	tileman_tile_fail(tile, _("cancelled"));
@@ -409,40 +414,86 @@ on_job_completed(Tileman *tman, DBusMessage *message)
    sd->id = 0;
 }
 
+static void
+on_submitted(void *user_data, E_DBus_Proxy *proxy, E_DBus_Proxy_Call *call_id)
+{
+   E_Smart_Data *sd = user_data;
+   DBusMessage *reply;
+   unsigned int id;
+
+   assert(sd->pending == call_id);
+   assert(!sd->id);
+
+   sd->pending = NULL;
+
+   e_dbus_proxy_end_call(proxy, call_id, &reply);
+   if (reply && dbus_message_get_args(reply, NULL,
+	    DBUS_TYPE_UINT32, &id,
+	    DBUS_TYPE_INVALID))
+     sd->id = id;
+
+   if (id)
+     ecore_hash_set(sd->tman->jobs, (void *) id, sd->obj);
+   else
+     tileman_tile_fail(sd->obj, _("failed to queue"));
+}
+
+static int
+job_busy(Tileman *tman, E_Smart_Data *sd)
+{
+   return (sd->id || sd->pending);
+}
+
 static int
 job_submit(Tileman *tman, E_Smart_Data *sd, int force)
 {
-   unsigned int id;
+   DBusMessage *message;
 
    //printf("submit job for tile (%d,%d)@%d\n", job->x, job->y, sd->level);
 
    if (!tman->proxy)
      return 0;
 
-   if (sd->id)
+   if (sd->id || sd->pending)
      return 1;
 
-   if (!e_dbus_proxy_simple_call(tman->proxy, "SubmitTile",
-				 NULL,
-				 DBUS_TYPE_INT32, &sd->tx,
-				 DBUS_TYPE_INT32, &sd->ty,
-				 DBUS_TYPE_BOOLEAN, &force,
-				 DBUS_TYPE_INVALID,
-				 DBUS_TYPE_UINT32, &id,
-				 DBUS_TYPE_INVALID))
-     return 0;
+   message = e_dbus_proxy_new_method_call(tman->proxy, "SubmitTile");
+   if (message)
+     {
+	if (!dbus_message_append_args(message,
+		 DBUS_TYPE_INT32, &sd->tx,
+		 DBUS_TYPE_INT32, &sd->ty,
+		 DBUS_TYPE_BOOLEAN, &force,
+		 DBUS_TYPE_INVALID))
+	  {
+	     dbus_message_unref(message);
+	     message = NULL;
+	  }
+     }
 
-   sd->id = id;
-   sd->timestamp = ecore_time_get();
+   if (message)
+     {
+	sd->pending = e_dbus_proxy_begin_call(tman->proxy, message,
+	      on_submitted, sd, NULL);
+	dbus_message_unref(message);
+     }
 
-   ecore_hash_set(tman->jobs, (void *) id, sd->obj);
-
-   return 1;
+   return (sd->pending != NULL);
 }
 
 static void
 job_cancel(Tileman *tman, E_Smart_Data *sd)
 {
+   if (sd->pending && tman->proxy)
+     {
+	e_dbus_proxy_cancel_call(tman->proxy, sd->pending);
+	sd->pending = NULL;
+
+	assert(!sd->id);
+
+	return;
+     }
+
    if (!sd->id)
      return;
 
