@@ -52,7 +52,7 @@ struct _E_Nav_Map_Desc {
 	double width, height;
 };
 
-void get_key(const char *path, char *buf)
+static void get_key(const char *path, char *buf)
 {
 	char *p;
 
