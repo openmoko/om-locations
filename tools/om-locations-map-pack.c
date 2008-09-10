@@ -42,6 +42,7 @@ int verbose;
 #define MAP_FORMAT 1
 
 typedef struct _E_Nav_Map_Desc E_Nav_Map_Desc;
+typedef struct _Tile_Fetch Tile_Fetch;
 
 struct _E_Nav_Map_Desc {
 	unsigned char format;
@@ -50,6 +51,16 @@ struct _E_Nav_Map_Desc {
 	int min_level, max_level;
 	double lon, lat;
 	double width, height;
+};
+
+struct _Tile_Fetch {
+	E_Nav_Map_Desc *md;
+	const char *dst;
+	const char *source;
+	int overwrite;
+	int rule;
+	int rule_data;
+	const char *url_format;
 };
 
 static void get_key(const char *path, char *buf)
@@ -328,23 +339,24 @@ fetch_skip_idler(void *data)
 
 static int fetch_sched(TileIter *iter)
 {
+	Tile_Fetch *tf = iter->data;
 	const char *url;
 	char dst[PATH_MAX];
 	int skip = 0;
 
 	snprintf(dst, sizeof(dst), "%s/%s/%d/%d",
-			(const char *) iter->data, "osm",
+			tf->dst, tf->source,
 			iter->z, iter->x);
 
 	if (!ecore_file_is_dir(dst) && !ecore_file_mkpath(dst))
 		return 0;
 
 	snprintf(dst, sizeof(dst), "%s/%s/%d/%d/%d.png",
-			(const char *) iter->data, "osm",
+			tf->dst, tf->source,
 			iter->z, iter->x, iter->y);
 
 	if (ecore_file_exists(dst)) {
-		if (ecore_file_size(dst) > 0)
+		if (!tf->overwrite && ecore_file_size(dst) > 0)
 			skip = 1;
 		else
 			ecore_file_unlink(dst);
@@ -366,16 +378,20 @@ static int fetch_sched(TileIter *iter)
 			fetch_completion, NULL, iter);
 }
 
-static int fetch_tiles(E_Nav_Map_Desc *md, const char *dst)
+static int fetch_tiles(Tile_Fetch *tf)
 {
 	TileIter *iter;
+	E_Nav_Map_Desc *md = tf->md;
+
 	int success = 1;
 
 	ecore_file_init();
-	iter = tile_iter_new(TILE_ITER_FORMAT_OSM,
+	iter = tile_iter_new(tf->rule,
+			tf->rule_data,
+			tf->url_format,
 			md->lon, md->lat, md->width, md->height,
 			md->min_level, md->max_level);
-	iter->data = dst;
+	iter->data = tf;
 
 	if (tile_iter_next(iter)) {
 		if (fetch_sched(iter))
@@ -425,6 +441,8 @@ void usage(const char *prog)
 {
 	printf("%s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] [-k] [-v] <cache-dir> [<output>]\n", prog);
 }
+
+#define OSM_URL_FORMAT "http://tile.openstreetmap.org/mapnik/%d/%d/%d.png"
 
 int main(int argc, char **argv)
 {
@@ -497,10 +515,22 @@ int main(int argc, char **argv)
 			return 1;
 		}
 
-		if (!skip_fetch && !fetch_tiles(&md, basedir)) {
-			printf("failed to fetch tiles\n");
+		if (!skip_fetch) {
+			Tile_Fetch tf;
 
-			return 1;
+			tf.md = &md;
+			tf.dst = basedir;
+			tf.source = "osm";
+			tf.overwrite = 0;
+			tf.rule = TILE_ITER_RULE_NORMAL;
+			tf.rule_data = 0;
+			tf.url_format = OSM_URL_FORMAT;
+
+		       	if (!fetch_tiles(&tf)) {
+				printf("failed to fetch tiles\n");
+
+				return 1;
+			}
 		}
 	}
 
