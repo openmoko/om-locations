@@ -343,13 +343,17 @@ static int fetch_sched(TileIter *iter)
 	const char *url;
 	char dst[PATH_MAX];
 	int skip = 0;
+	int ret;
 
 	snprintf(dst, sizeof(dst), "%s/%s/%d/%d",
 			tf->dst, tf->source,
 			iter->z, iter->x);
 
-	if (!ecore_file_is_dir(dst) && !ecore_file_mkpath(dst))
+	if (!ecore_file_is_dir(dst) && !ecore_file_mkpath(dst)) {
+		printf("failed to create %s\n", dst);
+
 		return 0;
+	}
 
 	snprintf(dst, sizeof(dst), "%s/%s/%d/%d/%d.png",
 			tf->dst, tf->source,
@@ -374,8 +378,12 @@ static int fetch_sched(TileIter *iter)
 		return 1;
 	}
 
-	return ecore_file_download(url, dst,
+	ret = ecore_file_download(url, dst,
 			fetch_completion, NULL, iter);
+	if (!ret)
+		printf("failed to queue download to Ecore_File\n");
+
+	return ret;
 }
 
 static int fetch_tiles(Tile_Fetch *tf)
@@ -403,18 +411,12 @@ static int fetch_tiles(Tile_Fetch *tf)
 	if (tile_iter_next(iter)) {
 		if (fetch_sched(iter))
 			ecore_main_loop_begin();
-		else
-			printf("failed to schedule fetch\n");
 	}
 
 	ecore_file_shutdown();
 
-	if (tile_iter_cur(iter) + 1 != tile_iter_count(iter)) {
-		printf("fetch failed: %d/%d\n",
-				tile_iter_cur(iter) + 1,
-				tile_iter_count(iter));
+	if (tile_iter_cur(iter) + 1 != tile_iter_count(iter))
 		success = 0;
-	}
 
 	tile_iter_destroy(iter);
 
