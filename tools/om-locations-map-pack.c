@@ -42,6 +42,7 @@ int verbose;
 #define MAP_FORMAT 1
 
 typedef struct _E_Nav_Map_Desc E_Nav_Map_Desc;
+typedef struct _Tile_Fetch Tile_Fetch;
 
 struct _E_Nav_Map_Desc {
 	unsigned char format;
@@ -52,7 +53,17 @@ struct _E_Nav_Map_Desc {
 	double width, height;
 };
 
-void get_key(const char *path, char *buf)
+struct _Tile_Fetch {
+	E_Nav_Map_Desc *md;
+	const char *dst;
+	const char *source;
+	int overwrite;
+	int rule;
+	int rule_data;
+	const char *url_format;
+};
+
+static void get_key(const char *path, char *buf)
 {
 	char *p;
 
@@ -328,23 +339,28 @@ fetch_skip_idler(void *data)
 
 static int fetch_sched(TileIter *iter)
 {
+	Tile_Fetch *tf = iter->data;
 	const char *url;
 	char dst[PATH_MAX];
 	int skip = 0;
+	int ret;
 
 	snprintf(dst, sizeof(dst), "%s/%s/%d/%d",
-			(const char *) iter->data, "osm",
+			tf->dst, tf->source,
 			iter->z, iter->x);
 
-	if (!ecore_file_is_dir(dst) && !ecore_file_mkpath(dst))
+	if (!ecore_file_is_dir(dst) && !ecore_file_mkpath(dst)) {
+		printf("failed to create %s\n", dst);
+
 		return 0;
+	}
 
 	snprintf(dst, sizeof(dst), "%s/%s/%d/%d/%d.png",
-			(const char *) iter->data, "osm",
+			tf->dst, tf->source,
 			iter->z, iter->x, iter->y);
 
 	if (ecore_file_exists(dst)) {
-		if (ecore_file_size(dst) > 0)
+		if (!tf->overwrite && ecore_file_size(dst) > 0)
 			skip = 1;
 		else
 			ecore_file_unlink(dst);
@@ -362,37 +378,47 @@ static int fetch_sched(TileIter *iter)
 		return 1;
 	}
 
-	return ecore_file_download(url, dst,
+	ret = ecore_file_download(url, dst,
 			fetch_completion, NULL, iter);
+	if (!ret)
+		printf("failed to queue download to Ecore_File\n");
+
+	return ret;
 }
 
-static int fetch_tiles(E_Nav_Map_Desc *md, const char *dst)
+static int fetch_tiles(Tile_Fetch *tf)
 {
 	TileIter *iter;
+	E_Nav_Map_Desc *md = tf->md;
+
 	int success = 1;
 
-	ecore_file_init();
-	iter = tile_iter_new(TILE_ITER_FORMAT_OSM,
+	iter = tile_iter_new(tf->rule,
+			tf->rule_data,
+			tf->url_format,
 			md->lon, md->lat, md->width, md->height,
 			md->min_level, md->max_level);
-	iter->data = dst;
+	if (!iter) {
+		printf("failed to create iterator, maybe the URL is wrong?\n");
+
+		return 0;
+	}
+
+	iter->data = tf;
+
+	ecore_file_init();
 
 	if (tile_iter_next(iter)) {
 		if (fetch_sched(iter))
 			ecore_main_loop_begin();
-		else
-			printf("failed to schedule fetch\n");
 	}
 
-	if (tile_iter_cur(iter) + 1 != tile_iter_count(iter)) {
-		printf("fetch failed: %d/%d\n",
-				tile_iter_cur(iter) + 1,
-				tile_iter_count(iter));
+	ecore_file_shutdown();
+
+	if (tile_iter_cur(iter) + 1 != tile_iter_count(iter))
 		success = 0;
-	}
 
 	tile_iter_destroy(iter);
-	ecore_file_shutdown();
 
 	return success;
 }
@@ -423,8 +449,18 @@ void _eet_merge(Eet_File *ef, Eet_File *base)
 
 void usage(const char *prog)
 {
-	printf("%s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] [-k] [-v] <cache-dir> [<output>]\n", prog);
+	printf("Usage: %s [-b base] [-d version,source,min_level,max_level,lon,lat,width,height] [-f] [-k] [-r level] [-u url_format] [-v] <cache-dir> [<output>]\n", prog);
+	printf("\n"
+	       "  -b base        merge in base\n"
+	       "  -d desc        describe tiles to download\n"
+	       "  -f             force download (overwrite existing tiles)\n"
+	       "  -k             skip download when -d is specified\n"
+	       "  -r level       reverse the level, down from <level>\n"
+	       "  -u url_format  specify the URL format (this is passed to printf)\n"
+	       "  -v             be verbose\n");
 }
+
+#define OSM_URL_FORMAT "http://tile.openstreetmap.org/mapnik/%d/%d/%d.png"
 
 int main(int argc, char **argv)
 {
@@ -432,10 +468,13 @@ int main(int argc, char **argv)
 	E_Nav_Map_Desc md;
 	Eet_File *ef = NULL;
 	char *map = NULL, *basemap = NULL, *desc = NULL;
+	const char *url_format = OSM_URL_FORMAT;
+	int force_fetch = 0;
 	int skip_fetch = 0;
+	int reverse_z = 0;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "b:d:kv")) != -1) {
+	while ((opt = getopt(argc, argv, "b:d:fkr:u:v")) != -1) {
 		switch (opt) {
 		case 'b':
 			basemap = optarg;
@@ -443,8 +482,22 @@ int main(int argc, char **argv)
 		case 'd':
 			desc = optarg;
 			break;
+		case 'f':
+			force_fetch = 1;
+			break;
 		case 'k':
 			skip_fetch = 1;
+			break;
+		case 'r':
+			reverse_z = atoi(optarg);
+			if (!reverse_z) {
+				usage(argv[0]);
+
+				return 1;
+			}
+			break;
+		case 'u':
+			url_format = optarg;
 			break;
 		case 'v':
 			verbose = 1;
@@ -497,10 +550,27 @@ int main(int argc, char **argv)
 			return 1;
 		}
 
-		if (!skip_fetch && !fetch_tiles(&md, basedir)) {
-			printf("failed to fetch tiles\n");
+		if (!skip_fetch) {
+			Tile_Fetch tf;
 
-			return 1;
+			tf.md = &md;
+			tf.dst = basedir;
+			tf.source = "osm";
+			tf.overwrite = force_fetch;
+			if (reverse_z) {
+				tf.rule = TILE_ITER_RULE_REVERSE_Z;
+				tf.rule_data = reverse_z;
+			} else {
+				tf.rule = TILE_ITER_RULE_NORMAL;
+				tf.rule_data = 0;
+			}
+			tf.url_format = url_format;
+
+		       	if (!fetch_tiles(&tf)) {
+				printf("failed to fetch tiles\n");
+
+				return 1;
+			}
 		}
 	}
 

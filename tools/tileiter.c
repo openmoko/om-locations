@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 #include "tileiter.h"
 
@@ -48,15 +49,76 @@ mercator_project(double lon, double lat, double *x, double *y)
 	*y = (1.0 - tmp / M_PI) / 2.0;
 }
 
-TileIter *tile_iter_new(int format, double lon, double lat, double width, double height, int min_z, int max_z)
+static int
+rule_check_format(const char *url_format, char *arg_types, int num_args)
+{
+	const char *p;
+	int i = 0;
+
+	p = url_format;
+	for (i = 0; i < num_args + 1; i++)
+	{
+		while (1) {
+			p = strchr(p, '%');
+			if (!p || p[1] != '%')
+				break;
+
+			p += 2;
+		}
+
+		if (i == num_args && p) {
+			i++;
+
+			break;
+		}
+
+		if (!p || p[1] != arg_types[i])
+			break;
+
+		p++;
+	}
+
+	return (i == num_args);
+}
+
+static int
+rule_check(int rule, int rule_data, const char *url_format, double lon, double lat, double width, double height, int min_z, int max_z)
+{
+	char arg_types[16];
+	int num_args;
+
+	memset(arg_types, 'd', 3);
+	num_args = 3;
+
+	switch (rule) {
+	case TILE_ITER_RULE_NORMAL:
+		break;
+	case TILE_ITER_RULE_REVERSE_Z:
+		if (rule_data < max_z)
+			return 0;
+		break;
+	default:
+		return 0;
+		break;
+	}
+
+	return rule_check_format(url_format, arg_types, num_args);
+}
+
+TileIter *tile_iter_new(int rule, int rule_data, const char *url_format, double lon, double lat, double width, double height, int min_z, int max_z)
 {
 	TileIter *iter;
+
+	if (!rule_check(rule, rule_data, url_format, lon, lat, width, height, min_z, max_z))
+		return NULL;
 
 	iter = malloc(sizeof(TileIter));
 	if (!iter)
 		return NULL;
 
-	iter->format = format;;
+	iter->rule = rule;
+	iter->rule_data = rule_data;
+	iter->url_format = strdup(url_format);
 	iter->lon = lon;
 	iter->lat = lat;
 	iter->width = width;
@@ -98,6 +160,7 @@ TileIter *tile_iter_new(int format, double lon, double lat, double width, double
 
 void tile_iter_destroy(TileIter *iter)
 {
+	free(iter->url_format);
 	free(iter);
 }
 
@@ -201,14 +264,21 @@ const char *tile_iter_url(TileIter *iter)
 	if (iter->z < iter->min_z || iter->z > iter->max_z)
 		return NULL;
 
-	switch (iter->format) {
-	case TILE_ITER_FORMAT_OSM:
+	switch (iter->rule)
+	{
+	case TILE_ITER_RULE_NORMAL:
 	default:
-		snprintf(iter->url, sizeof(iter->url), "%s/%d/%d/%d.png",
-				"http://tile.openstreetmap.org/mapnik",
+		snprintf(iter->url, sizeof(iter->url),
+				iter->url_format,
 				iter->z, iter->x, iter->y);
 		break;
+	case TILE_ITER_RULE_REVERSE_Z:
+		snprintf(iter->url, sizeof(iter->url),
+				iter->url_format,
+				iter->rule_data - iter->z, iter->x, iter->y);
+		break;
 	}
+
 
 	return iter->url;
 }

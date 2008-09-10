@@ -22,12 +22,15 @@
 #define _TILEITER_H_
 
 enum {
-	TILE_ITER_FORMAT_OSM,
+	TILE_ITER_RULE_NORMAL,
+	TILE_ITER_RULE_REVERSE_Z,
 };
 
 typedef struct _TileIter {
 	/* private */
-	int format;
+	int rule;
+	int rule_data;
+	char *url_format;
 	double lon, lat, width, height;
 	int min_z, max_z;
 	char url[1024];
@@ -38,10 +41,10 @@ typedef struct _TileIter {
 
 	/* public */
 	int z, x, y;
-	const void *data;
+	void *data;
 } TileIter;
 
-TileIter *tile_iter_new(int format, double lon, double lat, double width, double height, int min_z, int max_z);
+TileIter *tile_iter_new(int rule, int rule_data, const char *url_format, double lon, double lat, double width, double height, int min_z, int max_z);
 void tile_iter_destroy(TileIter *iter);
 void tile_iter_reset(TileIter *iter);
 int tile_iter_next(TileIter *iter);
