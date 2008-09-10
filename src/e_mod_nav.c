@@ -424,6 +424,9 @@ viewport_item_add(Diversity_Object *obj, int sync)
 	 break;
      }
 
+   if (!bat)
+     return FALSE;
+
    if (!sync)
      {
 	printf("async item add is not supported\n");
