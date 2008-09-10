@@ -1,5 +1,6 @@
 # List of source files which contain translatable strings.
 
+src/widgets/e_nav_button_bar.c
 src/widgets/e_nav_contact_editor.c
 src/widgets/e_nav_dialog.c
 src/widgets/e_nav_entry.c

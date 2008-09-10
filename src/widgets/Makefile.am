@@ -9,6 +9,7 @@ AM_CPPFLAGS =			\
 noinst_LTLIBRARIES = libwidget.la
 
 noinst_HEADERS =		\
+	e_nav_button_bar.h	\
 	e_nav_dialog.h		\
 	e_nav_contact_editor.h	\
 	e_nav_entry.h		\
@@ -17,6 +18,7 @@ noinst_HEADERS =		\
 	debug.h
 
 libwidget_la_SOURCES =		\
+	e_nav_button_bar.c	\
 	e_nav_dialog.c		\
 	e_nav_contact_editor.c	\
 	e_nav_entry.c		\
