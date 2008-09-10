@@ -38,7 +38,7 @@ typedef struct _TileIter {
 
 	/* public */
 	int z, x, y;
-	const void *data;
+	void *data;
 } TileIter;
 
 TileIter *tile_iter_new(int format, double lon, double lat, double width, double height, int min_z, int max_z);
