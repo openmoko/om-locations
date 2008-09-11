@@ -23,6 +23,7 @@
 #include "../e_nav.h"
 #include "e_nav_dialog.h"
 #include "e_nav_entry.h"
+#include "e_nav_button_bar.h"
 #include "../e_nav_theme.h"
 #include "../e_nav_misc.h"
 
@@ -40,15 +41,6 @@ struct _E_TextBlock_Item
    Evas_Object *label_obj;
    Evas_Object *item_obj;
    size_t length_limit;
-   void *data;
-};
-
-struct _E_Button_Item
-{
-   Evas_Object *obj;
-   Evas_Object *item_obj;
-   Evas_Coord sz;
-   void (*func) (void *data, Evas_Object *obj);
    void *data;
 };
 
@@ -74,7 +66,7 @@ struct _E_Smart_Data
    Evas_Object     *clip;
 
    Evas_List      *textblocks;
-   Evas_List      *buttons;
+   Evas_Object    *bbar;
 
    E_Nav_Drop_Data *drop;
 };
@@ -247,18 +239,8 @@ static void
 on_drop_done(void *data, Evas_Object *obj)
 {
    E_Smart_Data *sd = data;
-   Evas_List *l;
 
    evas_object_color_set(sd->bg_object, 0, 0, 0, 200);
-
-   for (l = sd->buttons; l; l = l->next)
-     {
-	E_Button_Item *bi = l->data;
-	Evas_Object *base;
-
-	base = edje_object_part_object_get(bi->item_obj, "base");
-	evas_object_color_set(base, 0, 0, 0, 128);
-     }
 
    e_nav_drop_destroy(sd->drop);
    sd->drop = NULL;
@@ -401,15 +383,10 @@ _e_nav_dialog_smart_del(Evas_Object *obj)
 
 	free(tbi);
      }
-   while (sd->buttons)   
-     {
-	E_Button_Item *bi;
-	
-	bi = sd->buttons->data;
-	sd->buttons = evas_list_remove_list(sd->buttons, sd->buttons);
-	evas_object_del(bi->item_obj);
-	free(bi);
-     }
+
+   if (sd->bbar)
+     evas_object_del(sd->bbar);
+
    if(sd->bg_object) evas_object_del(sd->bg_object);
    if(sd->title_object) evas_object_del(sd->title_object);
 
@@ -500,44 +477,28 @@ _e_nav_dialog_smart_clip_unset(Evas_Object *obj)
    evas_object_clip_unset(sd->clip);
 } 
 
-static void
-_e_button_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   E_Button_Item *bi;
-   E_Smart_Data *sd;
-     
-   bi = data;
-   if (!bi) return;
-   sd = evas_object_smart_data_get(bi->obj);
-   if (!sd) return;
-   if (bi->func) bi->func(bi->data, bi->obj);
-}
-
 void
 e_nav_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data)
 {
    E_Smart_Data *sd;
-   E_Button_Item *bi;
-   char group[256];
    
    SMART_CHECK(obj, ;);
-   bi = calloc(1, sizeof(E_Button_Item));
-   bi->obj = obj;
-   bi->func = func;
-   bi->data = data;
 
-   snprintf(group, sizeof(group), "%s/%s", sd->group_base, "button");
+   if (!sd->bbar)
+     {
+	char group[256];
 
-   bi->item_obj = e_nav_theme_object_new(evas_object_evas_get(obj),
-	 NULL, group);
-   evas_object_smart_member_add(bi->item_obj, obj);
-   evas_object_clip_set(bi->item_obj, sd->clip);
-   evas_object_show(bi->item_obj);
-   evas_object_event_callback_add(bi->item_obj, EVAS_CALLBACK_MOUSE_UP,
-				  _e_button_cb_mouse_up, bi);
-   
-   edje_object_part_text_set(bi->item_obj, "text", label);
-   sd->buttons = evas_list_append(sd->buttons, bi);
+	snprintf(group, sizeof(group), "%s/%s", sd->group_base, "button_bar");
+
+	sd->bbar = e_nav_button_bar_add(evas_object_evas_get(sd->obj));
+	e_nav_button_bar_embed_set(sd->bbar, sd->obj, group);
+
+	evas_object_smart_member_add(sd->bbar, sd->obj);
+	evas_object_clip_set(sd->bbar, sd->clip);
+	evas_object_show(sd->bbar);
+     }
+
+   e_nav_button_bar_button_add(sd->bbar, label, func, data);
 }
 
 void 
@@ -708,94 +669,141 @@ e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input
 }
 
 static void
-_e_nav_dialog_update(Evas_Object *obj)
+textblocks_update(E_Smart_Data *sd, Evas_Coord tb_start, Evas_Coord tb_end)
 {
-   E_Smart_Data *sd;
-   int tbc;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
+   Evas_List *l;
+   Evas_Coord gap_big, gap_small;
+   Evas_Coord label_pad, label_indent, label_height;
+   Evas_Coord item_indent, item_height;
+   Evas_Coord y;
 
-   tbc = (evas_list_count(sd->textblocks));
+   if (!sd->textblocks)
+     return;
 
-   int dialog_x = sd->x;
-   int dialog_y = sd->y;
-   int dialog_w = sd->w;
-   int dialog_h = sd->h;
+   gap_big = 25;
+   gap_small = 10;
 
-   evas_object_move(sd->bg_object, dialog_x, dialog_y );
-   evas_object_resize(sd->bg_object, dialog_w, dialog_h );
+   label_pad = 7;
+   label_indent = 19;
+   label_height = 25;
 
-   if(sd->title_object)
+   item_indent = 10;
+   item_height = 0;
+
+   /* adjust layout */
+   while (1)
      {
-        evas_object_resize(sd->title_object, dialog_w, dialog_h*(1.0/6));
-        evas_object_move(sd->title_object, dialog_x, dialog_y );
+	Evas_Coord h, kill_me;
+
+	h = gap_big;
+
+	for (l = sd->textblocks; l; l = l->next)
+	  {
+	     E_TextBlock_Item *tbi = l->data;
+	     Evas_Coord tbh = (item_height) ? item_height : tbi->sz;
+
+	     h += label_height + tbh + gap_small;
+	  }
+
+	kill_me = tb_start + h - tb_end;
+	if (kill_me <= 0)
+	  break;
+
+	if (gap_big > 15)
+	  {
+	     gap_big -= kill_me;
+	     if (gap_big < 15)
+	       gap_big = 15;
+	  }
+	else if (gap_small > 3)
+	  {
+	     gap_small -= kill_me;
+	     if (gap_small < 3)
+	       gap_small = 3;
+	  }
+	else if (!item_height)
+	  {
+	     item_height = 30;
+	  }
+	else /* give up */
+	  {
+	     item_height = 10;
+
+	     break;
+	  }
      }
 
-   int tmp_x, tmp_y;
-   Evas_List *l;
-   E_TextBlock_Item *tbi;
-   int indent = 10;
-   int button_w, button_h; 
-   int interspace;
-   int bc;
-
-   tmp_y =  dialog_y + dialog_h*(1.0/6) + (indent*2.5);
-   bc = evas_list_count(sd->buttons);
-   if(bc < 1 || bc > 3) return;
-   E_Button_Item *bi;
-   tmp_x = dialog_x;
-   button_w = 158;
-   button_h = 60;
+   y = tb_start + gap_big;
 
    for (l = sd->textblocks; l; l = l->next)
      {
-        tbi = l->data;
-        evas_object_move(tbi->label_obj, dialog_x + indent + 9, tmp_y + 7);
-        tmp_y = tmp_y + (indent * 2.5);
-        evas_object_move(tbi->item_obj, dialog_x + indent, tmp_y);
-        if((tmp_y + tbi->sz + indent + button_h) > (dialog_y + dialog_h) ) 
-          {
-             evas_object_resize(tbi->item_obj, (dialog_w-(indent*2)), (dialog_y + dialog_h - tmp_y - button_h - indent));
-             break;
-          }
-        else
-          {
-             evas_object_resize(tbi->item_obj, (dialog_w-(indent*2)), tbi->sz);
-          }
-        tmp_y = tmp_y + tbi->sz + indent;
-     }
-   tmp_y = tmp_y + (indent*2.5);
+	E_TextBlock_Item *tbi = l->data;
+	Evas_Coord tbh = (item_height) ? item_height : tbi->sz;
 
-   if (bc == 2)
-     { 
-        tmp_x = tmp_x + 50;
-        interspace = (dialog_w - (button_w * bc)) - (50 * 2); 
-     }
-   else if (bc == 3)
-     {
-        tmp_x = tmp_x;
-        interspace = (dialog_w - (button_w * bc)) / 2;
-     } 
-   else
-     {
-        interspace = (dialog_w - (button_w * bc)) / (bc + 1); 
-     }
+        evas_object_move(tbi->label_obj, sd->x + label_indent, y + label_pad);
+        evas_object_show(tbi->label_obj);
 
-   for (l = sd->buttons; l; l = l->next)
-     {
-        bi = l->data;
-        if(tbc==0) 
-          {
-             evas_object_move(bi->item_obj, tmp_x, dialog_y + dialog_h - button_h - 10 );
-          }
-        else 
-          {
-             evas_object_move(bi->item_obj, tmp_x, dialog_y + dialog_h - button_h - 10 );
-          }
+	y += label_height;
 
-        evas_object_resize(bi->item_obj, button_w, button_h);
-        tmp_x = tmp_x + button_w + interspace;
+        evas_object_move(tbi->item_obj, sd->x + item_indent, y);
+	evas_object_resize(tbi->item_obj, sd->w - (item_indent * 2), tbh);
+	evas_object_show(tbi->item_obj);
+
+	y += tbh + gap_small;
+     }
+}
+
+static void
+_e_nav_dialog_update(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   Evas_Coord title_height, bbar_height, bottom_border;
+   Evas_Coord tb_start, tb_end;
+
+   sd = evas_object_smart_data_get(obj);
+   if (!sd) return;
+
+   evas_object_move(sd->bg_object, sd->x, sd->y);
+   evas_object_resize(sd->bg_object, sd->w, sd->h);
+
+   title_height = sd->h / 6;
+   bottom_border = 10;
+   bbar_height = 60;
+
+   tb_start = sd->y + title_height;
+   tb_end = sd->y + sd->h - bbar_height - bottom_border;
+
+   if (sd->title_object)
+     {
+	evas_object_move(sd->title_object, sd->x, sd->y);
+	evas_object_resize(sd->title_object, sd->w, title_height);
+     }
+  
+   if (sd->textblocks)
+     textblocks_update(sd, tb_start, tb_end);
+
+   if (sd->bbar)
+     {
+	Evas_Coord button_w;
+	Evas_Coord inter;
+	int num_buttons;
+
+	button_w = 158;
+	num_buttons = e_nav_button_bar_num_buttons_get(sd->bbar);
+
+	if (num_buttons == 2)
+	  {
+	     inter = sd->w - (button_w + 50) * 2;
+	     e_nav_button_bar_paddings_set(sd->bbar, 50, inter, 50);
+	  }
+	else if (num_buttons > 1)
+	  {
+	     inter = (sd->w - (button_w * num_buttons)) / (num_buttons - 1);
+	     e_nav_button_bar_paddings_set(sd->bbar, 0, inter, 0);
+	  }
+
+	evas_object_move(sd->bbar, sd->x, tb_end);
+	evas_object_resize(sd->bbar, sd->w, bbar_height);
      }
 }
 
@@ -803,43 +811,37 @@ static void
 _e_nav_alert_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
+   Evas_Coord title_height, bbar_height;
    
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
-   int alert_x = sd->x;
-   int alert_y = sd->y;
-   int alert_w = sd->w;
-   int alert_h = sd->h;
+   evas_object_move(sd->bg_object, sd->x, sd->y );
+   evas_object_resize(sd->bg_object, sd->w, sd->h );
 
-   evas_object_move(sd->bg_object, alert_x, alert_y );
-   evas_object_resize(sd->bg_object, alert_w, alert_h );
+   title_height = sd->h * 3 / 7;
+   bbar_height = sd->h * 2 / 7;
 
-   if(sd->title_object)
+   if (sd->title_object)
      {
-        evas_object_resize(sd->title_object, alert_w, alert_h*(3.0/7));
-        evas_object_move(sd->title_object, alert_x, alert_y );
-        Evas_Object *o = edje_object_part_object_get(sd->title_object, "title");
-        evas_object_color_set(o, sd->title_color_r, sd->title_color_g, sd->title_color_b, sd->title_color_a);
+        Evas_Object *o;
+
+	evas_object_move(sd->title_object, sd->x, sd->y);
+	evas_object_resize(sd->title_object, sd->w, title_height);
+
+	o = edje_object_part_object_get(sd->title_object, "title");
+        evas_object_color_set(o,
+	      sd->title_color_r,
+	      sd->title_color_g,
+	      sd->title_color_b,
+	      sd->title_color_a);
      }
 
-   int tmp_x;
-   Evas_List *l;
-   int indent = 20;
-   int button_w, button_h; 
-   int bc = evas_list_count(sd->buttons);
-   E_Button_Item *bi;
-
-   if(bc==0) return;
-   tmp_x = alert_x + indent;
-   button_w = (int)( ( alert_w - (indent * 2) ) / bc );
-   button_h = alert_h*(2.0/7);
-
-   for (l = sd->buttons; l; l = l->next)
+   if (sd->bbar)
      {
-        bi = l->data;
-        evas_object_move(bi->item_obj, tmp_x, (alert_y+alert_h*(3.0/7)) );
-        evas_object_resize(bi->item_obj, button_w, button_h);
-        tmp_x = tmp_x + button_w + 3;
+	e_nav_button_bar_paddings_set(sd->bbar, 20, 3, 20);
+
+	evas_object_move(sd->bbar, sd->x, sd->y + title_height);
+	evas_object_resize(sd->bbar, sd->w, bbar_height);
      }
 }
