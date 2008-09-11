@@ -784,23 +784,14 @@ _e_nav_dialog_update(Evas_Object *obj)
 
    if (sd->bbar)
      {
-	Evas_Coord button_w;
-	Evas_Coord inter;
 	int num_buttons;
 
-	button_w = 158;
 	num_buttons = e_nav_button_bar_num_buttons_get(sd->bbar);
 
 	if (num_buttons == 2)
-	  {
-	     inter = sd->w - (button_w + 50) * 2;
-	     e_nav_button_bar_paddings_set(sd->bbar, 50, inter, 50);
-	  }
+	  e_nav_button_bar_paddings_set(sd->bbar, 50, 64, 50);
 	else if (num_buttons > 1)
-	  {
-	     inter = (sd->w - (button_w * num_buttons)) / (num_buttons - 1);
-	     e_nav_button_bar_paddings_set(sd->bbar, 0, inter, 0);
-	  }
+	  e_nav_button_bar_paddings_set(sd->bbar, 0, 3, 0);
 
 	evas_object_move(sd->bbar, sd->x, tb_end);
 	evas_object_resize(sd->bbar, sd->w, bbar_height);
