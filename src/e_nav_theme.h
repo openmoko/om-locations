@@ -32,5 +32,6 @@ const char      *e_nav_theme_path_get(void);
 /* custom_dir is ignored */
 Evas_Object     *e_nav_theme_object_new(Evas *e, const char *custom_dir, const char *group);
 int              e_nav_theme_object_set(Evas_Object *o, const char *custom_dir, const char *group);
+int              e_nav_theme_group_exist(const char *custom_dir, const char *group);
 
 #endif /* E_NAV_THEME_H */
