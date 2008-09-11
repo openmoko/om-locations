@@ -62,7 +62,7 @@ struct _E_Smart_Data
    /* the parent the dialog is transient for */
    Evas_Object     *parent;
    Evas_Object     *parent_mask;
-   
+
    Evas_Object     *clip;
 
    Evas_List      *textblocks;
@@ -99,7 +99,7 @@ void
 e_nav_dialog_type_set(Evas_Object *obj, int type)
 {
    E_Smart_Data *sd;
-   
+
    SMART_CHECK(obj, ;);
 
    switch (type)
@@ -123,7 +123,7 @@ _e_nav_dialog_move_and_resize(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_Coord x, y, w, h;
-   
+
    SMART_CHECK(obj, ;);
 
    if (sd->parent)
@@ -250,7 +250,7 @@ void
 e_nav_dialog_activate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    SMART_CHECK(obj, ;);
 
    if (sd->drop)
@@ -264,7 +264,7 @@ void
 e_nav_dialog_deactivate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    SMART_CHECK(obj, ;);
 
    if (sd->drop)
@@ -292,7 +292,7 @@ _e_nav_dialog_smart_init(void)
 	       _e_nav_dialog_smart_color_set,
 	       _e_nav_dialog_smart_clip_set,
 	       _e_nav_dialog_smart_clip_unset,
-	       
+	
 	       NULL /* data */
 	  };
 	_e_smart = evas_smart_class_new(&sc);
@@ -302,7 +302,7 @@ _e_nav_dialog_smart_init(void)
 static void
 _theme_source_set(E_Smart_Data *sd)
 {
-   sd->bg_object = evas_object_rectangle_add(evas_object_evas_get(sd->obj)); 
+   sd->bg_object = evas_object_rectangle_add(evas_object_evas_get(sd->obj));
    evas_object_smart_member_add(sd->bg_object, sd->obj);
    evas_object_move(sd->bg_object, sd->x, sd->y);
    evas_object_resize(sd->bg_object, sd->w, sd->h);
@@ -316,16 +316,16 @@ static void
 _e_nav_dialog_smart_add(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    sd = calloc(1, sizeof(E_Smart_Data));
    if (!sd) return;
    sd->obj = obj;
-   
+
    sd->x = 0;
    sd->y = 0;
    sd->w = 0;
    sd->h = 0;
-   
+
    sd->clip = evas_object_rectangle_add(evas_object_evas_get(obj));
    evas_object_smart_member_add(sd->clip, obj);
    evas_object_move(sd->clip, -10000, -10000);
@@ -348,7 +348,7 @@ static void
 _e_nav_dialog_smart_del(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
@@ -368,7 +368,7 @@ _e_nav_dialog_smart_del(Evas_Object *obj)
    if (sd->drop)
      e_nav_drop_destroy(sd->drop);
 
-   while (sd->textblocks)   
+   while (sd->textblocks)
      {
 	E_TextBlock_Item *tbi;
 	
@@ -394,12 +394,12 @@ _e_nav_dialog_smart_del(Evas_Object *obj)
 
    free(sd);
 }
-                    
+
 static void
 _e_nav_dialog_smart_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    sd->x = x;
@@ -415,7 +415,7 @@ static void
 _e_nav_dialog_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    sd->w = w;
@@ -431,7 +431,7 @@ static void
 _e_nav_dialog_smart_show(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    evas_object_show(sd->clip);
@@ -441,7 +441,7 @@ static void
 _e_nav_dialog_smart_hide(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    evas_object_hide(sd->clip);
@@ -451,7 +451,7 @@ static void
 _e_nav_dialog_smart_color_set(Evas_Object *obj, int r, int g, int b, int a)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    evas_object_color_set(sd->clip, r, g, b, a);
@@ -461,7 +461,7 @@ static void
 _e_nav_dialog_smart_clip_set(Evas_Object *obj, Evas_Object *clip)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    evas_object_clip_set(sd->clip, clip);
@@ -471,17 +471,17 @@ static void
 _e_nav_dialog_smart_clip_unset(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
    evas_object_clip_unset(sd->clip);
-} 
+}
 
 void
 e_nav_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data)
 {
    E_Smart_Data *sd;
-   
+
    SMART_CHECK(obj, ;);
 
    if (!sd->bbar)
@@ -501,14 +501,14 @@ e_nav_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void 
    e_nav_button_bar_button_add(sd->bbar, label, func, data);
 }
 
-void 
+void
 e_nav_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
 {
    E_Smart_Data *sd;
-   
+
    SMART_CHECK(obj, ;);
    if(!sd) return;
-   if(!sd->title_object) 
+   if(!sd->title_object)
      {
 	Evas_Object *o;
 	char group[256];
@@ -556,7 +556,7 @@ const char *
 e_nav_dialog_textblock_text_get(Evas_Object *obj, const char *label)
 {
    E_Smart_Data *sd;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return NULL;
    E_TextBlock_Item *tbi;
@@ -566,7 +566,7 @@ e_nav_dialog_textblock_text_get(Evas_Object *obj, const char *label)
         tbi = l->data;
         if(!strcmp(tbi->label, label))
           {
-             return tbi->input; 
+             return tbi->input;
           }
      }
    return NULL;
@@ -599,12 +599,12 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    E_TextBlock_Item *tbi = (E_TextBlock_Item*)data;
    Evas_Object *entry;
    Evas_Coord x, y, w, h;
-  
+
    entry = e_nav_entry_add(evas);
    e_nav_entry_title_set(entry, edje_object_part_text_get(tbi->label_obj, "dialog.label.text"));
    e_nav_entry_text_set(entry, tbi->input);
    e_nav_entry_text_limit_set(entry, tbi->length_limit);
-   
+
    e_nav_entry_button_add(entry, _("OK"), on_entry_ok, tbi);
    e_nav_entry_button_add(entry, _("Cancel"), on_entry_cancel, tbi);
 
@@ -617,20 +617,20 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    evas_object_show(entry);
 }
 
-void 
+void
 e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input, Evas_Coord size, size_t length_limit, void *data)
 {
    E_Smart_Data *sd;
    Evas_Object *text_object;
    E_TextBlock_Item *tbi;
    char group[256];
-   
+
    SMART_CHECK(obj, ;);
    tbi = calloc(1, sizeof(E_TextBlock_Item));
    tbi->obj = obj;
    if (label)
      tbi->label = strdup(label);
-   else 
+   else
      tbi->label = strdup("");
 
    snprintf(group, sizeof(group), "%s/%s", sd->group_base, "label");
@@ -662,9 +662,9 @@ e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input
    evas_object_clip_set(tbi->item_obj, sd->clip);
    evas_object_show(tbi->item_obj);
    edje_object_part_text_set(tbi->item_obj, "e.textblock.text", input);
-   evas_object_event_callback_add(tbi->item_obj, EVAS_CALLBACK_MOUSE_UP, 
+   evas_object_event_callback_add(tbi->item_obj, EVAS_CALLBACK_MOUSE_UP,
                                   _e_textblock_cb_mouse_up, tbi);
-   
+
    sd->textblocks = evas_list_append(sd->textblocks, tbi);
 }
 
@@ -740,14 +740,12 @@ textblocks_update(E_Smart_Data *sd, Evas_Coord tb_start, Evas_Coord tb_end)
 	E_TextBlock_Item *tbi = l->data;
 	Evas_Coord tbh = (item_height) ? item_height : tbi->sz;
 
-        evas_object_move(tbi->label_obj, sd->x + label_indent, y + label_pad);
-        evas_object_show(tbi->label_obj);
+	evas_object_move(tbi->label_obj, sd->x + label_indent, y + label_pad);
 
 	y += label_height;
 
-        evas_object_move(tbi->item_obj, sd->x + item_indent, y);
+	evas_object_move(tbi->item_obj, sd->x + item_indent, y);
 	evas_object_resize(tbi->item_obj, sd->w - (item_indent * 2), tbh);
-	evas_object_show(tbi->item_obj);
 
 	y += tbh + gap_small;
      }
@@ -778,7 +776,7 @@ _e_nav_dialog_update(Evas_Object *obj)
 	evas_object_move(sd->title_object, sd->x, sd->y);
 	evas_object_resize(sd->title_object, sd->w, title_height);
      }
-  
+
    if (sd->textblocks)
      textblocks_update(sd, tb_start, tb_end);
 
@@ -803,25 +801,26 @@ _e_nav_alert_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    Evas_Coord title_height, bbar_height;
-   
+
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
-   evas_object_move(sd->bg_object, sd->x, sd->y );
-   evas_object_resize(sd->bg_object, sd->w, sd->h );
+   evas_object_move(sd->bg_object, sd->x, sd->y);
+   evas_object_resize(sd->bg_object, sd->w, sd->h);
 
    title_height = sd->h * 3 / 7;
    bbar_height = sd->h * 2 / 7;
 
    if (sd->title_object)
      {
-        Evas_Object *o;
+	Evas_Object *o;
 
 	evas_object_move(sd->title_object, sd->x, sd->y);
 	evas_object_resize(sd->title_object, sd->w, title_height);
 
+	/* better way? */
 	o = edje_object_part_object_get(sd->title_object, "title");
-        evas_object_color_set(o,
+	evas_object_color_set(o,
 	      sd->title_color_r,
 	      sd->title_color_g,
 	      sd->title_color_b,
