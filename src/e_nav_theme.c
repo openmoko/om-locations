@@ -139,3 +139,12 @@ e_nav_theme_object_set(Evas_Object *obj, const char *custom_dir, const char *gro
 
    return edje_object_file_set(obj, theme_path, group);
 }
+
+int
+e_nav_theme_group_exist(const char *custom_dir, const char *group)
+{
+   if (!theme_path)
+     return 0;
+
+   return edje_file_group_exists(theme_path, group);
+}
