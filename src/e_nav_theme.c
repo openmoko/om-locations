@@ -140,6 +140,22 @@ e_nav_theme_object_set(Evas_Object *obj, const char *custom_dir, const char *gro
    return edje_object_file_set(obj, theme_path, group);
 }
 
+Evas_Object *
+e_nav_theme_component_new(Evas *e, const char *base_group, const char *comp, int check)
+{
+   char group[256];
+
+   if (!theme_path)
+     return NULL;
+
+   snprintf(group, sizeof(group), "%s/%s", base_group, comp);
+
+   if (check && !edje_file_group_exists(theme_path, group))
+     return NULL;
+
+   return e_nav_theme_object_new(e, NULL, group);
+}
+
 int
 e_nav_theme_group_exist(const char *custom_dir, const char *group)
 {
