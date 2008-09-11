@@ -1314,24 +1314,33 @@ group {
 }
 
 group {
-   name: "modules/diversity_nav/flying_menu";
+   name: "modules/diversity_nav/flying_menu/bg";
    parts {
       part { name: "flying_menu_bg";
          description { state: "default" 0.0;
             image.normal: "edit_send.png";
+            min: 0 75;
          }
       }
    }
 }
 
 group {
-   name: "modules/diversity_nav/flying_menu/interval";
+   name: "modules/diversity_nav/flying_menu/pad";
    parts {
       part { name: "asteristic";
          type: TEXT;
          effect: SOFT_SHADOW;
          mouse_events: 0;
          description { state: "default" 0.0;
+            rel1 {
+               relative: 0.0 0.0;
+               offset: 0 2;
+            }
+            rel2 {
+               relative: 1.0 1.0;
+               offset: 0 -15;
+            }
             color: 255 255 255 255;
             text {
                text: "*";
@@ -1346,24 +1355,24 @@ group {
 }
 
 group {
-   name: "modules/diversity_nav/tag_menu_item";
+   name: "modules/diversity_nav/flying_menu/button";
    parts {
-      part { name: "base";
+      part { name: "button.base";
          type: RECT;
          mouse_events: 1;
          description { state: "default" 0.0;
             color: 255 255 255 0;
             rel1 {
                relative: 0.0 0.0;
-               offset: 0 0;
+               offset: 0 2;
             }
             rel2 {
                relative: 1.0 1.0;
-               offset: 0 0;
+               offset: 0 -15;
             }
          } 
       }
-      part { name: "text";
+      part { name: "button.text";
          type: TEXT;
          effect: SOFT_SHADOW;
          mouse_events: 0;
@@ -1371,18 +1380,18 @@ group {
             rel1 {
                relative: 0.0 0.0;
                offset: 0 0;
-               to: "base";
+               to: "button.base";
             }
             rel2 {
                relative: 1.0 1.0;
                offset: 0 0;
-               to: "base";
+               to: "button.base";
             }
             color: 255 255 255 255;
             text {
                font: "Edje-Sans-Bold";
                size: 48;
-               min: 1 1;
+               min: 1 0;
                align: 0.5 0.5;
             }
          }

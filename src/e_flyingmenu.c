@@ -21,20 +21,9 @@
 #include "e_nav.h"
 #include "e_nav_theme.h"
 #include "e_flyingmenu.h"
+#include "widgets/e_nav_button_bar.h"
 
-/* navigator object */
 typedef struct _E_Smart_Data E_Smart_Data;
-typedef struct _E_Tagmenu_Item E_Tagmenu_Item;
-
-struct _E_Tagmenu_Item
-{
-   Evas_Object *obj;
-   Evas_Object *item_obj;
-   Evas_Object *interval;
-   Evas_Coord sz;
-   void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj);
-   void *data;
-};
 
 struct _E_Smart_Data
 {
@@ -45,12 +34,12 @@ struct _E_Smart_Data
    
    Evas_Object     *clip;
 
-   Evas_List       *items;
-   Evas_Object     *bg_obj;
    double           activate_time;
    int              activate_deactivate;
    Ecore_Animator  *animator;
    
+   Evas_Object     *bbar;
+
    /* directory to find theme .edj files from the module - if there is one */
    const char      *dir;
    
@@ -75,7 +64,6 @@ static void _e_flyingmenu_cb_src_obj_move(void *data, Evas *evas, Evas_Object *o
 static void _e_flyingmenu_cb_src_obj_resize(void *data, Evas *evas, Evas_Object *obj, void *event);
 static int _e_flyingmenu_cb_animator(void *data);
 static void _e_flyingmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event);
-static void _e_flyingmenu_cb_item_up(void *data, Evas *evas, Evas_Object *obj, void *event);
 
 #define SMART_NAME "e_flyingmenu"
 static Evas_Smart *_e_smart = NULL;
@@ -95,9 +83,13 @@ e_flyingmenu_theme_source_set(Evas_Object *obj, const char *custom_dir)
    SMART_CHECK(obj, ;);
    
    sd->dir = custom_dir;
-   sd->bg_obj = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/flying_menu");
-   evas_object_smart_member_add(sd->bg_obj, obj);
-   evas_object_clip_set(sd->bg_obj, sd->clip);
+
+   sd->bbar = e_nav_button_bar_add(evas_object_evas_get(obj));
+   e_nav_button_bar_embed_set(sd->bbar, obj, "modules/diversity_nav/flying_menu");
+   e_nav_button_bar_paddings_set(sd->bbar, 10, 10, 10);
+
+   evas_object_smart_member_add(sd->bbar, obj);
+   evas_object_clip_set(sd->bbar, sd->clip);
 }
 
 void
@@ -174,8 +166,6 @@ void
 e_flyingmenu_deactivate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
-   E_Tagmenu_Item *ti;
    
    SMART_CHECK(obj, ;);
    evas_object_hide(sd->event);
@@ -184,12 +174,7 @@ e_flyingmenu_deactivate(Evas_Object *obj)
    sd->activate_deactivate = -1;
    sd->activate_time = ecore_time_get();
    
-   for (l = sd->items; l; l = l->next)
-     {
-	ti = l->data;
-        evas_object_hide(ti->item_obj);
-        evas_object_hide(ti->interval);
-     }
+   evas_object_hide(sd->bbar);
 
    if (sd->animator) return;
    sd->animator = ecore_animator_add(_e_flyingmenu_cb_animator, obj);
@@ -200,25 +185,10 @@ void
 e_flyingmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data)
 {
    E_Smart_Data *sd;
-   E_Tagmenu_Item *ti;
    
    SMART_CHECK(obj, ;);
-   /* add menu item */
-   ti = calloc(1, sizeof(E_Tagmenu_Item));
-   ti->obj = obj;
-   ti->sz = size;
-   ti->func = func;
-   ti->data = data;
-   ti->item_obj = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/tag_menu_item");
 
-   evas_object_smart_member_add(ti->item_obj, obj);
-   evas_object_clip_set(ti->item_obj, sd->clip);
-   evas_object_event_callback_add(ti->item_obj, EVAS_CALLBACK_MOUSE_UP,
-				  _e_flyingmenu_cb_item_up, ti);
-   
-   edje_object_part_text_set(ti->item_obj, "text", label);
-   ti->interval = e_nav_theme_object_new(evas_object_evas_get(obj), sd->dir, "modules/diversity_nav/flying_menu/interval");
-   sd->items = evas_list_append(sd->items, ti);
+   e_nav_button_bar_button_add(sd->bbar, label, (void *) func, data);
 }
 
 /* internal calls */
@@ -296,17 +266,8 @@ _e_flyingmenu_smart_del(Evas_Object *obj)
 	evas_object_event_callback_del(sd->src_obj, EVAS_CALLBACK_RESIZE,
 				       _e_flyingmenu_cb_src_obj_resize);
      }
-   while (sd->items)
-     {
-	E_Tagmenu_Item *ti;
-	
-	ti = sd->items->data;
-	sd->items = evas_list_remove_list(sd->items, sd->items);
-	evas_object_del(ti->item_obj);
-	evas_object_del(ti->interval);
-	free(ti);
-     }
-   evas_object_del(sd->bg_obj);
+
+   evas_object_del(sd->bbar);
    evas_object_del(sd->clip);
    evas_object_del(sd->event);
    free(sd);
@@ -390,67 +351,40 @@ static void
 _e_flyingmenu_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
-   E_Tagmenu_Item *ti;
-   Evas_Coord x, y, w, h, xx, yy, ww, hh;
+   Evas_Coord x, y, w, h;
    double t;
-   Evas_Coord screen_x, screen_y, screen_w, screen_h;
-   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h); 
+   Evas_Coord menu_w, menu_h, menu_gap;
+   int num_buttons;
 
    sd = evas_object_smart_data_get(obj);
-   if (!sd) return;
-   if (!sd->items) return;
+   if (!sd)
+     return;
+   if (!sd->bbar)
+     return;
+
+   num_buttons = e_nav_button_bar_num_buttons_get(sd->bbar);
+   if (!num_buttons)
+     return;
+
+   if (num_buttons == 1)
+     menu_w = e_nav_button_bar_width_min_calc(sd->bbar, 270);
+   else
+     menu_w = e_nav_button_bar_width_min_calc(sd->bbar, 155);
+   menu_h = e_nav_button_bar_height_min_calc(sd->bbar, 0);
+
+   menu_gap = 2;
+
    evas_object_geometry_get(sd->src_obj, &x, &y, &w, &h);
-   int menu_h = screen_h/13;
-   if(menu_h<60) menu_h = 60;
-   int interspace = 15;
-   int tsize = 0;
+
    if (sd->activate_deactivate == 0)
      {
-	for (l = sd->items; l; l = l->next)
-          {
-	     ti = l->data;
-             tsize = tsize + ti->sz; 
-          }
+	evas_object_move(sd->bbar,
+	      x + (w - menu_w) / 2,
+	      y - menu_h - menu_gap);
+	evas_object_resize(sd->bbar, menu_w, menu_h);
 
-        evas_object_move(sd->bg_obj, 
-                         x+(w/2)-(tsize/2)-10, 
-                         y - menu_h - interspace - 2);
-        evas_object_resize(sd->bg_obj, tsize + (2 * 10), menu_h + interspace);
-        evas_object_show(sd->bg_obj);
+	evas_object_show(sd->bbar);
 
-        int size = 0;
-	for (l = sd->items; l; l = l->next)
-	  {
-	     ti = l->data;
-	     if (!sd->active)
-               {
-	          evas_object_hide(ti->item_obj);
-	          evas_object_hide(ti->interval);
-               }
-	     else
-	       {
-		  xx =  (-tsize/2) + size + (ti->sz/2);
-		  yy =  (-h/2) -interspace - (menu_h/2) ;
-		  ww = ti->sz ;
-		  hh = menu_h ;
-                  if(size!=0)
-                    {
-		       evas_object_move(ti->interval, 
-				   x + (w / 2) + xx - (ww / 2), 
-				   y + (h / 2) + yy - (hh / 2));
-		       evas_object_resize(ti->interval, 10, hh);
-		       evas_object_show(ti->interval);
-                    }
-		  evas_object_move(ti->item_obj, 
-				   x + (w / 2) + xx - (ww / 2), 
-				   y + (h / 2) + yy - (hh / 2));
-		  evas_object_resize(ti->item_obj, ww, hh);
-		  evas_object_show(ti->item_obj);
-                  size = size + ti->sz;
-		  
-	       }
-	  }
 	if (!sd->active)
 	  evas_object_hide(sd->event);
 	else
@@ -463,52 +397,21 @@ _e_flyingmenu_update(Evas_Object *obj)
 	if (t >= 1.0) t = 1.0;
 	t = 1.0 - ((1.0 - t) * (1.0 - t)); /* decelerate */
 	if (t >= 1.0) sd->activate_deactivate = 0;
-	evas_object_geometry_get(sd->src_obj, &x, &y, &w, &h);
 
-	for (l = sd->items; l; l = l->next)
-          {
-	     ti = l->data;
-             tsize = tsize + ti->sz; 
-          }
-        evas_object_move(sd->bg_obj, 
-                         x+(w/2)-(tsize/2)-10, 
-                         (int)((y*t) - menu_h - interspace - 2));
-        evas_object_resize(sd->bg_obj, tsize + (2 * 10), menu_h + interspace);
-        evas_object_show(sd->bg_obj);
+	evas_object_move(sd->bbar, 
+	      x + (w - menu_w) / 2,
+	      (Evas_Coord) (y * t) - menu_h - menu_gap);
+	evas_object_resize(sd->bbar, menu_w, menu_h);
 
-        int size = 0;
-	for (l = sd->items; l; l = l->next)
-	  {
-	     ti = l->data;
-             if(size!=0)
-               {
-                  evas_object_move(ti->interval, 
-                                   x+(w/2)-(tsize/2)+size-5,  
-                                   (int)((y*t)-menu_h-interspace));
-                  evas_object_resize(ti->interval, 10, menu_h);
-                  evas_object_show(ti->interval);
-               }
-	     evas_object_move(ti->item_obj, x+(w/2)-(tsize/2)+size, (int)((y*t)-menu_h-interspace));
-	     evas_object_resize(ti->item_obj, ti->sz, menu_h);
-	     evas_object_show(ti->item_obj);
-             size = size + ti->sz + 1;
-	  }
+	evas_object_show(sd->bbar);
      }
    else if (sd->activate_deactivate == -1)
      {
 	sd->activate_deactivate = 0;
 	sd->active = 0;
-	for (l = sd->items; l; l = l->next)
-	  {
-	     ti = l->data;
-	     if (!sd->active) evas_object_hide(ti->item_obj);
-	     if (!sd->active) evas_object_hide(ti->interval);
-	  }
-        evas_object_hide(sd->bg_obj);
+        evas_object_hide(sd->bbar);
         evas_object_hide(sd->event);
-
      }
-   
 }
 
 static void
@@ -564,19 +467,4 @@ static void
 _e_flyingmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
    e_flyingmenu_deactivate(data);
-}
-
-static void
-_e_flyingmenu_cb_item_up(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   E_Tagmenu_Item *ti;
-   E_Smart_Data *sd;
-     
-   ti = data;
-   if (!ti) return;
-   sd = evas_object_smart_data_get(ti->obj);
-   if (!sd) return;
-   if (!sd->src_obj) return;
-   if (!sd->active) return;
-   if (ti->func) ti->func(ti->data, ti->obj, sd->src_obj);
 }

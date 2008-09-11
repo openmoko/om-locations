@@ -46,8 +46,8 @@ location_save_dialog_show(void *data, Evas_Object *obj, Evas_Object *src_obj)
 
    e_flyingmenu_deactivate(obj);
 
-   nav = e_nav_world_item_nav_get(src_obj);
-   e_nav_world_item_geometry_get(src_obj, &lon, &lat, NULL, NULL);
+   nav = e_nav_world_item_nav_get(data);
+   e_nav_world_item_geometry_get(data, &lon, &lat, NULL, NULL);
    e_nav_world_item_location_action_new(nav, lon, lat);
 }
 
