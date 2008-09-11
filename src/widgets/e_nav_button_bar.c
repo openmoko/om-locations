@@ -150,7 +150,12 @@ e_nav_button_bar_style_set(Evas_Object *bbar, int style)
    if (style < 0 || style >= N_E_NAV_BUTTON_BAR_STYLES)
      return;
 
-   sd->style = style;
+   if (sd->style != style)
+     {
+	sd->style = style;
+
+	_e_nav_button_bar_update(bbar);
+     }
 }
 
 void
@@ -160,9 +165,16 @@ e_nav_button_bar_paddings_set(Evas_Object *bbar, Evas_Coord front, Evas_Coord in
 
    SMART_CHECK(bbar, ;);
 
-   sd->pad_front = front;
-   sd->pad_inter = inter;
-   sd->pad_back = back;
+   if (sd->pad_front != front ||
+       sd->pad_inter != inter ||
+       sd->pad_back != back)
+     {
+	sd->pad_front = front;
+	sd->pad_inter = inter;
+	sd->pad_back = back;
+
+	_e_nav_button_bar_update(bbar);
+     }
 }
 
 int
