@@ -236,7 +236,7 @@ e_nav_list_button_add(Evas_Object *li, const char *label, void (*func)(void *dat
      {
 	sd->bbar = e_nav_button_bar_add(evas_object_evas_get(li));
 	e_nav_button_bar_embed_set(sd->bbar, sd->obj,
-	      "modules/diversity_nav/button_bar/list");
+	      "modules/diversity_nav/list/button_bar");
 	e_nav_button_bar_style_set(sd->bbar,
 	      E_NAV_BUTTON_BAR_STYLE_RIGHT_ALIGNED);
 

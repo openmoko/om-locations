@@ -253,7 +253,7 @@ group {
 }
 
 group {
-   name: "modules/diversity_nav/button_bar/list/button";
+   name: "modules/diversity_nav/list/button_bar/button";
    parts {
       part { name: "button.text";
          type: TEXT;
