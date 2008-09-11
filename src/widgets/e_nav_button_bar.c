@@ -87,21 +87,6 @@ Evas_Object *e_nav_button_bar_add(Evas *e)
    return evas_object_smart_add(e, _e_smart);
 }
 
-static Evas_Object *
-obj_new(Evas *e, const char *base, const char *group)
-{
-   Evas_Object *obj;
-   char buf[256];
-
-   snprintf(buf, sizeof(buf), "%s/%s", base, group);
-   if (!e_nav_theme_group_exist(NULL, buf))
-     return NULL;
-
-   obj = e_nav_theme_object_new(e, NULL, buf);
-
-   return obj;
-}
-
 void
 e_nav_button_bar_embed_set(Evas_Object *bbar, Evas_Object *embedding, const char *group_base)
 {
@@ -123,7 +108,8 @@ e_nav_button_bar_embed_set(Evas_Object *bbar, Evas_Object *embedding, const char
      {
 	sd->group_base = strdup(group_base);
 
-	sd->bg = obj_new(evas_object_evas_get(bbar), sd->group_base, "bg");
+	sd->bg = e_nav_theme_component_new(evas_object_evas_get(bbar),
+	      sd->group_base, "bg", 1);
 	if (sd->bg)
 	  {
 	     evas_object_smart_member_add(sd->bg, sd->obj);
@@ -205,7 +191,8 @@ button_new(Evas_Object *bbar, const char *label, void *cb, void *cb_data)
    bdata->cb = cb;
    bdata->cb_data = cb_data;
 
-   bdata->obj = obj_new(evas_object_evas_get(bbar), sd->group_base, "button");
+   bdata->obj = e_nav_theme_component_new(evas_object_evas_get(bbar),
+	 sd->group_base, "button", 1);
    if (bdata->obj)
      {
 	evas_object_smart_member_add(bdata->obj, sd->obj);
@@ -261,8 +248,8 @@ e_nav_button_bar_button_add(Evas_Object *bbar, const char *label, void (*func)(v
      {
 	Button_Data *prev = sd->buttons->data;
 
-	prev->pad = obj_new(evas_object_evas_get(bbar),
-	      sd->group_base, "pad");
+	prev->pad = e_nav_theme_component_new(evas_object_evas_get(bbar),
+	      sd->group_base, "pad", 1);
 	if (prev->pad)
 	  {
 	     evas_object_smart_member_add(prev->pad, sd->obj);
