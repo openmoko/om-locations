@@ -511,12 +511,10 @@ e_nav_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
    if(!sd->title_object)
      {
 	Evas_Object *o;
-	char group[256];
 
-	snprintf(group, sizeof(group), "%s/%s", sd->group_base, "text");
+	o = e_nav_theme_component_new(evas_object_evas_get(obj),
+	      sd->group_base, "text", 0);
 
-	o = e_nav_theme_object_new(evas_object_evas_get(obj),
-	      NULL, group);
 	sd->title_object = o;
 	edje_object_part_text_set(sd->title_object, "title", title);
 	edje_object_part_text_set(sd->title_object, "message", message);
@@ -623,7 +621,6 @@ e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input
    E_Smart_Data *sd;
    Evas_Object *text_object;
    E_TextBlock_Item *tbi;
-   char group[256];
 
    SMART_CHECK(obj, ;);
    tbi = calloc(1, sizeof(E_TextBlock_Item));
@@ -633,10 +630,9 @@ e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input
    else
      tbi->label = strdup("");
 
-   snprintf(group, sizeof(group), "%s/%s", sd->group_base, "label");
+   text_object = e_nav_theme_component_new(evas_object_evas_get(obj),
+	 sd->group_base, "label", 0);
 
-   text_object = e_nav_theme_object_new(evas_object_evas_get(obj),
-	 NULL, group);
    edje_object_part_text_set(text_object, "dialog.label.text", label);
 
    tbi->label_obj = text_object;
