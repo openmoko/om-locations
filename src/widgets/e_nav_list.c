@@ -23,6 +23,7 @@
 #include <Etk.h>
 #include "e_nav_list.h"
 #include "e_nav_tree_model.h"
+#include "e_nav_button_bar.h"
 #include "../e_nav_theme.h"
 #include "../e_nav.h"
 
@@ -41,16 +42,14 @@ struct _E_Smart_Data
    Etk_Widget      *tree;
    Etk_Tree_Col    *col;
 
+   Evas_Object     *bbar;
+
    int frozen;
 
    Evas_List       *callbacks;
 
    int            (*sort_cb)(void *data, E_Nav_List_Item *item1, E_Nav_List_Item *item2);
    void            *sort_data;
-
-   void           (*button_cb)(void *data, Evas_Object *li);
-   void            *button_data;
-
 };
 
 struct _List_Row_Callback
@@ -123,15 +122,6 @@ _list_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up 
    return ETK_TRUE;
 }
 
-static void
-_list_button_clicked_cb(void *data, Evas_Object *frame, const char *emission, const char *source)
-{
-   E_Smart_Data *sd = data;
-
-   if (sd->button_cb)
-     sd->button_cb(sd->button_data, sd->obj);
-}
-
 Evas_Object *
 e_nav_list_add(Evas *e, int type)
 {
@@ -156,9 +146,6 @@ e_nav_list_add(Evas *e, int type)
    evas_object_resize(sd->frame, sd->w, sd->h);
    evas_object_clip_set(sd->frame, sd->clip);
    evas_object_show(sd->frame);
-
-   edje_object_signal_callback_add(sd->frame,
-	 "mouse,clicked,*", "button.text", _list_button_clicked_cb, sd);
 
    evas_object_event_callback_add(sd->obj, EVAS_CALLBACK_HIDE,
 	 _list_hide_cb, sd);
@@ -245,11 +232,18 @@ e_nav_list_button_add(Evas_Object *li, const char *label, void (*func)(void *dat
 
    SMART_CHECK(li, ;);
 
-   edje_object_part_text_set(sd->frame, "button.text", label);
+   if (!sd->bbar)
+     {
+	sd->bbar = e_nav_button_bar_add(evas_object_evas_get(li));
+	e_nav_button_bar_embed_set(sd->bbar, sd->obj,
+	      "modules/diversity_nav/button_bar/list");
+	e_nav_button_bar_style_set(sd->bbar,
+	      E_NAV_BUTTON_BAR_STYLE_RIGHT_ALIGNED);
 
-   sd->button_cb = func;
-   sd->button_data = data;
+	edje_object_part_swallow(sd->frame, "button_bar", sd->bbar);
+     }
 
+   e_nav_button_bar_button_add(sd->bbar, label, func, data);
    edje_object_signal_emit(sd->frame, "e,state,active", "e");
 }
 
@@ -260,13 +254,17 @@ e_nav_list_button_remove(Evas_Object *li, void (*func)(void *data, Evas_Object *
 
    SMART_CHECK(li, ;);
 
-   if (sd->button_cb != func || sd->button_data != data)
+   if (!sd->bbar)
      return;
 
-   sd->button_cb = NULL;
-   sd->button_data = NULL;
+   e_nav_button_bar_button_remove(sd->bbar, func, data);
+   if (!e_nav_button_bar_num_buttons_get(sd->bbar))
+     {
+	edje_object_signal_emit(sd->frame, "e,state,passive", "e");
 
-   edje_object_signal_emit(sd->frame, "e,state,passive", "e");
+	evas_object_del(sd->bbar);
+	sd->bbar = NULL;
+     }
 }
 
 void
@@ -479,16 +477,19 @@ _e_nav_list_smart_del(Evas_Object *obj)
    if (!sd)
      return;
 
-   evas_object_del(sd->clip);
-   evas_object_del(sd->frame);
-
-   etk_object_destroy(ETK_OBJECT(sd->embed));
-
    while (sd->callbacks)
      {
 	free(sd->callbacks->data);
 	sd->callbacks = evas_list_remove_list(sd->callbacks, sd->callbacks);
      }
+
+   etk_object_destroy(ETK_OBJECT(sd->embed));
+
+   if (sd->bbar)
+     evas_object_del(sd->bbar);
+
+   evas_object_del(sd->frame);
+   evas_object_del(sd->clip);
 
    free(sd);
 }

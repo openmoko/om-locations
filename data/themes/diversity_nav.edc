@@ -160,7 +160,7 @@ group {
          }     
       }
       part { name: "button_bar";
-         type: RECT;
+         type: SWALLOW;
          description { state: "default" 0.0;
             color: 255 255 255 255;
 	    visible: 0;
@@ -172,38 +172,13 @@ group {
             rel2 {
                to: "background";
                relative: 1.0 0.0;
-               offset: 0 39;
+               offset: -30 39;
             }
          }
          description { state: "shown" 0.0;
 	    inherit: "default" 0.0;
 	    visible: 1;
-	    rel2.offset: 0 85;
-         }
-      }
-      part { name: "button.text";
-         type: TEXT;
-         effect: SOFT_SHADOW;
-         mouse_events: 1;
-	 clip_to: "button_bar";
-         description { state: "default" 0.0;
-            rel1 {
-               to: "button_bar";
-               relative: 0.0 0.0;
-               offset: 0 0;
-            }
-            rel2 {
-               to: "button_bar";
-               relative: 1.0 1.0;
-               offset: -30 0;
-            }
-            color: 255 255 255 255;
-            color3: 0 0 0 0;
-            text {
-               font: "Edje-Sans-Bold";
-               size: 28;
-               align: 1.0 0.5;
-            }
+	    rel2.offset: -30 85;
          }
       }
       part { name: "swallow";
@@ -273,6 +248,27 @@ group {
          source: "e";
          action: STATE_SET "taglist" 0.0;
          target: "swallow";
+      }
+   }
+}
+
+group {
+   name: "modules/diversity_nav/button_bar/list/button";
+   parts {
+      part { name: "button.text";
+         type: TEXT;
+         effect: SOFT_SHADOW;
+         mouse_events: 1;
+         description { state: "default" 0.0;
+            color: 255 255 255 255;
+            color3: 0 0 0 0;
+            text {
+               font: "Edje-Sans-Bold";
+               size: 28;
+               align: 0.5 0.5;
+               min: 1 1;
+            }
+         }
       }
    }
 }
