@@ -51,6 +51,11 @@ struct _E_Smart_Data
    Evas_Coord pad_back;
 
    Evas_List *buttons;
+
+   char recalc_width : 1;
+   char recalc_height : 1;
+   Evas_Coord min_width;
+   Evas_Coord min_height;
 };
 
 struct _Button_Data {
@@ -124,6 +129,10 @@ e_nav_button_bar_embed_set(Evas_Object *bbar, Evas_Object *embedding, const char
 	sd->group_base = NULL;
 	sd->bg = NULL;
      }
+
+   sd->recalc_width = 1;
+   sd->recalc_height = 1;
+   _e_nav_button_bar_update(bbar);
 }
 
 void
@@ -140,6 +149,7 @@ e_nav_button_bar_style_set(Evas_Object *bbar, int style)
      {
 	sd->style = style;
 
+	sd->recalc_width = 1;
 	_e_nav_button_bar_update(bbar);
      }
 }
@@ -159,6 +169,7 @@ e_nav_button_bar_paddings_set(Evas_Object *bbar, Evas_Coord front, Evas_Coord in
 	sd->pad_inter = inter;
 	sd->pad_back = back;
 
+	sd->recalc_width = 1;
 	_e_nav_button_bar_update(bbar);
      }
 }
@@ -171,6 +182,87 @@ e_nav_button_bar_num_buttons_get(Evas_Object *bbar)
    SMART_CHECK(bbar, 0;);
 
    return evas_list_count(sd->buttons);
+}
+
+Evas_Coord
+e_nav_button_bar_width_min_calc(Evas_Object *bbar, Evas_Coord button_width)
+{
+   E_Smart_Data *sd;
+   Evas_List *l;
+   Evas_Coord w;
+   int count;
+
+   SMART_CHECK(bbar, 0;);
+
+   if (!sd->recalc_width)
+     return sd->min_width;
+
+   count = 0;
+   for (l = sd->buttons; l; l = l->next)
+     {
+	Button_Data *bdata = l->data;
+	Evas_Coord tmp;
+
+	if (bdata->obj)
+	  {
+	     edje_object_size_min_calc(bdata->obj, &tmp, NULL);
+	     if (tmp > button_width)
+	       button_width = tmp;
+	  }
+
+	count++;
+     }
+
+   w = sd->pad_front + sd->pad_back;
+   if (count)
+     w += button_width * count + sd->pad_inter * (count - 1);
+
+   sd->recalc_width = 0;
+   sd->min_width = w;
+
+   return w;
+}
+
+Evas_Coord
+e_nav_button_bar_height_min_calc(Evas_Object *bbar, Evas_Coord bar_height)
+{
+   E_Smart_Data *sd;
+   Evas_Coord h;
+
+   SMART_CHECK(bbar, 0;);
+
+   if (!sd->recalc_height)
+     return sd->min_height;
+
+   if (sd->bg)
+     {
+	edje_object_size_min_calc(sd->bg, NULL, &h);
+	if (bar_height < h)
+	  bar_height = h;
+     }
+
+   if (sd->buttons)
+     {
+	Button_Data *bdata = sd->buttons->data;
+
+	if (bdata->obj)
+	  {
+	     edje_object_size_min_calc(bdata->obj, NULL, &h);
+	     if (bar_height < h)
+	       bar_height = h;
+	  }
+	if (bdata->pad)
+	  {
+	     edje_object_size_min_calc(bdata->pad, NULL, &h);
+	     if (bar_height < h)
+	       bar_height = h;
+	  }
+     }
+
+   sd->recalc_height = 0;
+   sd->min_height = bar_height;
+
+   return bar_height;
 }
 
 static Button_Data *
@@ -260,6 +352,8 @@ e_nav_button_bar_button_add(Evas_Object *bbar, const char *label, void (*func)(v
 
    sd->buttons = evas_list_prepend(sd->buttons, bdata);
 
+   sd->recalc_width = 1;
+   sd->recalc_height = 1;
    _e_nav_button_bar_update(bbar);
 }
 
@@ -300,6 +394,8 @@ e_nav_button_bar_button_remove(Evas_Object *bbar, void (*func)(void *data, Evas_
 	  }
      }
 
+   sd->recalc_width = 1;
+   sd->recalc_height = 1;
    _e_nav_button_bar_update(bbar);
 }
 
@@ -494,21 +590,7 @@ _e_nav_button_bar_update(Evas_Object *bbar)
 	 break;
       case E_NAV_BUTTON_BAR_STYLE_LEFT_ALIGNED:
       case E_NAV_BUTTON_BAR_STYLE_RIGHT_ALIGNED:
-	 w = 0;
-
-	 for (l = evas_list_last(sd->buttons); l; l = l->prev)
-	   {
-	      Button_Data *bdata = l->data;
-	      Evas_Coord tmp;
-
-	      if (bdata->obj)
-		{
-		   edje_object_size_min_calc(bdata->obj, &tmp, NULL);
-		   if (tmp > w)
-		     w = tmp;
-		}
-	   }
-
+	 w = e_nav_button_bar_width_min_calc(sd->obj, 0);
 	 if (sd->style == E_NAV_BUTTON_BAR_STYLE_RIGHT_ALIGNED)
 	   {
 	      x = count * w + (count - 1) * sd->pad_inter;
