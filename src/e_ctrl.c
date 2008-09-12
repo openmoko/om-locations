@@ -331,6 +331,7 @@ from_span(int span)
    else if (v > 1.0)
      v = 1.0;
 
+#define M_LOG2		(0.6931471805)
    v = log((v * (1 << DRAG_SENSITIVITY)) + 1)
       / M_LOG2 / DRAG_SENSITIVITY;
 
