@@ -501,6 +501,26 @@ e_nav_dialog_button_add(Evas_Object *obj, const char *label, void (*func) (void 
    e_nav_button_bar_button_add(sd->bbar, label, func, data);
 }
 
+static void _title_color_set(Evas_Object *title_obj, int r, int g, int b, int a)
+{
+   Edje_Message_Int_Set *msg;
+   int num_ints = 4;
+
+   msg = malloc(sizeof(Edje_Message_Int_Set) + sizeof(int) * (num_ints - 1));
+   if (!msg)
+     return;
+
+   msg->count = num_ints;
+   msg->val[0] = r;
+   msg->val[1] = g;
+   msg->val[2] = b;
+   msg->val[3] = a;
+
+   edje_object_message_send(title_obj, EDJE_MESSAGE_INT_SET, 1, msg);
+
+   free(msg);
+}
+
 void
 e_nav_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
 {
@@ -522,6 +542,12 @@ e_nav_dialog_title_set(Evas_Object *obj, const char *title, const char *message)
 	evas_object_smart_member_add(sd->title_object, obj);
 	evas_object_clip_set(sd->title_object, sd->clip);
 	evas_object_show(sd->title_object);
+
+	_title_color_set(obj,
+	      sd->title_color_r,
+	      sd->title_color_g,
+	      sd->title_color_b,
+	      sd->title_color_a);
      }
 }
 
@@ -536,6 +562,8 @@ e_nav_dialog_title_color_set(Evas_Object *obj, int r, int g, int b, int a)
    sd->title_color_g = g;
    sd->title_color_b = b;
    sd->title_color_a = a;
+
+   _title_color_set(sd->title_object, r, g, b, a);
 }
 
 static void
@@ -809,18 +837,8 @@ _e_nav_alert_update(Evas_Object *obj)
 
    if (sd->title_object)
      {
-	Evas_Object *o;
-
 	evas_object_move(sd->title_object, sd->x, sd->y);
 	evas_object_resize(sd->title_object, sd->w, title_height);
-
-	/* better way? */
-	o = edje_object_part_object_get(sd->title_object, "title");
-	evas_object_color_set(o,
-	      sd->title_color_r,
-	      sd->title_color_g,
-	      sd->title_color_b,
-	      sd->title_color_a);
      }
 
    if (sd->bbar)

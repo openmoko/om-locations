@@ -1,5 +1,14 @@
 group {
    name: "modules/diversity_nav/alert/text";
+   script {
+      public message(Msg_Type:type, id, ...) {
+         if ((type == MSG_INT_SET) && (id == 1)) {
+            custom_state(PART:"title", "default", 0.0);
+            set_state_val(PART:"title", STATE_COLOR, getarg(2), getarg(3), getarg(4), getarg(5));
+            set_state(PART:"title", "custom", 0.0)
+         }
+      }
+   }
    parts {
       part { name: "base";
          type: RECT;
