@@ -333,7 +333,7 @@ e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when)
 
    if (sd->tileset)
      {
-	e_nav_tileset_to_pos(sd->tileset, lon, lat, &px, &py, FALSE);
+	e_nav_tileset_coord_to_pos(sd->tileset, lon, lat, &px, &py);
 	_e_nav_pos_set(obj, px, py, when);
      }
 }
@@ -347,7 +347,7 @@ e_nav_coord_lon_get(Evas_Object *obj)
    SMART_CHECK(obj, 0.0;);
 
    if (sd->tileset)
-     e_nav_tileset_center_get(sd->tileset, &lon, NULL);
+     e_nav_tileset_coord_from_pos(sd->tileset, sd->conf.px, sd->conf.py, &lon, NULL);
    else
      lon = 0.0;
 
@@ -363,7 +363,7 @@ e_nav_coord_lat_get(Evas_Object *obj)
    SMART_CHECK(obj, 0.0;);
 
    if (sd->tileset)
-     e_nav_tileset_center_get(sd->tileset, NULL, &lat);
+     e_nav_tileset_coord_from_pos(sd->tileset, sd->conf.px, sd->conf.py, NULL, &lat);
    else
      lat = 0.0;
 
@@ -490,9 +490,9 @@ e_nav_level_up(Evas_Object *obj)
    if (!sd->tileset)
      return;
 
-   level = e_nav_tileset_level_get(sd->tileset); 
-   e_nav_tileset_level_set(sd->tileset, level + 1); 
    span = e_nav_tileset_span_get(sd->tileset);
+   level = e_nav_tileset_level_from_span(sd->tileset, span);
+   span = e_nav_tileset_level_to_span(sd->tileset, level + 1); 
    e_nav_span_set(obj, span, 0.0);
 }
 
@@ -506,9 +506,9 @@ e_nav_level_down(Evas_Object *obj)
    if (!sd->tileset)
      return;
 
-   level = e_nav_tileset_level_get(sd->tileset); 
-   e_nav_tileset_level_set(sd->tileset, level - 1); 
    span = e_nav_tileset_span_get(sd->tileset);
+   level = e_nav_tileset_level_from_span(sd->tileset, span);
+   span = e_nav_tileset_level_to_span(sd->tileset, level - 1); 
    e_nav_span_set(obj, span, 0.0);
 }
 
@@ -1233,7 +1233,7 @@ _e_nav_wallpaper_update(Evas_Object *obj)
      return;
 
    e_nav_tileset_span_set(sd->tileset, sd->span);
-   e_nav_tileset_pos_set(sd->tileset, sd->px, sd->py, FALSE);
+   e_nav_tileset_pos_set(sd->tileset, sd->px, sd->py);
    e_nav_tileset_update(sd->tileset);
 }
 
@@ -1290,7 +1290,13 @@ static void _e_nav_to_offsets(Evas_Object *obj, double lon, double lat, double *
 	return;
      }
 
-   e_nav_tileset_to_offsets(sd->tileset, lon, lat, x, y);
+   e_nav_tileset_coord_to_pos(sd->tileset, lon, lat, x, y);
+
+   if (x)
+     *x = (*x - sd->px) * sd->span;
+
+   if (y)
+     *y = (*y - sd->py) * sd->span;
 }
 
 /* nav world internal calls - move to the end later */
