@@ -525,8 +525,8 @@ e_nav_world_item_add(Evas_Object *obj, Evas_Object *item)
    nwi->obj = obj;
    nwi->item = item;
    evas_object_data_set(item, "nav_world_item", nwi);
-   evas_object_event_callback_del(item, EVAS_CALLBACK_DEL,
-				  _e_nav_world_item_cb_item_del);
+   evas_object_event_callback_add(item, EVAS_CALLBACK_DEL,
+	 _e_nav_world_item_cb_item_del, NULL);
    sd->world_items = evas_list_append(sd->world_items, item);
    evas_object_smart_member_add(nwi->item, nwi->obj);
    evas_object_clip_set(nwi->item, sd->clip);
@@ -1347,6 +1347,6 @@ _e_nav_world_item_cb_item_del(void *data, Evas *evas, Evas_Object *obj, void *ev
    nwi = evas_object_data_get(obj, "nav_world_item");
    if (!nwi) return;
    sd = evas_object_smart_data_get(nwi->obj);
-   sd->world_items = evas_list_remove(sd->world_items, nwi);
+   sd->world_items = evas_list_remove(sd->world_items, obj);
    _e_nav_world_item_free(nwi);
 }
