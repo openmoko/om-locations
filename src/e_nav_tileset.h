@@ -24,10 +24,6 @@
 #include <Evas.h>
 #include <e_dbus_proxy.h>
 
-#define RADIANS(d) ((d) * M_PI / 180.0)
-#define DEGREES(d) ((d) * 180.0 / M_PI)
-#define M_LOG2		(0.6931471805)
-
 /* this should be kept the same as Tileman_Format */
 typedef enum _E_Nav_Tileset_Format {
    E_NAV_TILESET_FORMAT_OSM,
@@ -36,25 +32,20 @@ typedef enum _E_Nav_Tileset_Format {
 Evas_Object            *e_nav_tileset_add(Evas *e, E_Nav_Tileset_Format format, const char *dir);
 void                    e_nav_tileset_update(Evas_Object *obj);
 
-int                     e_nav_tileset_span_set(Evas_Object *obj, int span);
+void                    e_nav_tileset_pos_set(Evas_Object *obj, double px, double py);
+void                    e_nav_tileset_pos_get(Evas_Object *obj, double *px, double *py);
+
+void                    e_nav_tileset_span_set(Evas_Object *obj, int span);
 int                     e_nav_tileset_span_get(Evas_Object *obj);
+void                    e_nav_tileset_span_range(Evas_Object *obj, int *min_span, int *max_span);
 
-void                    e_nav_tileset_pos_set(Evas_Object *obj, double px, double py, int scaled);
-void                    e_nav_tileset_pos_get(Evas_Object *obj, double *px, double *py, int scaled);
+void                    e_nav_tileset_coord_to_pos(Evas_Object *obj, double lon, double lat, double *px, double *py);
+void                    e_nav_tileset_coord_from_pos(Evas_Object *obj, double px, double py, double *lon, double *lat);
+void                    e_nav_tileset_coord_range(Evas_Object *obj, double *abs_lon, double *abs_lat);
 
-int                     e_nav_tileset_to_pos(Evas_Object *obj, double lon, double lat, double *px, double *py, int scaled);
-int                     e_nav_tileset_from_pos(Evas_Object *obj, double px, double py, double *lon, double *lat, int scaled);
-
-/* decide span by map level */
-int                     e_nav_tileset_level_set(Evas_Object *obj, int level);
-int                     e_nav_tileset_level_get(Evas_Object *obj);
-void                    e_nav_tileset_levels_list(Evas_Object *obj, int *max_level, int *min_level);
-
-int                     e_nav_tileset_center_set(Evas_Object *obj, double lon, double lat);
-int                     e_nav_tileset_center_get(Evas_Object *obj, double *lon, double *lat);
-
-int                     e_nav_tileset_to_offsets(Evas_Object *obj, double lon, double lat, double *x, double *y);
-int                     e_nav_tileset_from_offsets(Evas_Object *obj, double x, double y, double *lon, double *lat);
+int                     e_nav_tileset_level_to_span(Evas_Object *obj, int level);
+int                     e_nav_tileset_level_from_span(Evas_Object *obj, int span);
+void                    e_nav_tileset_level_range(Evas_Object *obj, int *min_level, int *max_level);
 
 void                    e_nav_tileset_monitor_add(Evas_Object *obj, const char *dn);
 void                    e_nav_tileset_monitor_del(Evas_Object *obj, const char *dn);

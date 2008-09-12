@@ -32,6 +32,10 @@
 #include <string.h>
 #include <Eet.h>
 
+#define RADIANS(d) ((d) * M_PI / 180.0)
+#define DEGREES(d) ((d) * 180.0 / M_PI)
+#define M_LOG2		(0.6931471805)
+
 typedef struct _E_Smart_Data E_Smart_Data;
 
 typedef struct _E_Nav_Map E_Nav_Map;
@@ -71,7 +75,7 @@ struct _E_Smart_Data
 
    int min_level, max_level;
    int min_span, max_span;
-   double max_lon, max_lat;
+   double abs_lon, abs_lat;
 
    double px, py;
    int span;
@@ -111,9 +115,6 @@ static void _e_nav_tileset_update(Evas_Object *obj);
 #define SMART_NAME "e_nav_tileset"
 static Evas_Smart *_e_smart = NULL;
 
-#define TILE_VALID_NUM(lv, num) ((num) >= 0 && (num) < (1 << lv))
-#define TILE_VALID(lv, x, y) (TILE_VALID_NUM(lv, x) && TILE_VALID_NUM(lv, y))
-
 Evas_Object *
 e_nav_tileset_add(Evas *e, E_Nav_Tileset_Format format, const char *dir)
 {
@@ -144,11 +145,11 @@ e_nav_tileset_add(Evas *e, E_Nav_Tileset_Format format, const char *dir)
 
    sd->min_span = (1 << sd->min_level) * sd->tilesize;
    sd->max_span = (1 << sd->max_level) * sd->tilesize * 2;
-   sd->max_lon = 180.0;
-   mercator_project_inv(0.0, 0.0, NULL, &sd->max_lat);
+   sd->abs_lon = 180.0;
+   mercator_project_inv(0.0, 0.0, NULL, &sd->abs_lat);
 
-   e_nav_tileset_level_set(obj, sd->min_level);
-   e_nav_tileset_center_set(obj, 0.0, 0.0);
+   e_nav_tileset_span_set(obj, sd->min_span);
+   e_nav_tileset_pos_set(obj, 0.5, 0.5);
 
    return obj;
 }
@@ -157,6 +158,31 @@ void
 e_nav_tileset_update(Evas_Object *obj)
 {
    _e_nav_tileset_update(obj);
+}
+
+void
+e_nav_tileset_pos_set(Evas_Object *obj, double px, double py)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   sd->px = px;
+   sd->py = py;
+}
+
+void
+e_nav_tileset_pos_get(Evas_Object *obj, double *px, double *py)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (px)
+     *px = sd->px;
+
+   if (py)
+     *py = sd->py;
 }
 
 static void
@@ -170,30 +196,25 @@ proxy_level_set(Evas_Object *obj)
    tileman_proxy_level_set(sd->tman, sd->level);
 }
 
-int
+void
 e_nav_tileset_span_set(Evas_Object *obj, int span)
 {
    E_Smart_Data *sd;
    int level;
-   
-   SMART_CHECK(obj, 0;);
 
-   if (span < sd->min_span || span > sd->max_span)
-     return 0;
+   SMART_CHECK(obj, ;);
+
+   if (span < sd->min_span)
+     span = sd->min_span;
+   else if (span > sd->max_span)
+     span = sd->max_span;
 
    if (sd->span == span)
-     return 1;
+     return;
 
-   sd->px *= (double) span / sd->span;
-   sd->py *= (double) span / sd->span;
    sd->span = span;
 
-   level = (int) (log((double) span / sd->tilesize) / M_LOG2);
-
-   if (level < sd->min_level)
-     level = sd->min_level;
-   else if (level > sd->max_level)
-     level = sd->max_level;
+   level = e_nav_tileset_level_from_span(obj, span);
 
    if (sd->level != level)
      {
@@ -201,203 +222,133 @@ e_nav_tileset_span_set(Evas_Object *obj, int span)
 	proxy_level_set(obj);
      }
 
-   return 1;
+   return;
 }
 
 int
 e_nav_tileset_span_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   
+
    SMART_CHECK(obj, 0;);
 
    return sd->span;
 }
 
 void
-e_nav_tileset_pos_set(Evas_Object *obj, double px, double py, int scaled)
+e_nav_tileset_span_range(Evas_Object *obj, int *min_span, int *max_span)
 {
    E_Smart_Data *sd;
-   
+
    SMART_CHECK(obj, ;);
 
-   if (!scaled)
-     {
-	px *= sd->span;
-	py *= sd->span;
-     }
+   if (min_span)
+     *min_span = sd->min_span;
 
-   sd->px = px;
-   sd->py = py;
+   if (max_span)
+     *max_span = sd->max_span;
 }
 
 void
-e_nav_tileset_pos_get(Evas_Object *obj, double *px, double *py, int scaled)
+e_nav_tileset_coord_to_pos(Evas_Object *obj, double lon, double lat, double *px, double *py)
 {
    E_Smart_Data *sd;
-   int scale = 1;
-   
+
    SMART_CHECK(obj, ;);
 
-   if (!scaled)
-     scale = sd->span;
+   if (lon < -sd->abs_lon)
+     lon = -sd->abs_lon;
+   else if (lon > sd->abs_lon)
+     lon = sd->abs_lon;
 
-   if (px)
-     *px = sd->px / scale;
-
-   if (py)
-     *py = sd->py / scale;
-}
-
-int
-e_nav_tileset_to_pos(Evas_Object *obj, double lon, double lat, double *px, double *py, int scaled)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0;);
-
-   if (lon < -sd->max_lon || lon > sd->max_lon ||
-       lat < -sd->max_lat || lat > sd->max_lat)
-     return 0;
+   if (lat < -sd->abs_lat)
+     lat = -sd->abs_lat;
+   else if (lat > sd->abs_lat)
+     lat = sd->abs_lat;
 
    mercator_project(lon, lat, px, py);
 
-   if (scaled)
-     {
-	if (px)
-	  *px *= sd->span;
-
-	if (py)
-	  *py *= sd->span;
-     }
-
-   return 1;
-}
-
-int
-e_nav_tileset_from_pos(Evas_Object *obj, double px, double py, double *lon, double *lat, int scaled)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0;);
-
-   if (scaled)
-     {
-	px /= sd->span;
-	py /= sd->span;
-     }
-
-   if (px < 0.0 || px > 1.0 || py < 0.0 || py > 1.0)
-     return 0;
-
-   mercator_project_inv(px, py, lon, lat);
-
-   return 1;
-}
-
-int
-e_nav_tileset_level_set(Evas_Object *obj, int level)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0;);
-
-   if (level < sd->min_level || level > sd->max_level)
-     return 0;
-
-   e_nav_tileset_span_set(obj, (1 << level) * sd->tilesize);
-
-   return 1;
-}
-
-int
-e_nav_tileset_level_get(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0.0;);
-
-   return sd->level;
+   return;
 }
 
 void
-e_nav_tileset_levels_list(Evas_Object *obj, int *max_level, int *min_level)
+e_nav_tileset_coord_from_pos(Evas_Object *obj, double px, double py, double *lon, double *lat)
 {
    E_Smart_Data *sd;
-   
+
    SMART_CHECK(obj, ;);
+
+   if (px < 0.0)
+     px = 0.0;
+   else if (px > 1.0)
+     px = 1.0;
+
+   if (py < 0.0)
+     py = 0.0;
+   else if (py > 1.0)
+     py = 1.0;
+
+   mercator_project_inv(px, py, lon, lat);
+
+   return;
+}
+
+void
+e_nav_tileset_coord_range(Evas_Object *obj, double *abs_lon, double *abs_lat)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (abs_lon)
+     *abs_lon = sd->abs_lon;
+
+   if (abs_lat)
+     *abs_lat = sd->abs_lat;
+}
+
+int
+e_nav_tileset_level_to_span(Evas_Object *obj, int level)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (level < sd->min_level)
+     level = sd->min_level;
+   else if (level > sd->max_level)
+     level = sd->max_level;
+
+   return (1 << level) * sd->tilesize;
+}
+
+int
+e_nav_tileset_level_from_span(Evas_Object *obj, int span)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, 0;);
+
+   if (span < sd->min_span)
+     span = sd->min_span;
+   else if (span > sd->max_span)
+     span = sd->max_span;
+
+   return (int) (log((double) span / sd->tilesize) / M_LOG2);
+}
+
+void
+e_nav_tileset_level_range(Evas_Object *obj, int *min_level, int *max_level)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   if (min_level)
+     *min_level = sd->min_level;
 
    if (max_level)
      *max_level = sd->max_level;
-   if (min_level)
-     *min_level = sd->min_level;
-}
-
-int
-e_nav_tileset_center_set(Evas_Object *obj, double lon, double lat)
-{
-   double px, py;
-   
-   if (!e_nav_tileset_to_pos(obj, lon, lat, &px, &py, 1))
-     return 0;
-
-   e_nav_tileset_pos_set(obj, px, py, 1);
-
-   return 1;
-}
-
-int
-e_nav_tileset_center_get(Evas_Object *obj, double *lon, double *lat)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, 0;);
-
-   if (!e_nav_tileset_from_pos(obj, sd->px, sd->py, lon, lat, 1))
-     return 0;
-
-   return 1;
-}
-
-int
-e_nav_tileset_to_offsets(Evas_Object *obj, double lon, double lat, double *x, double *y)
-{
-   E_Smart_Data *sd;
-
-   SMART_CHECK(obj, 0;);
-
-   if (!e_nav_tileset_to_pos(obj, lon, lat, x, y, 1))
-     return 0;
-
-   if (x)
-     *x -= sd->px;
-
-   if (y)
-     *y -= sd->py;
-
-   return 1;
-}
-
-int
-e_nav_tileset_from_offsets(Evas_Object *obj, double x, double y, double *lon, double *lat)
-{
-   E_Smart_Data *sd;
-   double olon, olat;
-
-   SMART_CHECK(obj, 0;);
-
-   if (!e_nav_tileset_from_pos(obj, sd->px + x, sd->py + y, lon, lat, 1))
-     return 0;
-
-   if (!e_nav_tileset_center_get(obj, &olon, &olat))
-     return 0;
-
-   if (lon)
-     *lon -= olon;
-   if (lat)
-     *lat -= olat;
-
-   return 1;
 }
 
 void
@@ -1175,8 +1126,8 @@ _e_nav_tileset_prepare(Evas_Object *obj)
 
    mode = MODE_RELOAD;
 
-   tpx = (sd->px - (sd->w / 2.0)) / tilesize;
-   tpy = (sd->py - (sd->h / 2.0)) / tilesize;
+   tpx = ((sd->px * sd->span) - (sd->w / 2.0)) / tilesize;
+   tpy = ((sd->py * sd->span) - (sd->h / 2.0)) / tilesize;
 
    tiles_ox = (int)tpx;
    tiles_oy = (int)tpy;
