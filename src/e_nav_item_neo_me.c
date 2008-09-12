@@ -39,12 +39,12 @@ struct _Neo_Me_Data
 };
 
 static void
-location_save_dialog_show(void *data, Evas_Object *obj, Evas_Object *src_obj)
+location_save_dialog_show(void *data, Evas_Object *obj)
 {
    Evas_Object *nav;
    double lon, lat;
 
-   e_flyingmenu_deactivate(obj);
+   evas_object_del(obj);
 
    nav = e_nav_world_item_nav_get(data);
    e_nav_world_item_geometry_get(data, &lon, &lat, NULL, NULL);
@@ -112,10 +112,12 @@ e_nav_world_item_neo_me_activate(Evas_Object *item)
    e_flyingmenu_theme_source_set(om, THEMEDIR);
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, item);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 270, _("touch me!"),
-			       location_save_dialog_show, item);
-   evas_object_show(om);
+   e_flyingmenu_item_size_min_set(om, 270);
+   e_flyingmenu_item_add(om, _("touch me!"),
+	 location_save_dialog_show, item);
+
    e_flyingmenu_activate(om);
+   evas_object_show(om);
 }
 
 void

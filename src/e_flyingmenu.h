@@ -21,17 +21,18 @@
 #ifndef E_FLYINGMENU_H
 #define E_FLYINGMENU_H
 
-/* types */
-
-/* object management */
 Evas_Object    *e_flyingmenu_add(Evas *e);
 void            e_flyingmenu_theme_source_set(Evas_Object *obj, const char *custom_dir);
+
 void            e_flyingmenu_source_object_set(Evas_Object *obj, Evas_Object *src_obj);
 Evas_Object    *e_flyingmenu_source_object_get(Evas_Object *obj);
 void            e_flyingmenu_autodelete_set(Evas_Object *obj, Evas_Bool autodelete);
 Evas_Bool       e_flyingmenu_autodelete_get(Evas_Object *obj);
+
+void            e_flyingmenu_item_size_min_set(Evas_Object *obj, Evas_Coord size);
+Evas_Coord      e_flyingmenu_item_size_min_get(Evas_Object *obj);
+void            e_flyingmenu_item_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data);
+
 void            e_flyingmenu_activate(Evas_Object *obj);
-void            e_flyingmenu_deactivate(Evas_Object *obj);
-void            e_flyingmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data);
-    
-#endif
+
+#endif /* E_FLYINGMENU_H */

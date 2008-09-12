@@ -202,20 +202,20 @@ location_send(Evas_Object *item, const char *to)
 }
 
 static void
-_e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
+_e_nav_world_item_cb_menu_edit(void *data, Evas_Object *obj)
 {
    Evas_Object *location_object = (Evas_Object *) data;
 
-   e_flyingmenu_deactivate(obj);
+   evas_object_del(obj);
    e_nav_world_item_location_action_edit(location_object);
 }
 
 static void
-_e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
+_e_nav_world_item_cb_menu_send(void *data, Evas_Object *obj)
 {
    Evas_Object *location_object = (Evas_Object *) data;
 
-   e_flyingmenu_deactivate(obj);
+   evas_object_del(obj);
    e_nav_world_item_location_action_send(location_object);
 }
 
@@ -227,13 +227,15 @@ cb_menu_activate(void *data, Evas_Object *obj, const char *emission, const char 
    e_flyingmenu_theme_source_set(om, data);  // data is THEMEDIR
    e_flyingmenu_autodelete_set(om, 1);
    e_flyingmenu_source_object_set(om, obj);   // obj is location evas object
-   /* FIXME: real menu items */
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, _("edit"),
-			       _e_nav_world_item_cb_menu_1, obj);
-   e_flyingmenu_theme_item_add(om, "modules/diversity_nav/tag_menu_item", 160, _("send"),
-			       _e_nav_world_item_cb_menu_2, obj);
-   evas_object_show(om);
+
+   e_flyingmenu_item_size_min_set(om, 160);
+   e_flyingmenu_item_add(om, _("edit"),
+	 _e_nav_world_item_cb_menu_edit, obj);
+   e_flyingmenu_item_add(om, _("send"),
+	 _e_nav_world_item_cb_menu_send, obj);
+
    e_flyingmenu_activate(om);
+   evas_object_show(om);
 }
 
 static void

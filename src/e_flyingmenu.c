@@ -39,10 +39,8 @@ struct _E_Smart_Data
    Ecore_Animator  *animator;
    
    Evas_Object     *bbar;
+   Evas_Coord       button_min_size;
 
-   /* directory to find theme .edj files from the module - if there is one */
-   const char      *dir;
-   
    unsigned char autodelete : 1;
    unsigned char active : 1;
 };
@@ -63,7 +61,6 @@ static void _e_flyingmenu_cb_src_obj_del(void *data, Evas *evas, Evas_Object *ob
 static void _e_flyingmenu_cb_src_obj_move(void *data, Evas *evas, Evas_Object *obj, void *event);
 static void _e_flyingmenu_cb_src_obj_resize(void *data, Evas *evas, Evas_Object *obj, void *event);
 static int _e_flyingmenu_cb_animator(void *data);
-static void _e_flyingmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event);
 
 #define SMART_NAME "e_flyingmenu"
 static Evas_Smart *_e_smart = NULL;
@@ -82,8 +79,6 @@ e_flyingmenu_theme_source_set(Evas_Object *obj, const char *custom_dir)
    
    SMART_CHECK(obj, ;);
    
-   sd->dir = custom_dir;
-
    sd->bbar = e_nav_button_bar_add(evas_object_evas_get(obj));
    e_nav_button_bar_embed_set(sd->bbar, obj, "modules/diversity_nav/flying_menu");
    e_nav_button_bar_paddings_set(sd->bbar, 10, 10, 10);
@@ -148,6 +143,36 @@ e_flyingmenu_autodelete_get(Evas_Object *obj)
 }
 
 void
+e_flyingmenu_item_size_min_set(Evas_Object *obj, Evas_Coord size)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+
+   sd->button_min_size = size;
+}
+
+Evas_Coord
+e_flyingmenu_item_size_min_get(Evas_Object *obj)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+
+   return sd->button_min_size;
+}
+
+void
+e_flyingmenu_item_add(Evas_Object *obj, const char *label, void (*func) (void *data, Evas_Object *obj), void *data)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+
+   e_nav_button_bar_button_add(sd->bbar, label, func, data);
+}
+
+void
 e_flyingmenu_activate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
@@ -160,35 +185,6 @@ e_flyingmenu_activate(Evas_Object *obj)
    sd->activate_time = ecore_time_get();
    if (sd->animator) return;
    sd->animator = ecore_animator_add(_e_flyingmenu_cb_animator, obj);
-}
-
-void
-e_flyingmenu_deactivate(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-   evas_object_hide(sd->event);
-
-   if (!sd->active) return;
-   sd->activate_deactivate = -1;
-   sd->activate_time = ecore_time_get();
-   
-   evas_object_hide(sd->bbar);
-
-   if (sd->animator) return;
-   sd->animator = ecore_animator_add(_e_flyingmenu_cb_animator, obj);
-    
-}
-
-void
-e_flyingmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size, const char *label, void (*func) (void *data, Evas_Object *obj, Evas_Object *src_obj), void *data)
-{
-   E_Smart_Data *sd;
-   
-   SMART_CHECK(obj, ;);
-
-   e_nav_button_bar_button_add(sd->bbar, label, (void *) func, data);
 }
 
 /* internal calls */
@@ -215,6 +211,12 @@ _e_flyingmenu_smart_init(void)
 	  };
 	_e_smart = evas_smart_class_new(&sc);
      }
+}
+
+static void
+_e_flyingmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event)
+{
+   evas_object_del(data);
 }
 
 static void
@@ -267,7 +269,12 @@ _e_flyingmenu_smart_del(Evas_Object *obj)
 				       _e_flyingmenu_cb_src_obj_resize);
      }
 
-   evas_object_del(sd->bbar);
+   if (sd->animator)
+     ecore_animator_del(sd->animator);
+
+   if (sd->bbar)
+     evas_object_del(sd->bbar);
+
    evas_object_del(sd->clip);
    evas_object_del(sd->event);
    free(sd);
@@ -366,12 +373,8 @@ _e_flyingmenu_update(Evas_Object *obj)
    if (!num_buttons)
      return;
 
-   if (num_buttons == 1)
-     menu_w = e_nav_button_bar_width_min_calc(sd->bbar, 270);
-   else
-     menu_w = e_nav_button_bar_width_min_calc(sd->bbar, 155);
+   menu_w = e_nav_button_bar_width_min_calc(sd->bbar, sd->button_min_size);
    menu_h = e_nav_button_bar_height_min_calc(sd->bbar, 0);
-
    menu_gap = 2;
 
    evas_object_geometry_get(sd->src_obj, &x, &y, &w, &h);
@@ -461,10 +464,4 @@ _e_flyingmenu_cb_animator(void *data)
 	return 0;
      }
    return 1;
-}
-
-static void
-_e_flyingmenu_cb_event_down(void *data, Evas *evas, Evas_Object *obj, void *event)
-{
-   e_flyingmenu_deactivate(data);
 }
