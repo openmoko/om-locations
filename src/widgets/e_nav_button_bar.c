@@ -149,7 +149,6 @@ e_nav_button_bar_style_set(Evas_Object *bbar, int style)
      {
 	sd->style = style;
 
-	sd->recalc_width = 1;
 	_e_nav_button_bar_update(bbar);
      }
 }
