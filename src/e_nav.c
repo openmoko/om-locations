@@ -40,11 +40,12 @@ struct _E_Nav_World_Item
    Evas_Object *obj; // the nav obj this nav item belongs to
    Evas_Object *item; // the tiem object itself
    E_Nav_World_Item_Type type;
-   struct { // where in the world it lives. x,y are the center. w,h the size
-      // in longitudinal/latitudinal degrees
-      double x, y, w, h;
-   } geom;
    unsigned char scale : 1; // scale item with span or not
+
+   struct {
+      double px, py;
+      double w, h;
+   } geom;
 };
 
 struct _E_Smart_Data
@@ -593,43 +594,79 @@ e_nav_world_item_scale_get(Evas_Object *item)
 void
 e_nav_world_item_coord_set(Evas_Object *item, double lon, double lat)
 {
+   E_Smart_Data *sd;
    E_Nav_World_Item *nwi;
    
    nwi = evas_object_data_get(item, "nav_world_item");
    if (!nwi)
      return;
 
-   nwi->geom.x = lon;
-   nwi->geom.y = lat;
+   SMART_CHECK(nwi->obj, ;);
+
+   if (!sd->tileset)
+     {
+	nwi->geom.px = 0.5;
+	nwi->geom.py = 0.5;
+
+	return;
+     }
+
+   e_nav_tileset_coord_to_pos(sd->tileset,
+	 lon, lat, &nwi->geom.px, &nwi->geom.py);
 }
 
 void
 e_nav_world_item_coord_get(Evas_Object *item, double *lon, double *lat)
 {
+   E_Smart_Data *sd;
    E_Nav_World_Item *nwi;
    
    nwi = evas_object_data_get(item, "nav_world_item");
    if (!nwi)
      return;
 
-   if (lon)
-     *lon = nwi->geom.x;
+   SMART_CHECK(nwi->obj, ;);
 
-   if (lat)
-     *lat = nwi->geom.y;
+   e_nav_tileset_coord_from_pos(sd->tileset,
+	 nwi->geom.px, nwi->geom.py, lon, lat);
 }
 
 void
 e_nav_world_item_size_set(Evas_Object *item, double w, double h)
 {
+   E_Smart_Data *sd;
    E_Nav_World_Item *nwi;
+   double lon, lat;
    
    nwi = evas_object_data_get(item, "nav_world_item");
    if (!nwi)
      return;
 
-   nwi->geom.w = w;
-   nwi->geom.h = h;
+   SMART_CHECK(nwi->obj, ;);
+
+   if (!nwi->scale)
+     {
+	nwi->geom.w = w;
+	nwi->geom.h = h;
+
+	return;
+     }
+   else if (!sd->tileset)
+     {
+	nwi->geom.w = 0.0;
+	nwi->geom.h = 0.0;
+
+	return;
+     }
+
+   e_nav_tileset_coord_from_pos(sd->tileset,
+	 nwi->geom.px, nwi->geom.py, &lon, &lat);
+
+   lon += w;
+   lat += h;
+
+   e_nav_tileset_coord_to_pos(sd->tileset,
+	 lon, lat, &nwi->geom.w, &nwi->geom.h);
 }
 
 void
@@ -655,10 +692,9 @@ e_nav_world_item_geometry_set(Evas_Object *item, double x, double y, double w, d
    
    nwi = evas_object_data_get(item, "nav_world_item");
    if (!nwi) return;
-   nwi->geom.x = x;
-   nwi->geom.y = y;
-   nwi->geom.w = w;
-   nwi->geom.h = h;
+
+   e_nav_world_item_coord_set(item, x, y);
+   e_nav_world_item_size_set(item, w, h);
 }
 
 void
@@ -668,10 +704,9 @@ e_nav_world_item_geometry_get(Evas_Object *item, double *x, double *y, double *w
    
    nwi = evas_object_data_get(item, "nav_world_item");
    if (!nwi) return;
-   if (x) *x = nwi->geom.x;
-   if (y) *y = nwi->geom.y;
-   if (w) *w = nwi->geom.w;
-   if (h) *h = nwi->geom.h;
+
+   e_nav_world_item_coord_get(item, x, y);
+   e_nav_world_item_size_get(item, w, h);
 }
 
 void
@@ -725,7 +760,7 @@ e_nav_world_item_focus(Evas_Object *item)
      return;
 
    e_nav_world_item_raise(item);
-   e_nav_coord_set(nwi->obj, nwi->geom.x, nwi->geom.y, 0.0);
+   e_nav_pos_set(nwi->obj, nwi->geom.px, nwi->geom.py, 0.0);
 }
 
 /* internal calls */
@@ -1316,28 +1351,6 @@ _e_nav_cb_timer_moveng_pause(void *data)
 }
 #endif
 
-static void _e_nav_to_offsets(Evas_Object *obj, double lon, double lat, double *x, double *y)
-{
-   E_Smart_Data *sd;
-   
-   sd = evas_object_smart_data_get(obj);
-   if (!sd || !sd->tileset)
-     {
-	*x = 0.0;
-	*y = 0.0;
-
-	return;
-     }
-
-   e_nav_tileset_coord_to_pos(sd->tileset, lon, lat, x, y);
-
-   if (x)
-     *x = (*x - sd->px) * sd->span;
-
-   if (y)
-     *y = (*y - sd->py) * sd->span;
-}
-
 /* nav world internal calls - move to the end later */
 static void
 _e_nav_world_item_free(E_Nav_World_Item *nwi)
@@ -1355,23 +1368,22 @@ _e_nav_world_item_move_resize(E_Nav_World_Item *nwi)
    if (nwi->type == E_NAV_WORLD_ITEM_TYPE_LINKED) return;
    if (nwi->scale)
      {
-	x = nwi->geom.x - (nwi->geom.w / 2.0);
-	y = nwi->geom.y - (nwi->geom.h / 2.0);
-	_e_nav_to_offsets(nwi->obj, x, y, &x, &y);
+	x = (nwi->geom.px - (nwi->geom.w / 2.0) - sd->px) * sd->span;
+	y = (nwi->geom.py - (nwi->geom.h / 2.0) - sd->py) * sd->span;
 
-	w = nwi->geom.x + (nwi->geom.w / 2.0);
-	h = nwi->geom.y + (nwi->geom.h / 2.0);
-	_e_nav_to_offsets(nwi->obj, w, h, &w, &h);
+	w = (nwi->geom.px + (nwi->geom.w / 2.0) - sd->px) * sd->span;
+	w -= x;
 
-	w = w - x;
-	h = h - y;
+	h = (nwi->geom.py + (nwi->geom.h / 2.0) - sd->py) * sd->span;
+	h -= y;
 
 	x = (sd->x + (sd->w / 2) + x);
 	y = (sd->y + (sd->h / 2) + y);
      }
    else
      {
-	_e_nav_to_offsets(nwi->obj, nwi->geom.x, nwi->geom.y, &x, &y);
+	x = (nwi->geom.px - sd->px) * sd->span;
+	y = (nwi->geom.py - sd->py) * sd->span;
 
 	w = nwi->geom.w;
 	h = nwi->geom.h;
