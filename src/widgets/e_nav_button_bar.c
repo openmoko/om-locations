@@ -751,6 +751,9 @@ _e_nav_button_bar_update(Evas_Object *bbar)
 
 	 w = sd->button_width;
 	 break;
+      case E_NAV_BUTTON_BAR_STYLE_JUSTIFIED:
+	 w = sd->button_width;
+	 break;
      }
 
    /* layout buttons in the front */
@@ -782,6 +785,15 @@ _e_nav_button_bar_update(Evas_Object *bbar)
    /* no button added to the back */
    if (!count)
      return;
+
+   if (sd->style == E_NAV_BUTTON_BAR_STYLE_JUSTIFIED)
+     {
+	w = sd->pad_back + count * sd->button_width +
+	   (count - 1) * sd->pad_inter;
+
+	x = sd->x + sd->w - w;
+	w = sd->button_width;
+     }
 
    /* layout buttons in the back */
    for (l = sd->buttons; l; l = l->next)
