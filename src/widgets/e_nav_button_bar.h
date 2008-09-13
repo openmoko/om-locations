@@ -34,9 +34,10 @@ Evas_Object            *e_nav_button_bar_add(Evas *e);
 void                    e_nav_button_bar_embed_set(Evas_Object *bbar, Evas_Object *embedding, const char *group_base);
 void                    e_nav_button_bar_style_set(Evas_Object *bbar, int style);
 void                    e_nav_button_bar_paddings_set(Evas_Object *bbar, Evas_Coord front, Evas_Coord inter, Evas_Coord back);
+void                    e_nav_button_bar_button_size_request(Evas_Object *bbar, Evas_Coord w, Evas_Coord h);
 int                     e_nav_button_bar_num_buttons_get(Evas_Object *bbar);
-Evas_Coord              e_nav_button_bar_width_min_calc(Evas_Object *bbar, Evas_Coord button_width);
-Evas_Coord              e_nav_button_bar_height_min_calc(Evas_Object *bbar, Evas_Coord bar_height);
+Evas_Coord              e_nav_button_bar_width_min_calc(Evas_Object *bbar);
+Evas_Coord              e_nav_button_bar_height_min_calc(Evas_Object *bbar);
 
 void                    e_nav_button_bar_button_add(Evas_Object *bbar, const char *label, void (*func)(void *data, Evas_Object *obj), void *data);
 void                    e_nav_button_bar_button_remove(Evas_Object *bbar, void (*func)(void *data, Evas_Object *bbar), void *data);
