@@ -289,9 +289,7 @@ viewport_item_tag_add_fini(void *data, E_Nav_DBus_Batch *bat)
 	    DBUS_TYPE_DOUBLE, &h,
 	    DBUS_TYPE_INVALID))
      {
-	e_nav_world_item_geometry_get(nwi, NULL, NULL, &w, &h);
-
-	e_nav_world_item_geometry_set(nwi, lon, lat, w, h);
+	e_nav_world_item_coord_set(nwi, lon, lat);
 	e_nav_world_item_update(nwi);
      }
    else
@@ -636,8 +634,7 @@ on_neo_me_geometry_changed(void *data, DBusMessage *msg)
 	return;
      }
 
-   e_nav_world_item_geometry_get(neo_me, NULL, NULL, &w, &h);
-   e_nav_world_item_geometry_set(neo_me, lon, lat, w, h);
+   e_nav_world_item_coord_set(neo_me, lon, lat);
    e_nav_world_item_update(neo_me);
 
    if (e_ctrl_follow_get(mdata.ctrl))
@@ -886,11 +883,9 @@ _e_mod_neo_me_init()
 	     diversity_object_geometry_get(
 		   (Diversity_Object *) mdata.self,
 		   &lon, &lat, &w, &h);
-	     e_nav_world_item_geometry_get(neo_me,
-		   NULL, NULL, &w, &h);
 
-	     e_nav_world_item_geometry_set(neo_me,
-		   lon, lat, w, h);
+	     e_nav_world_item_coord_set(neo_me,
+		   lon, lat);
 	     e_nav_world_item_neo_me_fixed_set(neo_me, 1);
 
 	     e_nav_world_item_update(neo_me);
@@ -1174,8 +1169,7 @@ _e_mod_nav_shutdown(void)
    if (!mdata.nav)
      return;
 
-   lon = e_nav_coord_lon_get(mdata.nav);
-   lat = e_nav_coord_lat_get(mdata.nav);
+   e_nav_coord_get(mdata.nav, &lon, &lat);
    span = e_nav_span_get(mdata.nav);
 
    dn_config_float_set(mdata.cfg, "lon", lon);
