@@ -182,9 +182,11 @@ _e_flyingmenu_move_and_resize(Evas_Object *obj)
 
    if (sd->bbar)
      {
-	menu_w = e_nav_button_bar_width_min_calc(sd->bbar,
-	      sd->button_min_size);
-	menu_h = e_nav_button_bar_height_min_calc(sd->bbar, 0);
+	e_nav_button_bar_button_size_request(sd->bbar,
+	      sd->button_min_size, 0);
+
+	menu_w = e_nav_button_bar_width_min_calc(sd->bbar);
+	menu_h = e_nav_button_bar_height_min_calc(sd->bbar);
 	menu_gap = 2;
      }
    else
