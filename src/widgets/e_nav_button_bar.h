@@ -40,6 +40,7 @@ Evas_Coord              e_nav_button_bar_width_min_calc(Evas_Object *bbar);
 Evas_Coord              e_nav_button_bar_height_min_calc(Evas_Object *bbar);
 
 void                    e_nav_button_bar_button_add(Evas_Object *bbar, const char *label, void (*func)(void *data, Evas_Object *obj), void *data);
+void                    e_nav_button_bar_button_add_back(Evas_Object *bbar, const char *label, void (*func)(void *data, Evas_Object *obj), void *data);
 void                    e_nav_button_bar_button_remove(Evas_Object *bbar, void (*func)(void *data, Evas_Object *bbar), void *data);
 
 #endif /* E_NAV_BUTTON_BAR_H */

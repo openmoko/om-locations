@@ -23,12 +23,19 @@
 #include <Edje.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "e_nav_button_bar.h"
 #include "../e_nav.h"
 #include "../e_nav_theme.h"
 
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _Button_Data Button_Data;
+
+enum {
+     E_NAV_BUTTON_BAR_BUTTON_TYPE_FRONT,
+     E_NAV_BUTTON_BAR_BUTTON_TYPE_BACK,
+     N_E_NAV_BUTTON_BAR_BUTTON_TYPES,
+};
 
 struct _E_Smart_Data
 {
@@ -64,6 +71,7 @@ struct _E_Smart_Data
 
 struct _Button_Data {
      unsigned int id;
+     int type;
      Evas_Object *bbar;
 
      Evas_Object *obj;
@@ -348,7 +356,7 @@ on_button_clicked(void *data, Evas_Object *button, const char *emission, const c
 }
 
 static Button_Data *
-button_new(Evas_Object *bbar, const char *label, void *cb, void *cb_data)
+button_new(Evas_Object *bbar, const char *label, void *cb, void *cb_data, int type)
 {
    E_Smart_Data *sd;
    Button_Data *bdata;
@@ -360,6 +368,7 @@ button_new(Evas_Object *bbar, const char *label, void *cb, void *cb_data)
      return NULL;
 
    bdata->id = ++sd->serial_number;
+   bdata->type = type;
 
    bdata->bbar = bbar;
    bdata->cb = cb;
@@ -377,6 +386,11 @@ button_new(Evas_Object *bbar, const char *label, void *cb, void *cb_data)
 
 	edje_object_signal_callback_add(bdata->obj,
 	      "mouse,clicked,*", "button.*", on_button_clicked, bdata);
+
+	if (type == E_NAV_BUTTON_BAR_BUTTON_TYPE_FRONT)
+	  edje_object_signal_emit(bdata->obj, "nav,state,front", "nav");
+	else
+	  edje_object_signal_emit(bdata->obj, "nav,state,back", "nav");
      }
 
    return bdata;
@@ -398,16 +412,26 @@ static void
 e_nav_button_bar_bdata_add(Evas_Object *bbar, Button_Data *bdata)
 {
    E_Smart_Data *sd;
+   Button_Data *prev = NULL;
    Evas_List *l;
 
    SMART_CHECK(bbar, ;);
 
    for (l = sd->buttons; l; l = l->next)
      {
-	Button_Data *prev = l->data;
+	Button_Data *tmp = l->data;
 
-	if (prev->pad)
-	  break;
+	if (tmp->type == bdata->type)
+	  {
+	     prev = tmp;
+
+	     break;
+	  }
+     }
+
+   if (prev)
+     {
+	assert(!prev->pad);
 
 	prev->pad = e_nav_theme_component_new(evas_object_evas_get(bbar),
 	      sd->group_base, "pad", 1);
@@ -417,8 +441,6 @@ e_nav_button_bar_bdata_add(Evas_Object *bbar, Button_Data *bdata)
 	     evas_object_clip_set(prev->pad, sd->clip);
 	     evas_object_show(prev->pad);
 	  }
-
-	break;
      }
 
    sd->buttons = evas_list_prepend(sd->buttons, bdata);
@@ -429,6 +451,7 @@ static void
 e_nav_button_bar_bdata_remove(Evas_Object *bbar, Button_Data *bdata)
 {
    E_Smart_Data *sd;
+   Button_Data *prev = NULL;
    Evas_List *l, *tmp_l;
 
    SMART_CHECK(bbar, ;);
@@ -439,15 +462,20 @@ e_nav_button_bar_bdata_remove(Evas_Object *bbar, Button_Data *bdata)
 
    for (tmp_l = l->next; tmp_l; tmp_l = tmp_l->next)
      {
-	Button_Data *prev = tmp_l->data;
+	Button_Data *tmp = tmp_l->data;
 
-	if (prev->pad)
+	if (tmp->type == bdata->type)
 	  {
-	     evas_object_del(bdata->pad);
-	     bdata->pad = NULL;
-	  }
+	     prev = tmp;
 
-	break;
+	     break;
+	  }
+     }
+
+   if (prev && prev->pad)
+     {
+	evas_object_del(prev->pad);
+	prev->pad = NULL;
      }
 
    sd->buttons = evas_list_remove_list(sd->buttons, l);
@@ -462,7 +490,26 @@ e_nav_button_bar_button_add(Evas_Object *bbar, const char *label, void (*func)(v
 
    SMART_CHECK(bbar, ;);
 
-   bdata = button_new(bbar, label, func, data);
+   bdata = button_new(bbar, label, func, data, E_NAV_BUTTON_BAR_BUTTON_TYPE_FRONT);
+   if (!bdata)
+     return;
+
+   e_nav_button_bar_bdata_add(bbar, bdata);
+
+   sd->recalc_width = 1;
+   sd->recalc_height = 1;
+   _e_nav_button_bar_update(bbar);
+}
+
+void
+e_nav_button_bar_button_add_back(Evas_Object *bbar, const char *label, void (*func)(void *data, Evas_Object *bbar), void *data)
+{
+   E_Smart_Data *sd;
+   Button_Data *bdata;
+
+   SMART_CHECK(bbar, ;);
+
+   bdata = button_new(bbar, label, func, data, E_NAV_BUTTON_BAR_BUTTON_TYPE_BACK);
    if (!bdata)
      return;
 
@@ -700,9 +747,43 @@ _e_nav_button_bar_update(Evas_Object *bbar)
 	 break;
      }
 
+   /* layout buttons in the front */
    for (l = evas_list_last(sd->buttons); l; l = l->prev)
      {
 	Button_Data *bdata = l->data;
+
+	if (bdata->type != E_NAV_BUTTON_BAR_BUTTON_TYPE_FRONT)
+	  continue;
+
+	if (bdata->obj)
+	  {
+	     evas_object_move(bdata->obj, x, y);
+	     evas_object_resize(bdata->obj, w, h);
+	  }
+
+	x += w;
+
+	if (bdata->pad)
+	  {
+	     evas_object_move(bdata->pad, x, y);
+	     evas_object_resize(bdata->pad, sd->pad_inter, h);
+	  }
+
+	x += sd->pad_inter;
+	count--;
+     }
+
+   /* no button added to the back */
+   if (!count)
+     return;
+
+   /* layout buttons in the back */
+   for (l = sd->buttons; l; l = l->next)
+     {
+	Button_Data *bdata = l->data;
+
+	if (bdata->type == E_NAV_BUTTON_BAR_BUTTON_TYPE_FRONT)
+	  continue;
 
 	if (bdata->obj)
 	  {
