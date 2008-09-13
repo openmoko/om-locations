@@ -22,6 +22,7 @@
 
 #include <Etk.h>
 #include "e_nav_entry.h"
+#include "e_nav_button_bar.h"
 #include "../e_nav.h"
 #include "../e_nav_theme.h"
 #include "../e_nav_misc.h"
@@ -39,12 +40,8 @@ struct _E_Smart_Data
    Etk_Widget      *embed;
    Etk_Widget      *entry;
 
-   /* button 0, 1, 2 corresponds to button on the left, right,
-    * and bottom respectively */
-   struct {
-	void      (*cb)(void *data, Evas_Object *entry);
-	void       *data;
-   } buttons[3];
+   Evas_Object     *top_bbar;
+   Evas_Object     *bottom_bbar;
 };
 
 static void _e_nav_entry_smart_init(void);
@@ -67,40 +64,6 @@ e_nav_entry_add(Evas *e)
    _e_nav_entry_smart_init();
 
    return evas_object_smart_add(e, _e_smart);
-}
-
-static void
-on_button_clicked(void *data, Evas_Object *obj, const char *emission, const char *source)
-{
-   E_Smart_Data *sd = data;
-   char *p;
-   int i;
-
-   p = strchr(source, '.');
-   if (!p)
-     return;
-   p++;
-
-   switch (*p)
-     {
-      case 'l': /* left */
-	 i = 0;
-	 break;
-      case 'r': /* right */
-	 i = 1;
-	 break;
-      case 'b': /* bottom */
-	 i = 2;
-	 break;
-      default:
-	 printf("unknown button %s clicked\n", p);
-	 
-	 return;
-	 break;
-     }
-
-   if (sd->buttons[i].cb)
-     sd->buttons[i].cb(sd->buttons[i].data, sd->obj);
 }
 
 static Etk_Bool
@@ -129,62 +92,42 @@ void
 e_nav_entry_button_add(Evas_Object *entry, const char *label, void (*func)(void *data, Evas_Object *entry), void *data)
 {
    E_Smart_Data *sd;
-   int i;
+   int num_buttons;;
 
    SMART_CHECK(entry, ;);
 
-   /* XXX do we want to have a real button bar? */
-   for (i = 0; i < 3; i++)
+   /* this is weird... */
+   num_buttons = e_nav_button_bar_num_buttons_get(sd->top_bbar);
+   switch (num_buttons)
      {
-	if (!sd->buttons[i].cb)
-	  {
-	     const char *part;
-
-	     sd->buttons[i].cb = func;
-	     sd->buttons[i].data = data;
-
-	     switch (i)
-	       {
-		case 0:
-		   part = "button.left";
-		   break;
-		case 1:
-		   part = "button.right";
-		   break;
-		case 2:
-		   edje_object_signal_emit(sd->frame, "e,state,active", "e");
-		   part = "button.bottom";
-		   break;
-	       }
-
-	     edje_object_part_text_set(sd->frame, part, label);
-
-	     break;
-	  }
+      case 0:
+	 e_nav_button_bar_button_add(sd->top_bbar, label, func, data);
+	 break;
+      case 1:
+	 e_nav_button_bar_button_add_back(sd->top_bbar, label, func, data);
+	 break;
+      default:
+	 e_nav_button_bar_button_add(sd->bottom_bbar, label, func, data);
+	 break;
      }
+
+   if (e_nav_button_bar_num_buttons_get(sd->bottom_bbar))
+     edje_object_signal_emit(sd->frame, "e,state,active", "e");
 }
 
 void
 e_nav_entry_button_remove(Evas_Object *entry, void (*func)(void *data, Evas_Object *entry), void *data)
 {
    E_Smart_Data *sd;
-   int i;
 
    SMART_CHECK(entry, ;);
 
-   for (i = 0; i < 3; i++)
-     {
-	if (sd->buttons[i].cb == func && sd->buttons[i].data == data)
-	  {
-	     sd->buttons[i].cb = NULL;
-	     sd->buttons[i].data = NULL;
+   /* try both */
+   e_nav_button_bar_button_remove(sd->top_bbar, func, data);
+   e_nav_button_bar_button_remove(sd->bottom_bbar, func, data);
 
-	     if (i == 2)
-	       edje_object_signal_emit(sd->frame, "e,state,passive", "e");
-
-	     break;
-	  }
-     }
+   if (!e_nav_button_bar_num_buttons_get(sd->bottom_bbar))
+     edje_object_signal_emit(sd->frame, "e,state,passive", "e");
 }
 
 void
@@ -315,7 +258,18 @@ _theme_source_set(E_Smart_Data *sd)
    evas_object_clip_set(sd->frame, sd->clip);
    evas_object_show(sd->frame);
 
-   edje_object_signal_callback_add(sd->frame, "mouse,clicked,*", "button.*", on_button_clicked, sd);
+   sd->top_bbar = e_nav_button_bar_add(evas_object_evas_get(sd->obj));
+   e_nav_button_bar_embed_set(sd->top_bbar, sd->obj,
+	 "modules/diversity_nav/entry/button_bar");
+   e_nav_button_bar_style_set(sd->top_bbar, E_NAV_BUTTON_BAR_STYLE_JUSTIFIED);
+   e_nav_button_bar_button_size_request(sd->top_bbar, 160, 0);
+   edje_object_part_swallow(sd->frame, "button_bar.top", sd->top_bbar);
+
+   sd->bottom_bbar = e_nav_button_bar_add(evas_object_evas_get(sd->obj));
+   e_nav_button_bar_embed_set(sd->bottom_bbar, sd->obj,
+	 "modules/diversity_nav/entry/button_bar_bottom");
+   e_nav_button_bar_style_set(sd->bottom_bbar, E_NAV_BUTTON_BAR_STYLE_CENTERED);
+   edje_object_part_swallow(sd->frame, "button_bar.bottom", sd->bottom_bbar);
 
    sd->entry = etk_entry_new();
    etk_signal_connect_by_code(ETK_WIDGET_FOCUSED_SIGNAL, ETK_OBJECT(sd->entry), ETK_CALLBACK(on_entry_focused), sd);
@@ -361,10 +315,13 @@ _e_nav_entry_smart_del(Evas_Object *obj)
 
    SMART_CHECK(obj, ;);
 
-   evas_object_del(sd->clip);
+   evas_object_del(sd->top_bbar);
+   evas_object_del(sd->bottom_bbar);
    evas_object_del(sd->frame);
 
    etk_object_destroy(ETK_OBJECT(sd->embed));
+
+   evas_object_del(sd->clip);
 
    free(sd);
 }
