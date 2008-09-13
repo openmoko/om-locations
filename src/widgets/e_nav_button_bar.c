@@ -335,6 +335,18 @@ e_nav_button_bar_height_min_calc(Evas_Object *bbar)
    return h;
 }
 
+static void
+on_button_clicked(void *data, Evas_Object *button, const char *emission, const char *source)
+{
+   Button_Data *bdata = data;
+   E_Smart_Data *sd;
+
+   SMART_CHECK(bdata->bbar, ;);
+
+   if (bdata->cb)
+     bdata->cb(bdata->cb_data, (sd->embedding) ? sd->embedding : bdata->bbar);
+}
+
 static Button_Data *
 button_new(Evas_Object *bbar, const char *label, void *cb, void *cb_data)
 {
@@ -362,6 +374,9 @@ button_new(Evas_Object *bbar, const char *label, void *cb, void *cb_data)
 	evas_object_show(bdata->obj);
 
 	edje_object_part_text_set(bdata->obj, "button.text", label);
+
+	edje_object_signal_callback_add(bdata->obj,
+	      "mouse,clicked,*", "button.*", on_button_clicked, bdata);
      }
 
    return bdata;
@@ -380,15 +395,63 @@ button_destroy(Button_Data *bdata)
 }
 
 static void
-on_button_clicked(void *data, Evas_Object *button, const char *emission, const char *source)
+e_nav_button_bar_bdata_add(Evas_Object *bbar, Button_Data *bdata)
 {
-   Button_Data *bdata = data;
    E_Smart_Data *sd;
+   Evas_List *l;
 
-   SMART_CHECK(bdata->bbar, ;);
+   SMART_CHECK(bbar, ;);
 
-   if (bdata->cb)
-     bdata->cb(bdata->cb_data, (sd->embedding) ? sd->embedding : bdata->bbar);
+   for (l = sd->buttons; l; l = l->next)
+     {
+	Button_Data *prev = l->data;
+
+	if (prev->pad)
+	  break;
+
+	prev->pad = e_nav_theme_component_new(evas_object_evas_get(bbar),
+	      sd->group_base, "pad", 1);
+	if (prev->pad)
+	  {
+	     evas_object_smart_member_add(prev->pad, sd->obj);
+	     evas_object_clip_set(prev->pad, sd->clip);
+	     evas_object_show(prev->pad);
+	  }
+
+	break;
+     }
+
+   sd->buttons = evas_list_prepend(sd->buttons, bdata);
+   e_nav_button_bar_button_size_calc(bbar);
+}
+
+static void
+e_nav_button_bar_bdata_remove(Evas_Object *bbar, Button_Data *bdata)
+{
+   E_Smart_Data *sd;
+   Evas_List *l, *tmp_l;
+
+   SMART_CHECK(bbar, ;);
+
+   l = evas_list_find(sd->buttons, bdata);
+   if (!l)
+     return;
+
+   for (tmp_l = l->next; tmp_l; tmp_l = tmp_l->next)
+     {
+	Button_Data *prev = tmp_l->data;
+
+	if (prev->pad)
+	  {
+	     evas_object_del(bdata->pad);
+	     bdata->pad = NULL;
+	  }
+
+	break;
+     }
+
+   sd->buttons = evas_list_remove_list(sd->buttons, l);
+   e_nav_button_bar_button_size_calc(bbar);
 }
 
 void
@@ -403,25 +466,7 @@ e_nav_button_bar_button_add(Evas_Object *bbar, const char *label, void (*func)(v
    if (!bdata)
      return;
 
-   edje_object_signal_callback_add(bdata->obj,
-        "mouse,clicked,*", "button.*", on_button_clicked, bdata);
-
-   if (sd->buttons)
-     {
-	Button_Data *prev = sd->buttons->data;
-
-	prev->pad = e_nav_theme_component_new(evas_object_evas_get(bbar),
-	      sd->group_base, "pad", 1);
-	if (prev->pad)
-	  {
-	     evas_object_smart_member_add(prev->pad, sd->obj);
-	     evas_object_clip_set(prev->pad, sd->clip);
-	     evas_object_show(prev->pad);
-	  }
-     }
-
-   sd->buttons = evas_list_prepend(sd->buttons, bdata);
-   e_nav_button_bar_button_size_calc(bbar);
+   e_nav_button_bar_bdata_add(bbar, bdata);
 
    sd->recalc_width = 1;
    sd->recalc_height = 1;
@@ -434,7 +479,6 @@ e_nav_button_bar_button_remove(Evas_Object *bbar, void (*func)(void *data, Evas_
    E_Smart_Data *sd;
    Button_Data *bdata;
    Evas_List *l;
-   int last;
 
    SMART_CHECK(bbar, ;);
 
@@ -448,23 +492,8 @@ e_nav_button_bar_button_remove(Evas_Object *bbar, void (*func)(void *data, Evas_
    if (!l)
      return;
 
-   last = (sd->buttons == l);
-
-   sd->buttons = evas_list_remove_list(sd->buttons, l);
-   e_nav_button_bar_button_min_calc(bbar);
-
+   e_nav_button_bar_bdata_remove(bbar, bdata);
    button_destroy(bdata);
-
-   if (last)
-     {
-	bdata = sd->buttons->data;
-
-	if (bdata->pad)
-	  {
-	     evas_object_del(bdata->pad);
-	     bdata->pad = NULL;
-	  }
-     }
 
    sd->recalc_width = 1;
    sd->recalc_height = 1;
