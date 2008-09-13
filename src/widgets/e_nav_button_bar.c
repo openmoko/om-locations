@@ -745,6 +745,12 @@ _e_nav_button_bar_update(Evas_Object *bbar)
 
 	 w = sd->button_width;
 	 break;
+      case E_NAV_BUTTON_BAR_STYLE_CENTERED:
+	 w = e_nav_button_bar_width_min_calc(sd->obj);
+	 x += (sd->w - w) / 2;
+
+	 w = sd->button_width;
+	 break;
      }
 
    /* layout buttons in the front */
