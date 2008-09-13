@@ -89,32 +89,38 @@ Evas_Object    *e_nav_world_ctrl_get(Evas_Object *obj);
 
 /* tileset will be added to e_nav */
 void            e_nav_world_tileset_set(Evas_Object *obj, Evas_Object *nt);
-    
+
 /* spatial & zoom controls */
+void            e_nav_pos_set(Evas_Object *obj, double px, double py, double when);
+void            e_nav_pos_get(Evas_Object *obj, double *px, double *py);
+
 void            e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when);
-double          e_nav_coord_lon_get(Evas_Object *obj);
-double          e_nav_coord_lat_get(Evas_Object *obj);
+void            e_nav_coord_get(Evas_Object *obj, double *lon, double *lat);
+
 void            e_nav_span_set(Evas_Object *obj, int span, double when);
 int             e_nav_span_get(Evas_Object *obj);
 
-void            e_nav_level_up(Evas_Object *obj);
-void            e_nav_level_down(Evas_Object *obj);
-void            e_nav_move_up(Evas_Object *obj);
-void            e_nav_move_down(Evas_Object *obj);
-void            e_nav_move_left(Evas_Object *obj);
-void            e_nav_move_right(Evas_Object *obj);
+void            e_nav_level_set(Evas_Object *obj, int level, double when);
+int             e_nav_level_get(Evas_Object *obj);
 
 /* world items */
 void                   e_nav_world_item_add(Evas_Object *obj, Evas_Object *item);
 void                   e_nav_world_item_delete(Evas_Object *obj, Evas_Object *item);
 void                   e_nav_world_item_type_set(Evas_Object *item, E_Nav_World_Item_Type type);
+
 E_Nav_World_Item_Type  e_nav_world_item_type_get(Evas_Object *item);
-void                   e_nav_world_item_geometry_set(Evas_Object *item, double x, double y, double w, double h);
-void                   e_nav_world_item_geometry_get(Evas_Object *item, double *x, double *y, double *w, double *h);
+Evas_Object           *e_nav_world_item_nav_get(Evas_Object *item);
+
 void                   e_nav_world_item_scale_set(Evas_Object *item, Evas_Bool scale);
 Evas_Bool              e_nav_world_item_scale_get(Evas_Object *item);
+void                   e_nav_world_item_coord_set(Evas_Object *item, double lon, double lat);
+void                   e_nav_world_item_coord_get(Evas_Object *item, double *lon, double *lat);
+void                   e_nav_world_item_size_set(Evas_Object *item, double w, double h);
+void                   e_nav_world_item_size_get(Evas_Object *item, double *w, double *h);
+void                   e_nav_world_item_geometry_set(Evas_Object *item, double x, double y, double w, double h);
+void                   e_nav_world_item_geometry_get(Evas_Object *item, double *x, double *y, double *w, double *h);
+
 void                   e_nav_world_item_update(Evas_Object *item);
-Evas_Object           *e_nav_world_item_nav_get(Evas_Object *item);
 
 void                   e_nav_world_item_lower(Evas_Object *item);
 void                   e_nav_world_item_raise(Evas_Object *item);

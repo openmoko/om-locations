@@ -260,8 +260,8 @@ e_nav_world_tileset_set(Evas_Object *obj, Evas_Object *nt)
    _e_nav_update(obj);
 }
 
-static void
-_e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
+void
+e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
 {
    E_Smart_Data *sd;
    double t;
@@ -320,21 +320,53 @@ _e_nav_pos_set(Evas_Object *obj, double px, double py, double when)
 }
 
 void
+e_nav_pos_get(Evas_Object *obj, double *px, double *py)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+
+   if (px)
+     *px = sd->conf.px;
+
+   if (py)
+     *py = sd->conf.py;
+}
+
+void
 e_nav_coord_set(Evas_Object *obj, double lon, double lat, double when)
 {
    E_Smart_Data *sd;
    double px, py;
    
    SMART_CHECK(obj, ;);
-   if (lon < -180.0) lon = -180.0;
-   else if (lon > 180.0) lon = 180.0;
-   if (lat < -85.0) lat = -85.0;
-   else if (lat > 85.0) lat = 85.0;
 
    if (sd->tileset)
      {
 	e_nav_tileset_coord_to_pos(sd->tileset, lon, lat, &px, &py);
-	_e_nav_pos_set(obj, px, py, when);
+	e_nav_pos_set(obj, px, py, when);
+     }
+}
+
+void
+e_nav_coord_get(Evas_Object *obj, double *lon, double *lat)
+{
+   E_Smart_Data *sd;
+   
+   SMART_CHECK(obj, ;);
+
+   if (sd->tileset)
+     {
+	e_nav_tileset_coord_from_pos(sd->tileset,
+	      sd->conf.px, sd->conf.py, lon, lat);
+     }
+   else
+     {
+	if (lon)
+	  *lon = 0.0;
+
+	if (lat)
+	  *lat = 0.0;
      }
 }
 
@@ -418,110 +450,46 @@ e_nav_span_get(Evas_Object *obj)
 
    return sd->span;
 }
-
-static void
-_e_nav_move(Evas_Object *obj, char dir)
+ 
+void
+e_nav_level_set(Evas_Object *obj, int level, double when)
 {
    E_Smart_Data *sd;
-   int screen_x, screen_y, screen_w, screen_h;
-   double xoff, yoff;
+   int span;
 
-   sd = evas_object_smart_data_get(obj);
+   SMART_CHECK(obj, ;);
 
-   evas_output_viewport_get(evas_object_evas_get(obj), &screen_x, &screen_y, &screen_w, &screen_h);
-   switch (dir)
-     {
-      case 'u':
-	 xoff = 0.0;
-	 yoff = -screen_h / 3.0;
-	 break;
-      case 'd':
-	 xoff = 0.0;
-	 yoff = screen_h / 3.0;
-	 break;
-      case 'l':
-	 xoff = -screen_w / 3.0;
-	 yoff = 0.0;
-	 break;
-      case 'r':
-      default:
-	 xoff = screen_w / 3.0;
-	 yoff = 0.0;
-	 break;
-     }
+   span = e_nav_tileset_level_to_span(sd->tileset, level);
 
-   xoff /= sd->span;
-   yoff /= sd->span;
-
-   _e_nav_pos_set(obj, sd->px + xoff, sd->py + yoff, 0.0);
+   e_nav_span_set(obj, span, when);
 }
 
-void
-e_nav_move_up(Evas_Object *obj)
-{
-   _e_nav_move(obj, 'u');
-}
-
-void
-e_nav_move_down(Evas_Object *obj)
-{
-   _e_nav_move(obj, 'd');
-}
-
-void
-e_nav_move_left(Evas_Object *obj)
-{
-   _e_nav_move(obj, 'l');
-}
-
-void
-e_nav_move_right(Evas_Object *obj)
-{
-   _e_nav_move(obj, 'r');
-}
-
-void
-e_nav_level_up(Evas_Object *obj)
+int
+e_nav_level_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   int span, level;
+   
+   SMART_CHECK(obj, 0;);
 
-   sd = evas_object_smart_data_get(obj);
    if (!sd->tileset)
-     return;
+     return 0;
 
-   span = e_nav_tileset_span_get(sd->tileset);
-   level = e_nav_tileset_level_from_span(sd->tileset, span);
-   span = e_nav_tileset_level_to_span(sd->tileset, level + 1); 
-   e_nav_span_set(obj, span, 0.0);
-}
-
-void
-e_nav_level_down(Evas_Object *obj)
-{
-   E_Smart_Data *sd;
-   int span, level;
-
-   sd = evas_object_smart_data_get(obj);
-   if (!sd->tileset)
-     return;
-
-   span = e_nav_tileset_span_get(sd->tileset);
-   level = e_nav_tileset_level_from_span(sd->tileset, span);
-   span = e_nav_tileset_level_to_span(sd->tileset, level - 1); 
-   e_nav_span_set(obj, span, 0.0);
+   return e_nav_tileset_level_from_span(sd->tileset, sd->conf.span);
 }
 
 /* world items */
 void
 e_nav_world_item_add(Evas_Object *obj, Evas_Object *item)
 {
-   E_Nav_World_Item *nwi;
    E_Smart_Data *sd;
+   E_Nav_World_Item *nwi;
    
    SMART_CHECK(obj, ;);
+
    nwi = calloc(1, sizeof(E_Nav_World_Item));
-   if (!nwi) return;
+   if (!nwi)
+     return;
+
    nwi->obj = obj;
    nwi->item = item;
    evas_object_data_set(item, "nav_world_item", nwi);
@@ -530,43 +498,56 @@ e_nav_world_item_add(Evas_Object *obj, Evas_Object *item)
    sd->world_items = evas_list_append(sd->world_items, item);
    evas_object_smart_member_add(nwi->item, nwi->obj);
    evas_object_clip_set(nwi->item, sd->clip);
-   if (nwi->type == E_NAV_WORLD_ITEM_TYPE_WALLPAPER)
-     evas_object_stack_above(nwi->item, sd->clip);
-   else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_ITEM)
-     evas_object_stack_below(nwi->item, sd->stacking);
-   else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_OVERLAY)
-     evas_object_stack_above(nwi->item, sd->stacking);
-   else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_LINKED)
-     evas_object_stack_above(nwi->item, sd->stacking);
+
+   nwi->type = E_NAV_WORLD_ITEM_TYPE_ITEM;
+   evas_object_stack_below(nwi->item, sd->stacking);
 }
 
 void
 e_nav_world_item_delete(Evas_Object *obj, Evas_Object *item)
 {
    E_Smart_Data *sd;
-   
+   E_Nav_World_Item *nwi;
+
    SMART_CHECK(obj, ;);
+
+   nwi = evas_object_data_get(obj, "nav_world_item");
+   if (!nwi)
+     return;
+
    sd->world_items = evas_list_remove(sd->world_items, item);
+
+   evas_object_event_callback_del(item, EVAS_CALLBACK_DEL,
+	 _e_nav_world_item_cb_item_del);
+
+   _e_nav_world_item_free(nwi);
 }
 
 void
 e_nav_world_item_type_set(Evas_Object *item, E_Nav_World_Item_Type type)
 {
-   E_Nav_World_Item *nwi;
    E_Smart_Data *sd;
+   E_Nav_World_Item *nwi;
    
    nwi = evas_object_data_get(item, "nav_world_item");
-   if (!nwi) return;
-   nwi->type = type;
-   sd = evas_object_smart_data_get(nwi->obj);
-   if (nwi->type == E_NAV_WORLD_ITEM_TYPE_WALLPAPER)
-     evas_object_stack_above(nwi->item, sd->clip);
-   else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_ITEM)
-     evas_object_stack_below(nwi->item, sd->stacking);
-   else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_OVERLAY)
-     evas_object_stack_above(nwi->item, sd->stacking);
-   else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_LINKED)
-     evas_object_stack_above(nwi->item, sd->stacking);
+   if (!nwi)
+     return;
+
+   if (nwi->type != type)
+     {
+	SMART_CHECK(nwi->obj, ;);
+
+	nwi->type = type;
+
+	if (nwi->type == E_NAV_WORLD_ITEM_TYPE_WALLPAPER)
+	  evas_object_stack_above(nwi->item, sd->clip);
+	else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_ITEM)
+	  evas_object_stack_below(nwi->item, sd->stacking);
+	else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_OVERLAY)
+	  evas_object_stack_above(nwi->item, sd->stacking);
+	else if (nwi->type == E_NAV_WORLD_ITEM_TYPE_LINKED)
+	  evas_object_stack_above(nwi->item, sd->stacking);
+     }
 }
 
 E_Nav_World_Item_Type
@@ -577,6 +558,94 @@ e_nav_world_item_type_get(Evas_Object *item)
    nwi = evas_object_data_get(item, "nav_world_item");
    if (!nwi) return 0;
    return nwi->type;
+}
+
+Evas_Object *
+e_nav_world_item_nav_get(Evas_Object *item)
+{
+   E_Nav_World_Item *nwi;
+   
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi) return NULL;
+   return nwi->obj;
+}
+
+void
+e_nav_world_item_scale_set(Evas_Object *item, Evas_Bool scale)
+{
+   E_Nav_World_Item *nwi;
+   
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi) return;
+   nwi->scale = scale;
+}
+
+Evas_Bool
+e_nav_world_item_scale_get(Evas_Object *item)
+{
+   E_Nav_World_Item *nwi;
+   
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi) return 0;
+   return nwi->scale;
+}
+
+void
+e_nav_world_item_coord_set(Evas_Object *item, double lon, double lat)
+{
+   E_Nav_World_Item *nwi;
+   
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi)
+     return;
+
+   nwi->geom.x = lon;
+   nwi->geom.y = lat;
+}
+
+void
+e_nav_world_item_coord_get(Evas_Object *item, double *lon, double *lat)
+{
+   E_Nav_World_Item *nwi;
+   
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi)
+     return;
+
+   if (lon)
+     *lon = nwi->geom.x;
+
+   if (lat)
+     *lat = nwi->geom.y;
+}
+
+void
+e_nav_world_item_size_set(Evas_Object *item, double w, double h)
+{
+   E_Nav_World_Item *nwi;
+   
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi)
+     return;
+
+   nwi->geom.w = w;
+   nwi->geom.h = h;
+}
+
+void
+e_nav_world_item_size_get(Evas_Object *item, double *w, double *h)
+{
+   E_Nav_World_Item *nwi;
+   
+   nwi = evas_object_data_get(item, "nav_world_item");
+   if (!nwi)
+     return;
+
+   if (w)
+     *w = nwi->geom.w;
+
+   if (h)
+     *h = nwi->geom.h;
 }
 
 void
@@ -606,26 +675,6 @@ e_nav_world_item_geometry_get(Evas_Object *item, double *x, double *y, double *w
 }
 
 void
-e_nav_world_item_scale_set(Evas_Object *item, Evas_Bool scale)
-{
-   E_Nav_World_Item *nwi;
-   
-   nwi = evas_object_data_get(item, "nav_world_item");
-   if (!nwi) return;
-   nwi->scale = scale;
-}
-
-Evas_Bool
-e_nav_world_item_scale_get(Evas_Object *item)
-{
-   E_Nav_World_Item *nwi;
-   
-   nwi = evas_object_data_get(item, "nav_world_item");
-   if (!nwi) return 0;
-   return nwi->scale;
-}
-
-void
 e_nav_world_item_update(Evas_Object *item)
 {
    E_Nav_World_Item *nwi;
@@ -633,16 +682,6 @@ e_nav_world_item_update(Evas_Object *item)
    nwi = evas_object_data_get(item, "nav_world_item");
    if (!nwi) return;
    _e_nav_world_item_move_resize(nwi);
-}
-
-Evas_Object *
-e_nav_world_item_nav_get(Evas_Object *item)
-{
-   E_Nav_World_Item *nwi;
-   
-   nwi = evas_object_data_get(item, "nav_world_item");
-   if (!nwi) return NULL;
-   return nwi->obj;
 }
 
 void
@@ -833,7 +872,7 @@ _e_nav_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
      evas_object_resize(sd->tileset, sd->w, sd->h);
 
    /* this checks pos boundaries and update e_nav */
-   _e_nav_pos_set(obj, sd->px, sd->py, 0.0);
+   e_nav_pos_set(obj, sd->px, sd->py, 0.0);
 }
 
 static void
@@ -958,7 +997,7 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 	sd->moveng.start.py = sd->py;
 	sd->moveng.start.span = sd->conf.span;
 
-	_e_nav_pos_set(obj, sd->px, sd->py, 0.0);
+	e_nav_pos_set(obj, sd->px, sd->py, 0.0);
 
 	return;
      }
@@ -975,7 +1014,7 @@ _e_nav_movengine_plain(Evas_Object *obj, E_Nav_Movengine_Action action, Evas_Coo
 	  e_ctrl_follow_set(sd->ctrl, FALSE);
      }
 
-   _e_nav_pos_set(obj, px, py, when);
+   e_nav_pos_set(obj, px, py, when);
 }
 
 static void
