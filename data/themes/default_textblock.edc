@@ -1,26 +1,11 @@
 images {
-   image: "diversity_ibar_bg.png" COMP;
-   image: "diversity_ibar_over.png" COMP;
+   image: "textblock_bg.png" COMP;
 }
 
 styles
 {
    style {
       name: "textblock_style";
-      base: "font=Edje-Sans font_size=16 align=left color=#fff style=shadow shadow_color=#ffffff00 wrap=word";
-      
-      tag:  "br" "\n";
-      tag:  "hilight" "+ font=Edje-Sans-Bold style=glow color=#fff glow2_color=#fe87 glow_color=#fa14";
-      tag:  "b" "+ font=Edje-Vera-Bold";
-      tag:  "title" "+ font_size=12 font=Edje-Sans-Bold style=soft_shadow color=#fff shadow_color=#00000020";
-      tag:  "/title" "- \n \n";
-   }
-   style {
-      name: "textblock_style2";
-      base: "font=Edje-Sans font_size=16 text_class=tb_plain align=left color=#626262 style=shadow shadow_color=#00000080 wrap=word";
-   }
-   style {
-      name: "textblock_style3";
       base: "font=Edje-Sans-Bold font_size=16 text_class=tb_plain align=left color=#fff style=shadow shadow_color=#ffffff00 wrap=word";
 
       tag:  "br" "\n";
@@ -38,33 +23,12 @@ group {
 	 mouse_events:  1;
 	 description {
 	    state:    "default" 0.0;
+	    rel1.offset: 4 4;
+	    rel2.offset: -3 -3;
 	    image {
-	       normal: "diversity_ibar_bg.png";
-	       border: 7 7 7 7;
-	    }
-	    fill {
-	       smooth : 0;
-	    }
-	 }
-      }
-      part {
-	 name:          "conf_over";
-	 mouse_events:  1;
-	 description {
-	    state:    "default" 0.0;
-	    rel1 {
-	       to:       "bg";
-	    }
-	    rel2 {
-	       to:       "bg";
-	    }
-	    image {
-	       normal: "diversity_ibar_over.png";
-	       border: 13 13 13 13;
+	       normal: "textblock_bg.png";
+               border: 5 5 5 5;
                middle: 0;
-	    }
-            fill {
-	       smooth : 0;
 	    }
 	 }
       }
@@ -77,20 +41,19 @@ group {
 	    state:    "default" 0.0;
 	    rel1 {
 	       relative: 0.0 0.0;
-	       offset: 20 13;
+	       offset: 16 9;
                to:    "bg";
 	    }
 	    rel2 {
 	       relative: 1.0 1.0;
-	       offset: -10 -10;
+	       offset: -7 -7;
                to:    "bg";
 	    }
 	    text {
-	       style:    "textblock_style3";
+	       style:    "textblock_style";
 	       min:      0 1;
 	    }
 	 }
       }
-       
    }
 }
