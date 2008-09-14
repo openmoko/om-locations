@@ -36,8 +36,6 @@ EXTRA_DIST =				\
 	ap_top.png			\
 	ap_tower.png			\
 	city.png			\
-	diversity_ibar_bg.png		\
-	diversity_ibar_over.png		\
 	diversity_scrollpane_bg.png	\
 	diversity_scrollpane_over.png	\
 	down.png			\
@@ -66,6 +64,7 @@ EXTRA_DIST =				\
 	red_dot1.png			\
 	right.png			\
 	tag_icon.png			\
+	textblock_bg.png		\
 	up.png				\
 	zoomin.png			\
 	zoomout.png			\
