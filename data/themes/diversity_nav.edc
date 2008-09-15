@@ -8,7 +8,6 @@ images {
    image: "ap_tower.png" COMP;
    image: "ap_top.png" COMP;
    image: "ap_signal.png" COMP;
-   image: "neo.png" COMP;
    image: "neo_other.png" COMP;
    image: "tag_icon.png" COMP;
    image: "edit_send.png" COMP;
