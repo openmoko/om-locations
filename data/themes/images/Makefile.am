@@ -36,36 +36,11 @@ EXTRA_DIST =				\
 	ap_top.png			\
 	ap_tower.png			\
 	city.png			\
-	diversity_scrollpane_bg.png	\
-	diversity_scrollpane_over.png	\
-	down.png			\
-	e17_ibar_bg_v.png		\
-	e17_ibar_over_v.png		\
-	e17_ilist_bg0.png		\
-	e17_ilist_bg1.png		\
-	e17_titlebar_glint1.png		\
-	e17_titlebar_glint2.png		\
-	e17_titlebar_glint3.png		\
-	e17_titlebar.png		\
-	e17_titlebar_shadow1.png	\
-	e17_titlebar_shadow2.png	\
 	edit_send.png			\
-	entry_black.png			\
-	entry_disabled.png		\
-	entry.png			\
-	focus.png			\
-	left.png			\
-	location.png			\
 	logo.png			\
-	measure_64px.png		\
 	neo_other.png			\
-	neo.png				\
 	red_dot1.png			\
-	right.png			\
 	tag_icon.png			\
 	textblock_bg.png		\
-	up.png				\
-	zoomin.png			\
-	zoomout.png			\
 	zoom.png			\
 	$(touches)
