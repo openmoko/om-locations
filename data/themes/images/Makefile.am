@@ -58,7 +58,6 @@ EXTRA_DIST =				\
 	location.png			\
 	logo.png			\
 	measure_64px.png		\
-	module_icon.png			\
 	neo_other.png			\
 	neo.png				\
 	red_dot1.png			\
