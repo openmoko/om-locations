@@ -697,53 +697,52 @@ textblocks_update(E_Smart_Data *sd, Evas_Coord tb_start, Evas_Coord tb_end)
 {
    Evas_List *l;
    Evas_Coord gap_big, gap_small;
-   Evas_Coord label_pad, label_indent, label_height;
-   Evas_Coord item_indent, item_height;
+   Evas_Coord label_height, item_height;
    Evas_Coord y;
 
    if (!sd->textblocks)
      return;
 
    gap_big = 25;
-   gap_small = 10;
+   gap_small = 13;
 
-   label_pad = 7;
-   label_indent = 19;
-   label_height = 25;
-
-   item_indent = 10;
+   label_height = 22;
    item_height = 0;
+#define TEXTBLOCK_HEIGHT(tbi) ((item_height) ? (item_height) : (tbi)->sz)
 
    /* adjust layout */
    while (1)
      {
 	Evas_Coord h, kill_me;
+	int num_tbs = 0;
 
 	h = gap_big;
 
 	for (l = sd->textblocks; l; l = l->next)
 	  {
 	     E_TextBlock_Item *tbi = l->data;
-	     Evas_Coord tbh = (item_height) ? item_height : tbi->sz;
+	     Evas_Coord tbh = TEXTBLOCK_HEIGHT(tbi);
 
 	     h += label_height + tbh + gap_small;
+
+	     num_tbs++;
 	  }
 
 	kill_me = tb_start + h - tb_end;
 	if (kill_me <= 0)
 	  break;
 
-	if (gap_big > 15)
+	if (gap_big > 20)
 	  {
 	     gap_big -= kill_me;
-	     if (gap_big < 15)
-	       gap_big = 15;
+	     if (gap_big < 20)
+	       gap_big = 20;
 	  }
-	else if (gap_small > 3)
+	else if (gap_small > 0)
 	  {
-	     gap_small -= kill_me;
-	     if (gap_small < 3)
-	       gap_small = 3;
+	     gap_small -= (kill_me + num_tbs - 1) / num_tbs;
+	     if (gap_small < 0)
+	       gap_small = 0;
 	  }
 	else if (!item_height)
 	  {
@@ -751,7 +750,7 @@ textblocks_update(E_Smart_Data *sd, Evas_Coord tb_start, Evas_Coord tb_end)
 	  }
 	else /* give up */
 	  {
-	     item_height = 10;
+	     item_height = 20;
 
 	     break;
 	  }
@@ -762,14 +761,14 @@ textblocks_update(E_Smart_Data *sd, Evas_Coord tb_start, Evas_Coord tb_end)
    for (l = sd->textblocks; l; l = l->next)
      {
 	E_TextBlock_Item *tbi = l->data;
-	Evas_Coord tbh = (item_height) ? item_height : tbi->sz;
+	Evas_Coord tbh = TEXTBLOCK_HEIGHT(tbi);
 
-	evas_object_move(tbi->label_obj, sd->x + label_indent, y + label_pad);
+	evas_object_move(tbi->label_obj, sd->x, y);
 
 	y += label_height;
 
-	evas_object_move(tbi->item_obj, sd->x + item_indent, y);
-	evas_object_resize(tbi->item_obj, sd->w - (item_indent * 2), tbh);
+	evas_object_move(tbi->item_obj, sd->x, y);
+	evas_object_resize(tbi->item_obj, sd->w, tbh);
 
 	y += tbh + gap_small;
      }
@@ -779,7 +778,7 @@ static void
 _e_nav_dialog_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_Coord title_height, bbar_height, bottom_border;
+   Evas_Coord title_height, bbar_height;
    Evas_Coord tb_start, tb_end;
 
    sd = evas_object_smart_data_get(obj);
@@ -789,11 +788,10 @@ _e_nav_dialog_update(Evas_Object *obj)
    evas_object_resize(sd->bg_object, sd->w, sd->h);
 
    title_height = sd->h / 6;
-   bottom_border = 10;
-   bbar_height = 60;
+   bbar_height = 70;
 
    tb_start = sd->y + title_height;
-   tb_end = sd->y + sd->h - bbar_height - bottom_border;
+   tb_end = sd->y + sd->h - bbar_height;
 
    if (sd->title_object)
      {
