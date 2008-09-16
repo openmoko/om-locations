@@ -161,6 +161,9 @@ e_nav_list_add(Evas *e, int type)
    etk_scrolled_view_dragable_set(
 	 ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(sd->tree))),
 	 ETK_TRUE);
+   etk_scrolled_view_drag_bouncy_set(
+	 ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(sd->tree))),
+	 ETK_FALSE);
 
    etk_signal_connect_by_code(ETK_TREE_ROW_CLICKED_SIGNAL, ETK_OBJECT(sd->tree),
       ETK_CALLBACK(_list_tree_row_clicked_cb), li);
