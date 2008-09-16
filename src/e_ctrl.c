@@ -149,10 +149,12 @@ _e_nav_tag_sel(void *data, Evas_Object *tl, E_Nav_List_Item *item)
 static int
 _e_nav_tag_sort(void *data, E_Nav_List_Item *tag1, E_Nav_List_Item *tag2)
 {
-   time_t t1, t2;
+   time_t t1 = 0, t2 = 0;
 
-   t1 = e_nav_world_item_location_timestamp_get((Evas_Object *) tag1);
-   t2 = e_nav_world_item_location_timestamp_get((Evas_Object *) tag2);
+   if (tag1)
+     t1 = e_nav_world_item_location_timestamp_get((Evas_Object *) tag1);
+   if (tag2)
+     t2 = e_nav_world_item_location_timestamp_get((Evas_Object *) tag2);
 
    return (t2 - t1);
 }
