@@ -390,7 +390,7 @@ typedef struct
   unsigned int call_id;
   E_DBus_Proxy_Call_Func cb_func;
   void *data;
-  E_DBus_Proxy_Free_Func free_func;
+  E_DBus_Free_Func free_func;
 } E_DBus_Pending_Notify;
 
 static void
@@ -405,7 +405,7 @@ async_proxy_call(DBusPendingCall *pending, void *data)
 }
 
 EAPI E_DBus_Proxy_Call *
-e_dbus_proxy_begin_call_with_timeout(E_DBus_Proxy *proxy, DBusMessage *message, E_DBus_Proxy_Call_Func cb_func, void *data, E_DBus_Proxy_Free_Func free_func, int timeout)
+e_dbus_proxy_begin_call_with_timeout(E_DBus_Proxy *proxy, DBusMessage *message, E_DBus_Proxy_Call_Func cb_func, void *data, E_DBus_Free_Func free_func, int timeout)
 {
   E_DBus_Pending_Notify *notify = NULL;
   DBusPendingCall *pending;
@@ -447,7 +447,7 @@ e_dbus_proxy_begin_call_with_timeout(E_DBus_Proxy *proxy, DBusMessage *message, 
 }
 
 EAPI E_DBus_Proxy_Call *
-e_dbus_proxy_begin_call(E_DBus_Proxy *proxy, DBusMessage *message, E_DBus_Proxy_Call_Func cb_func, void *data, E_DBus_Proxy_Free_Func free_func)
+e_dbus_proxy_begin_call(E_DBus_Proxy *proxy, DBusMessage *message, E_DBus_Proxy_Call_Func cb_func, void *data, E_DBus_Free_Func free_func)
 {
   return e_dbus_proxy_begin_call_with_timeout(proxy, message, cb_func, data, free_func, -1);
 }
