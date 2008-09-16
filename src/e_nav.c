@@ -512,7 +512,7 @@ e_nav_world_item_delete(Evas_Object *obj, Evas_Object *item)
 
    SMART_CHECK(obj, ;);
 
-   nwi = evas_object_data_get(obj, "nav_world_item");
+   nwi = evas_object_data_del(obj, "nav_world_item");
    if (!nwi)
      return;
 
