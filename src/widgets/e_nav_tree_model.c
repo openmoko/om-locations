@@ -115,9 +115,12 @@ _card_update(Evas_Object *card, Card_Data *cdata)
 	 evas_object_data_get(card, "e_nav_card") == cdata)
      return;
 
-   snprintf(text, sizeof(text),
-	 "<b><font_size=48>%s</></b>",
-	 e_nav_card_name_get((E_Nav_Card *) cdata->data.obj));
+   if (cdata->data.obj)
+     snprintf(text, sizeof(text),
+	   "<b><font_size=48>%s</></b>",
+	   e_nav_card_name_get((E_Nav_Card *) cdata->data.obj));
+   else
+     text[0] = '\0';
 
    edje_object_part_text_set(card, "etk.text.label", text);
    edje_object_size_min_calc(card, &cdata->w, &cdata->h);
@@ -180,6 +183,14 @@ _tag_style(char *buf, int len, Evas_Object *tag)
    const char *title, *desc;
    const char *style;
    Evas_Bool unread;
+
+   if (!tag)
+     {
+	if (len > 0)
+	  *buf = '\0';
+
+	return 0;
+     }
 
    title = e_nav_world_item_location_name_get(tag);
    if (!title || !*title)
