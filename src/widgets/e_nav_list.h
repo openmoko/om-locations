@@ -49,6 +49,10 @@ void            e_nav_list_item_remove(Evas_Object *li, E_Nav_List_Item *item);
 void            e_nav_list_item_update(Evas_Object *li, E_Nav_List_Item *item);
 void            e_nav_list_clear(Evas_Object *li);
 
+/* add a NULL item which is disabled */
+void            e_nav_list_fake_set(Evas_Object *li, Evas_Bool fake);
+Evas_Bool       e_nav_list_fake_get(Evas_Object *li);
+
 void            e_nav_list_freeze(Evas_Object *li);
 void            e_nav_list_thaw(Evas_Object *li);
 

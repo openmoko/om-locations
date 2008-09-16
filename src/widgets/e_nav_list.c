@@ -42,6 +42,8 @@ struct _E_Smart_Data
    Etk_Widget      *tree;
    Etk_Tree_Col    *col;
 
+   Etk_Tree_Row    *fake_row;
+
    Evas_Object     *bbar;
 
    int frozen;
@@ -76,15 +78,13 @@ static int
 _list_compare(Etk_Tree_Col *col, Etk_Tree_Row *row1, Etk_Tree_Row *row2, void *data)
 {
    E_Smart_Data *sd = data;
-   E_Nav_List_Item *item1, *item2;
+   E_Nav_List_Item *item1 = NULL, *item2 = NULL;
 
-   item1 = etk_tree_row_data_get(row1);
-   if (!row1 || !item1)
-     return 1;
+   if (row1)
+     item1 = etk_tree_row_data_get(row1);
 
-   item2 = etk_tree_row_data_get(row2);
-   if (!row2 || !item2)
-     return -1;
+   if (row2)
+     item2 = etk_tree_row_data_get(row2);
 
    return sd->sort_cb(sd->sort_data, item1, item2);
 }
@@ -109,6 +109,9 @@ _list_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up 
    Evas_List *l;
 
    SMART_CHECK(li, ETK_TRUE;);
+
+   if (row == sd->fake_row)
+     return ETK_TRUE;
 
    item = etk_tree_row_data_get(row);
 
@@ -154,6 +157,7 @@ e_nav_list_add(Evas *e, int type)
    etk_tree_headers_visible_set(ETK_TREE(sd->tree), 0);
    etk_tree_mode_set(ETK_TREE(sd->tree), ETK_TREE_MODE_LIST);
    etk_tree_multiple_select_set(ETK_TREE(sd->tree), ETK_FALSE);
+   etk_tree_alternating_row_colors_set(ETK_TREE(sd->tree), ETK_FALSE);
    etk_tree_rows_height_set(ETK_TREE(sd->tree), 90);
    etk_scrolled_view_policy_set(
 	 etk_tree_scrolled_view_get(ETK_TREE(sd->tree)),
@@ -312,16 +316,10 @@ e_nav_list_callback_del(Evas_Object *li, void *func, void *data)
    free(cb);
 }
 
-void
-e_nav_list_item_add(Evas_Object *li, E_Nav_List_Item *item)
+static Etk_Tree_Row *
+_list_item_add(E_Smart_Data *sd, E_Nav_List_Item *item)
 {
-   E_Smart_Data *sd;
    Etk_Tree_Row *tree_row;
-
-   SMART_CHECK(li, ;);
-
-   if (!item)
-     return;
 
    tree_row = etk_tree_row_prepend(ETK_TREE(sd->tree), NULL, sd->col, item, NULL);
    if (tree_row)
@@ -331,6 +329,21 @@ e_nav_list_item_add(Evas_Object *li, E_Nav_List_Item *item)
 	if (!sd->frozen)
 	  etk_tree_col_sort(sd->col, TRUE);
      }
+
+   return tree_row;
+}
+
+void
+e_nav_list_item_add(Evas_Object *li, E_Nav_List_Item *item)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+
+   if (!item)
+     return;
+
+   _list_item_add(sd, item);
 }
 
 static Etk_Tree_Row *
@@ -394,6 +407,57 @@ e_nav_list_clear(Evas_Object *li)
    SMART_CHECK(li, ;);
 
    etk_tree_clear(ETK_TREE(sd->tree));
+}
+
+static Etk_Bool
+_list_tree_row_selected_cb(Etk_Tree *tree, Etk_Tree_Row *row, void *data)
+{
+   Evas_Object *li = data;
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ETK_TRUE;);
+
+   if (row == sd->fake_row)
+     etk_tree_row_unselect(row);
+
+   return ETK_TRUE;
+}
+
+void
+e_nav_list_fake_set(Evas_Object *li, Evas_Bool fake)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+
+   if (fake && !sd->fake_row)
+     {
+	sd->fake_row = _list_item_add(sd, NULL);
+	if (sd->fake_row)
+	  etk_signal_connect_by_code(ETK_TREE_ROW_SELECTED_SIGNAL,
+		ETK_OBJECT(sd->tree),
+		ETK_CALLBACK(_list_tree_row_selected_cb),
+		li);
+     }
+   else if (!fake && sd->fake_row)
+     {
+	etk_signal_disconnect_by_code(ETK_TREE_ROW_SELECTED_SIGNAL,
+	      ETK_OBJECT(sd->tree),
+	      ETK_CALLBACK(_list_tree_row_selected_cb),
+	      li);
+	etk_tree_row_delete(sd->fake_row);
+	sd->fake_row = NULL;
+     }
+}
+
+Evas_Bool
+e_nav_list_fake_get(Evas_Object *li)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(li, ;);
+
+   return (sd->fake_row != NULL);
 }
 
 void e_nav_list_freeze(Evas_Object *li)
