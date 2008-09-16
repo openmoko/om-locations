@@ -88,6 +88,11 @@ _e_nav_contact_sort(void *data, E_Nav_List_Item *card1, E_Nav_List_Item *card2)
 {
    const char *p1, *p2;
 
+   if (!card1)
+     return -1;
+   else if (!card2)
+     return 1;
+
    p1 = e_nav_card_name_get((E_Nav_Card *) card1);
    if (!p1)
      return -1;
