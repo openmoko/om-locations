@@ -37,6 +37,7 @@ int                 e_ctrl_follow_get(Evas_Object* obj);
 void                e_ctrl_follow_set(Evas_Object *obj, int follow);
 
 unsigned int        e_ctrl_message_text_add(Evas_Object *obj, const char *msg, double timeout);
+void                e_ctrl_message_text_edit(Evas_Object *obj, unsigned int msg_id, const char *msg, double timeout);
 void                e_ctrl_message_text_del(Evas_Object *obj, unsigned int msg_id);
 
 void                e_ctrl_taglist_tag_add(Evas_Object *obj, Evas_Object *loc);

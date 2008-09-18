@@ -636,6 +636,16 @@ e_ctrl_message_text_add(Evas_Object *obj, const char *msg, double timeout)
 }
 
 void
+e_ctrl_message_text_edit(Evas_Object *obj, unsigned int msg_id, const char *msg, double timeout)
+{
+   E_Smart_Data *sd;
+
+   SMART_CHECK(obj, ;);
+
+   msgboard_message_edit(sd->msgboard, msg_id, msg, timeout);
+}
+
+void
 e_ctrl_message_text_del(Evas_Object *obj, unsigned int msg_id)
 {
    E_Smart_Data *sd;
