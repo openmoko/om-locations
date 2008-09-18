@@ -171,6 +171,7 @@ e_nav_taglist_new(Evas_Object *obj, const char *custom_dir)
    etk_scrolled_view_policy_set(etk_tree_scrolled_view_get(ETK_TREE(tl->tree)), ETK_POLICY_HIDE, ETK_POLICY_HIDE);
    etk_scrolled_view_dragable_set(ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(tl->tree))),ETK_TRUE);
    etk_scrolled_view_drag_bouncy_set(ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(tl->tree))),ETK_FALSE);
+   etk_scrolled_view_extra_vmargin_set(ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(tl->tree))), 60);
 
    etk_tree_mode_set(ETK_TREE(tl->tree), ETK_TREE_MODE_LIST);
    etk_tree_multiple_select_set(ETK_TREE(tl->tree), ETK_FALSE);
