@@ -112,11 +112,16 @@ static void _eet_pack(Eet_File *ef, const char *path)
 
 	evas_object_del(im);
 
+	/* force evas_object_free to be called immediately */
+	evas_norender(evas);
+
 	return;
 
 fail:
-	if (im)
+	if (im) {
 		evas_object_del(im);
+		evas_norender(evas);
+	}
 	printf("failed to pack %s\n", key);
 
 	return;
