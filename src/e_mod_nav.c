@@ -778,7 +778,7 @@ gps_search_start(void)
    mdata.fix_msg_id = e_ctrl_message_text_add(mdata.ctrl,
 	 _("Searching for your location"), 0.0);
 
-   mdata.fix_timer = ecore_timer_add(60.0,
+   mdata.fix_timer = ecore_timer_add(120.0,
                            gps_search_timeout,
                            NULL);
 }
