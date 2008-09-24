@@ -166,18 +166,18 @@ group {
 	    rel1 {
 		to: "background";
 	    	relative: 0.0 0.0;
-		offset: 0 0;
+		offset: 0 1;
 	    }
             rel2 {
                to: "background";
                relative: 1.0 0.0;
-               offset: -30 39;
+               offset: -27 39;
             }
          }
          description { state: "shown" 0.0;
 	    inherit: "default" 0.0;
 	    visible: 1;
-	    rel2.offset: -30 85;
+	    rel2.offset: -27 72;
          }
       }
       part { name: "swallow";
