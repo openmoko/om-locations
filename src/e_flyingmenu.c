@@ -78,7 +78,6 @@ e_flyingmenu_theme_source_set(Evas_Object *obj, const char *custom_dir)
    
    sd->bbar = e_nav_button_bar_add(evas_object_evas_get(obj));
    e_nav_button_bar_embed_set(sd->bbar, obj, "modules/diversity_nav/flying_menu");
-   e_nav_button_bar_paddings_set(sd->bbar, 10, 10, 10);
 
    evas_object_smart_member_add(sd->bbar, obj);
    evas_object_clip_set(sd->bbar, sd->clip);
@@ -169,6 +168,11 @@ e_flyingmenu_item_add(Evas_Object *obj, const char *label, void (*func) (void *d
    SMART_CHECK(obj, ;);
 
    e_nav_button_bar_button_add(sd->bbar, label, func, data);
+
+   if (e_nav_button_bar_num_buttons_get(sd->bbar) == 2)
+     e_nav_button_bar_paddings_set(sd->bbar, 10, 1, 9);
+   else
+     e_nav_button_bar_paddings_set(sd->bbar, 10, 0, 10);
 }
 
 static void
