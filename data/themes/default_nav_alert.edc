@@ -2,7 +2,7 @@ styles
 {
    style {
       name: "alert_style";
-      base: "font=Edje-Sans-Bold font_size=24 color=#fff align=left wrap=word tabstops=150";
+      base: "font=Edje-Sans-Bold font_size=24 color=#fff align=left wrap=word tabstops=148";
 
       tag:  "title" "+ ";
       tag:  "/title" "- \t";
@@ -67,7 +67,7 @@ group {
             }
             rel2 {
                relative: 1.0 1.0;
-               offset: 0 0;
+               offset: 0 -1;
                to: "button.base";
             }
             color: 255 255 255 255;

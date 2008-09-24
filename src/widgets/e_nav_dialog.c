@@ -858,7 +858,7 @@ _e_nav_alert_update(Evas_Object *obj)
    evas_object_resize(sd->bg_object, sd->w, sd->h);
 
    title_height = sd->h * 3 / 7;
-   bbar_height = sd->h * 2 / 7;
+   bbar_height = sd->h * 2 / 7 + 1;
 
    if (sd->title_object)
      {
@@ -868,7 +868,14 @@ _e_nav_alert_update(Evas_Object *obj)
 
    if (sd->bbar)
      {
-	e_nav_button_bar_paddings_set(sd->bbar, 20, 3, 20);
+	int num_buttons;
+
+	num_buttons = e_nav_button_bar_num_buttons_get(sd->bbar);
+
+	if (num_buttons == 2)
+	  e_nav_button_bar_paddings_set(sd->bbar, 20, 3, 17);
+	else
+	  e_nav_button_bar_paddings_set(sd->bbar, 20, 3, 20);
 
 	evas_object_move(sd->bbar, sd->x, sd->y + title_height);
 	evas_object_resize(sd->bbar, sd->w, bbar_height);
