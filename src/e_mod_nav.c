@@ -33,6 +33,8 @@
 #include "e_ctrl.h"
 #include "widgets/e_nav_dialog.h"
 
+#include <time.h>
+
 typedef struct _E_Module_Data E_Module_Data;
 
 static struct _E_Module_Data {
@@ -988,17 +990,38 @@ _e_mod_nav_dbus_init(void)
    eqp = diversity_bard_equipment_get(mdata.self, "nmea");
    if (eqp)
      {
-	const char *dev;
+	const char *dev, *log;
 
-	dev = "/dev/ttySAC1:9600";
-	if (diversity_equipment_config_set(eqp, "device-path",
+	dev = dn_config_string_get(mdata.cfg, "gps_device");
+	if (dev && diversity_equipment_config_set(eqp, "device-path",
 		 DBUS_TYPE_STRING, &dev))
 	  {
-#if 0
-	     dev = "/tmp/nmea.log";
-	     diversity_equipment_config_set(eqp, "log",
-		   DBUS_TYPE_STRING, &dev);
-#endif
+	     log = dn_config_string_get(mdata.cfg, "gps_log");
+	     if (log)
+	       {
+		  char buf[PATH_MAX];
+
+		  if (!ecore_file_exists(log) || ecore_file_is_dir(log))
+		    {
+		       struct tm *tm;
+		       time_t now;
+		       char tstr[32];
+
+		       if (!ecore_file_exists(log))
+			 ecore_file_mkpath(log);
+
+		       now = time(NULL);
+		       tm = localtime(&now);
+		       strftime(tstr, sizeof(tstr), "%Y-%m-%d.%H%M", tm);
+
+		       snprintf(buf, sizeof(buf), "%s/%s.log", log, tstr);
+
+		       log = buf;
+		    }
+
+		  diversity_equipment_config_set(eqp, "log",
+			DBUS_TYPE_STRING, &log);
+	       }
 
 	     diversity_dbus_signal_connect((Diversity_DBus *) mdata.self,
 		   DIVERSITY_DBUS_IFACE_OBJECT,

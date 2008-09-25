@@ -31,6 +31,7 @@
 #define DEFAULT_VALUE_NEO_ME_LON 121.575348
 #define DEFAULT_VALUE_NEO_ME_LAT 25.073111
 #define DEFAULT_VALUE_TILE_PATH "/tmp/diversity-maps"
+#define DEFAULT_VALUE_GPS_DEVICE "/dev/ttySAC1:9600"
 
 typedef struct Diversity_Nav_Config Diversity_Nav_Config; 
 struct Diversity_Nav_Config
