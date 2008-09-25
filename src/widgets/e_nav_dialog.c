@@ -130,13 +130,13 @@ _e_nav_dialog_move_and_resize(Evas_Object *obj)
 
    if (sd->parent)
      {
+	evas_object_geometry_get(sd->parent, &x, &y, &w, &h);
+
+	evas_object_move(sd->parent_mask, x, y);
+	evas_object_resize(sd->parent_mask, w, h);
+
 	if (sd->type == E_NAV_DIALOG_TYPE_NORMAL)
 	  {
-	     evas_object_geometry_get(sd->parent, &x, &y, &w, &h);
-
-	     evas_object_move(sd->parent_mask, x, y);
-	     evas_object_resize(sd->parent_mask, w, h);
-
 	     y = h / 8.0;
 
 	     if (sd->textblocks)
@@ -146,11 +146,6 @@ _e_nav_dialog_move_and_resize(Evas_Object *obj)
 	  }
 	else
 	  {
-	     evas_object_geometry_get(sd->parent, &x, &y, &w, &h);
-
-	     evas_object_move(sd->parent_mask, x, y);
-	     evas_object_resize(sd->parent_mask, w, h);
-
 	     y = h / 3.0;
 	     h = h / 3.0;
 	  }
@@ -716,10 +711,6 @@ e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input
    if(length_limit > 0)
      tbi->length_limit = length_limit;
 
-   if (input)
-     tbi->input = strdup(input);
-   else
-     tbi->input = strdup("");
    if(size < 30) size=30;
    if(size > 150) size=150;
    tbi->sz = size;
@@ -730,9 +721,10 @@ e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input
    evas_object_smart_member_add(tbi->item_obj, obj);
    evas_object_clip_set(tbi->item_obj, sd->clip);
    evas_object_show(tbi->item_obj);
-   edje_object_part_text_set(tbi->item_obj, "e.textblock.text", input);
    evas_object_event_callback_add(tbi->item_obj, EVAS_CALLBACK_MOUSE_UP,
                                   _e_textblock_cb_mouse_up, tbi);
+
+   textblock_text_set(tbi, input, 0);
 
    sd->textblocks = evas_list_append(sd->textblocks, tbi);
 }
