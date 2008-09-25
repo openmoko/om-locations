@@ -184,12 +184,12 @@ e_nav_dialog_transient_for_set(Evas_Object *obj, Evas_Object *parent)
 
    if (sd->parent)
      {
-	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_DEL,
-	      on_parent_del);
-	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_MOVE,
-	      (void *) _e_nav_dialog_move_and_resize);
-	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_RESIZE,
-	      (void *) _e_nav_dialog_move_and_resize);
+	evas_object_event_callback_del_full(sd->parent, EVAS_CALLBACK_DEL,
+	      on_parent_del, obj);
+	evas_object_event_callback_del_full(sd->parent, EVAS_CALLBACK_MOVE,
+	      (void *) _e_nav_dialog_move_and_resize, obj);
+	evas_object_event_callback_del_full(sd->parent, EVAS_CALLBACK_RESIZE,
+	      (void *) _e_nav_dialog_move_and_resize, obj);
      }
 
    sd->parent = parent;
@@ -349,18 +349,7 @@ _e_nav_dialog_smart_del(Evas_Object *obj)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return;
 
-   if (sd->parent)
-     {
-	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_DEL,
-	      on_parent_del);
-	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_MOVE,
-	      (void *) _e_nav_dialog_move_and_resize);
-	evas_object_event_callback_del(sd->parent, EVAS_CALLBACK_RESIZE,
-	      (void *) _e_nav_dialog_move_and_resize);
-     }
-
-   if (sd->parent_mask)
-     evas_object_del(sd->parent_mask);
+   e_nav_dialog_transient_for_set(obj, NULL);
 
    if (sd->drop)
      e_nav_drop_destroy(sd->drop);
