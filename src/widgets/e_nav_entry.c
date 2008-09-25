@@ -1,6 +1,6 @@
 /* e_nav_entry.c -
  *
- * Copyright 2008 OpenMoko, Inc.
+ * Copyright 2008 Openmoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
  *
  * This work is based on e17 project.  See also COPYING.e17.

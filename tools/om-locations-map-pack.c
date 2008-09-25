@@ -1,6 +1,6 @@
 /* om-locations-map-pack.c -
  *
- * Copyright 2008 OpenMoko, Inc.
+ * Copyright 2008 Openmoko, Inc.
  * Authored by Chia-I Wu <olv@openmoko.com>
  *
  * This program is free software; you can redistribute it and/or modify

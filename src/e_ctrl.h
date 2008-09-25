@@ -1,6 +1,6 @@
 /* e_ctrl.h -
  *
- * Copyright 2008 OpenMoko, Inc.
+ * Copyright 2008 Openmoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
  *
  * This program is free software; you can redistribute it and/or modify

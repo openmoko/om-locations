@@ -1,6 +1,6 @@
 /* e_mod_config.c -
  *
- * Copyright 2008 OpenMoko, Inc.
+ * Copyright 2008 Openmoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
  *
  * This work is based on EWL,

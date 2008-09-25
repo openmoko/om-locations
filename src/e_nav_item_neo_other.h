@@ -1,6 +1,6 @@
 /* e_nav_item_neo_other.h -
  *
- * Copyright 2007-2008 OpenMoko, Inc.
+ * Copyright 2007-2008 Openmoko, Inc.
  * Authored by Carsten Haitzler <raster@openmoko.org>
  *
  * This program is free software; you can redistribute it and/or modify

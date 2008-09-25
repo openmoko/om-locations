@@ -1,6 +1,6 @@
 /* e_nav_dbus.c -
  *
- * Copyright 2007-2008 OpenMoko, Inc.
+ * Copyright 2007-2008 Openmoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
  *             Chia-I Wu <olv@openmoko.com>
  *

@@ -1,6 +1,6 @@
 /* e_dbus_proxy.c - E_DBus_Proxy
  *
- * Copyright 2007-2008 OpenMoko, Inc.
+ * Copyright 2007-2008 Openmoko, Inc.
  * Authored by Jeremy Chang <jeremy@openmoko.com>
  *             Chia-I Wu <olv@openmoko.com>
  *
