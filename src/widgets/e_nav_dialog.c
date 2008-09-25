@@ -662,9 +662,12 @@ on_entry_cancel(void *data, Evas_Object *entry)
 static void
 _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
 {
+   E_Smart_Data *sd;
    E_TextBlock_Item *tbi = (E_TextBlock_Item*)data;
    Evas_Object *entry;
    Evas_Coord x, y, w, h;
+
+   SMART_CHECK(tbi->obj, ;);
 
    entry = e_nav_entry_add(evas);
    e_nav_entry_title_set(entry, edje_object_part_text_get(tbi->label_obj, "dialog.label.text"));
@@ -674,7 +677,18 @@ _e_textblock_cb_mouse_up(void *data, Evas *evas, Evas_Object *obj, void *event)
    e_nav_entry_button_add(entry, _("OK"), on_entry_ok, tbi);
    e_nav_entry_button_add(entry, _("Cancel"), on_entry_cancel, tbi);
 
-   evas_output_viewport_get(evas, &x, &y, &w, &h);
+   if (sd->parent)
+     {
+	evas_object_geometry_get(sd->parent, &x, &y, &w, &h);
+     }
+   else
+     {
+	x = sd->x;
+	y = sd->y;
+	w = sd->w;
+	h = sd->h;
+     }
+
    evas_object_move(entry, x, y);
    evas_object_resize(entry, w, h);
 
