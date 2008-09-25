@@ -593,18 +593,6 @@ e_nav_dialog_title_color_set(Evas_Object *obj, int r, int g, int b, int a)
    _title_update(sd);
 }
 
-static void
-e_nav_dialog_textblock_text_set(void *obj, const char *input)
-{
-   E_TextBlock_Item *tbi = (E_TextBlock_Item*)obj;
-   if(tbi->input) free((void*)tbi->input);
-   if(input)
-     tbi->input = strdup(input);
-   else
-     tbi->input = strdup("");
-   edje_object_part_text_set(tbi->item_obj, "e.textblock.text", input);
-}
-
 const char *
 e_nav_dialog_textblock_text_get(Evas_Object *obj, const char *label)
 {
@@ -626,6 +614,36 @@ e_nav_dialog_textblock_text_get(Evas_Object *obj, const char *label)
 }
 
 static void
+textblock_text_set(E_TextBlock_Item *tbi, const char *input, int trim)
+{
+   if (tbi->input)
+     free(tbi->input);
+
+   if (!input)
+     input = "";
+
+   if (trim)
+     {
+	while (*input == ' ')
+	  input++;
+     }
+
+   tbi->input = strdup(input);
+
+   if (trim)
+     {
+	input = tbi->input + strlen(tbi->input) - 1;
+
+	while (input >= tbi->input && *input == ' ')
+	  input--;
+
+	((char *) input)[1] = '\0';
+     }
+
+   edje_object_part_text_set(tbi->item_obj, "e.textblock.text", tbi->input);
+}
+
+static void
 on_entry_ok(void *data, Evas_Object *entry)
 {
    E_TextBlock_Item *tbi = data;
@@ -635,7 +653,7 @@ on_entry_ok(void *data, Evas_Object *entry)
    SMART_CHECK(tbi->obj, ;);
 
    text = e_nav_entry_text_get(entry);
-   e_nav_dialog_textblock_text_set(tbi, text);
+   textblock_text_set(tbi, text, 1);
 
    evas_object_del(entry);
 }
