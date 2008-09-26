@@ -49,8 +49,10 @@ static struct _E_Module_Data {
      Diversity_Bard       *self;
      Diversity_Viewport   *worldview;
 
-     Ecore_Timer          *fix_timer;
-     unsigned int          fix_msg_id;
+     int                   gps_state;
+     Ecore_Timer          *gps_check_timer;
+     Ecore_Timer          *gps_fix_timer;
+     unsigned int          gps_msg_id;
 } mdata;
 
 static void on_neo_other_property_changed(void *data, DBusMessage *msg);
@@ -660,13 +662,13 @@ on_neo_me_property_changed(void *data, DBusMessage *msg)
    fixed = (fixed != DIVERSITY_OBJECT_ACCURACY_NONE);
    e_nav_world_item_neo_me_fixed_set(neo_me, fixed);
 
-   if (mdata.fix_timer && fixed)
+   if (mdata.gps_fix_timer && fixed)
      gps_search_stop();
 }
 
 #define GPS_DEVICE_NAME "/sys/bus/platform/drivers/neo1973-pm-gps/neo1973-pm-gps.0/pwron"
 enum {
-     GPS_STATE_NA,
+     GPS_STATE_NA = 0,
      GPS_STATE_OFF,
      GPS_STATE_ON,
 };
@@ -753,7 +755,7 @@ gps_search_timeout(void *data)
    e_nav_dialog_activate(ad);
    evas_object_show(ad);
 
-   mdata.fix_timer = NULL;
+   mdata.gps_fix_timer = NULL;
 
    return 0;
 }
@@ -761,28 +763,33 @@ gps_search_timeout(void *data)
 static void
 gps_search_stop()
 {
-   if (mdata.fix_timer)
+   if (mdata.gps_fix_timer)
      {
-	ecore_timer_del(mdata.fix_timer);
-	mdata.fix_timer = NULL;
+	ecore_timer_del(mdata.gps_fix_timer);
+	mdata.gps_fix_timer = NULL;
      }
 
-   if (mdata.fix_msg_id)
+   if (mdata.gps_msg_id)
      {
-	e_ctrl_message_text_del(mdata.ctrl, mdata.fix_msg_id);
-	mdata.fix_msg_id = 0;
+	e_ctrl_message_text_del(mdata.ctrl, mdata.gps_msg_id);
+	mdata.gps_msg_id = 0;
      }
 }
 
 static void
 gps_search_start(void)
 {
-   mdata.fix_msg_id = e_ctrl_message_text_add(mdata.ctrl,
-	 _("Searching for your location"), 0.0);
+   if (mdata.gps_fix_timer)
+     ecore_timer_del(mdata.gps_fix_timer);
 
-   mdata.fix_timer = ecore_timer_add(120.0,
+   mdata.gps_fix_timer = ecore_timer_add(120.0,
                            gps_search_timeout,
                            NULL);
+
+   if (!mdata.gps_msg_id)
+     mdata.gps_msg_id = e_ctrl_message_text_add(mdata.ctrl,
+	   _("Searching for your location"), 0.0);
+
 }
 
 static void
@@ -791,7 +798,10 @@ gps_check_yes(void *data, Evas_Object *obj)
    e_nav_dialog_deactivate(obj);
 
    if (gps_state_set(GPS_STATE_ON) == GPS_STATE_ON)
-     gps_search_start();
+     {
+	mdata.gps_state = GPS_STATE_ON;
+	gps_search_start();
+     }
 }
 
 static void
@@ -807,16 +817,33 @@ gps_check(void *data)
    int state;
 
    neo_me = e_nav_world_neo_me_get(mdata.nav);
-   if (!neo_me)
-     return FALSE;
-
    state = gps_state_get();
-   if (state == GPS_STATE_ON)
+   if (!neo_me || state == GPS_STATE_NA)
      {
-	if (!e_nav_world_item_neo_me_fixed_get(neo_me))
-	  gps_search_start();
+	mdata.gps_state = GPS_STATE_NA;
+	mdata.gps_check_timer = NULL;
+
+	return FALSE;
      }
-   else if (state == GPS_STATE_OFF)
+
+   if (state == mdata.gps_state)
+     return TRUE;
+
+   /* this is the first time we are here */
+   if (mdata.gps_state == GPS_STATE_NA)
+     {
+	if (state == GPS_STATE_ON)
+	  {
+	     if (!e_nav_world_item_neo_me_fixed_get(neo_me))
+	       gps_search_start();
+	  }
+
+	ecore_timer_interval_set(mdata.gps_check_timer, 60.0);
+     }
+
+   mdata.gps_state = state;
+
+   if (state == GPS_STATE_OFF)
      {
 	Evas_Object *ad;
 
@@ -828,11 +855,13 @@ gps_check(void *data)
 	e_nav_dialog_button_add(ad, _("Yes"), gps_check_yes, NULL);
 	e_nav_dialog_button_add(ad, _("No"), gps_check_no, NULL);
 
+	gps_search_stop();
+
 	e_nav_dialog_activate(ad);
 	evas_object_show(ad);
      }
 
-   return FALSE;
+   return TRUE;
 }
 
 static E_DBus_Proxy *
@@ -1162,7 +1191,8 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg)
 
    _e_mod_nav_update(evas);
 
-   ecore_timer_add(2.0, gps_check, NULL);
+   mdata.gps_check_timer =
+      ecore_timer_add(2.0, gps_check, NULL);
 }
 
 void
