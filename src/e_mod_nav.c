@@ -808,6 +808,12 @@ static void
 gps_check_no(void *data, Evas_Object *obj)
 {
    e_nav_dialog_deactivate(obj);
+
+   if (mdata.gps_check_timer)
+     {
+	ecore_timer_del(mdata.gps_check_timer);
+	mdata.gps_check_timer = NULL;
+     }
 }
 
 static int
