@@ -37,6 +37,7 @@ typedef struct _Diversity_Ap Diversity_Ap;
 typedef struct _Diversity_Bard Diversity_Bard;
 typedef struct _Diversity_Tag Diversity_Tag;
 typedef struct _Diversity_Sms Diversity_Sms;
+typedef struct _Diversity_Rae Diversity_Rae;
 
 typedef enum {
      DIVERSITY_DBUS_IFACE_PROPERTIES,
@@ -50,6 +51,7 @@ typedef enum {
      DIVERSITY_DBUS_IFACE_EQUIPMENT,
      DIVERSITY_DBUS_IFACE_ATLAS,
      DIVERSITY_DBUS_IFACE_SMS,
+     DIVERSITY_DBUS_IFACE_RAE,
      N_DIVERSITY_DBUS_IFACES
 } Diversity_DBus_IFace;
 
@@ -137,5 +139,9 @@ int                 diversity_tag_prop_get(Diversity_Tag *tag, const char *key, 
 
 int                 diversity_sms_tag_send(Diversity_Sms *sms, const char *number, Diversity_Tag *tag);
 int                 diversity_sms_tag_share(Diversity_Sms *sms, Diversity_Bard *bard, Diversity_Tag *tag);
+
+int                 diversity_rae_login(Diversity_Rae *rae, const char *username, const char *password);
+int                 diversity_rae_query(Diversity_Rae *rae, double lon, double lat, double radius);
+int                 diversity_rae_report(Diversity_Rae *rae, Diversity_Ap *ap);
 
 #endif

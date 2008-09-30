@@ -59,6 +59,7 @@ static const char *diversity_ifaces[N_DIVERSITY_DBUS_IFACES] =
    "org.openmoko.Diversity.Equipment",
    "org.openmoko.Diversity.Atlas",
    "org.openmoko.Diversity.Sms",
+   "org.openmoko.Diversity.Rae",
 };
 
 struct _Diversity_DBus
@@ -1302,7 +1303,8 @@ diversity_bard_equipment_get(Diversity_Bard *bard, const char *eqp_name)
    if (strcmp(eqp_name, "osm") != 0 &&
        strcmp(eqp_name, "nmea") != 0 &&
        strcmp(eqp_name, "phonekit") != 0 &&
-       strcmp(eqp_name, "qtopia") )
+       strcmp(eqp_name, "qtopia") != 0 &&
+       strcmp(eqp_name, "rae") != 0)
      return NULL;
 
    bpath = diversity_dbus_path_get((Diversity_DBus *) bard);
@@ -1522,5 +1524,99 @@ diversity_sms_tag_share(Diversity_Sms *sms, Diversity_Bard *bard, Diversity_Tag 
 	dbus_error_free(&error);
         return FALSE;
      }
+   return TRUE;
+}
+
+int
+diversity_rae_login(Diversity_Rae *rae, const char *username, const char *password)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   if (!username)
+     username = "";
+   if (!password)
+     password = "";
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) rae,
+	 DIVERSITY_DBUS_IFACE_RAE);
+   if (!proxy)
+     return FALSE;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "Login", &error,
+                                 DBUS_TYPE_STRING, &username,
+				 DBUS_TYPE_STRING, &password,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to login: %s | %s\n", error.name, error.message);
+	dbus_error_free(&error);
+
+        return FALSE;
+     }
+
+   return TRUE;
+}
+
+int
+diversity_rae_query(Diversity_Rae *rae, double lon, double lat, double radius)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) rae,
+	 DIVERSITY_DBUS_IFACE_RAE);
+   if (!proxy)
+     return FALSE;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "Query", &error,
+                                 DBUS_TYPE_DOUBLE, &lon,
+                                 DBUS_TYPE_DOUBLE, &lat,
+                                 DBUS_TYPE_DOUBLE, &radius,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to query: %s | %s\n", error.name, error.message);
+	dbus_error_free(&error);
+
+        return FALSE;
+     }
+
+   return TRUE;
+}
+
+int
+diversity_rae_report(Diversity_Rae *rae, Diversity_Ap *ap)
+{
+   E_DBus_Proxy *proxy;
+   DBusError error;
+   const char *path;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) rae,
+	 DIVERSITY_DBUS_IFACE_RAE);
+   if (!proxy)
+     return FALSE;
+
+   path = diversity_dbus_path_get((Diversity_DBus *) ap);
+   if (!path)
+     return FALSE;
+
+   dbus_error_init(&error);
+   if (!e_dbus_proxy_simple_call(proxy,
+				 "Report", &error,
+                                 DBUS_TYPE_OBJECT_PATH, &path,
+				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_INVALID))
+     {
+	printf("failed to Report: %s | %s\n", error.name, error.message);
+	dbus_error_free(&error);
+
+        return FALSE;
+     }
+
    return TRUE;
 }
