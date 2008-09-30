@@ -99,6 +99,9 @@ viewport_property_call_new(E_DBus_Proxy *proxy, Diversity_DBus_IFace iface, cons
       case DIVERSITY_DBUS_IFACE_OBJECT:
 	 iface_name = "org.openmoko.Diversity.Object";
 	 break;
+      case DIVERSITY_DBUS_IFACE_AP:
+	 iface_name = "org.openmoko.Diversity.Ap";
+	 break;
       case DIVERSITY_DBUS_IFACE_BARD:
 	 iface_name = "org.openmoko.Diversity.Bard";
 	 break;
@@ -125,6 +128,13 @@ viewport_property_call_new(E_DBus_Proxy *proxy, Diversity_DBus_IFace iface, cons
 }
 
 enum {
+     VIEWPORT_AP_SSID = 0,
+     VIEWPORT_AP_FLAGS,
+     VIEWPORT_AP_GEOMETRY,
+     N_VIEWPORT_AP_CALLS
+};
+
+enum {
      VIEWPORT_CARD_FULLNAME = 0,
      VIEWPORT_CARD_PHONE,
      N_VIEWPORT_CARD_CALLS
@@ -138,49 +148,106 @@ enum {
      N_VIEWPORT_TAG_CALLS
 };
 
-#if 0
 static void
-viewport_ap_update(Evas_Object *nwi)
+viewport_item_ap_add_fini(void *data, E_Nav_DBus_Batch *bat)
 {
+   Diversity_Object *ap = data;
    Evas_Object *nwi;
-   double lon = 0.0, lat = 0.0, w = 0.0, h = 0.0;
-   int accuracy = DIVERSITY_OBJECT_ACCURACY_NONE;
-   char *ssid = NULL;
-   int flags = 0;
+   DBusMessage *reply;
+   DBusError error;
+   double lon, lat, w, h;
+   const char *ssid = NULL;
+   unsigned int flags;
 
-   diversity_object_geometry_get((Diversity_Object *) ap,
-	 &lon, &lat, &w, &h);
-   diversity_dbus_property_get((Diversity_DBus *) ap,
-	 DIVERSITY_DBUS_IFACE_OBJECT, "Accuracy",  &accuracy);
-
-   /* XXX */
-   if (accuracy == DIVERSITY_OBJECT_ACCURACY_NONE)
-     return NULL;
-
-   diversity_dbus_property_get((Diversity_DBus *) ap,
-	 DIVERSITY_DBUS_IFACE_AP, "Ssid", &ssid);
-   diversity_dbus_property_get((Diversity_DBus *) ap,
-	 DIVERSITY_DBUS_IFACE_AP, "Flags", &flags);
-
-   lon += w / 2;
-   lat += h / 2;
-
-   nwi = e_nav_world_item_ap_add(mdata.nav, THEMEDIR, lon, lat);
-
-   e_nav_world_item_ap_range_set(nwi, w / 2);
-   if (ssid)
+   if (e_nav_dbus_batch_replied_get(bat) != N_VIEWPORT_AP_CALLS)
      {
-	e_nav_world_item_ap_essid_set(nwi, ssid);
+	printf("failed to add ap to %p\n", ap);
 
-	free(ssid);
+	e_nav_dbus_batch_destroy(bat);
+
+	return;
      }
 
-   if (flags)
+   nwi = e_nav_world_item_ap_add(mdata.nav,
+	 THEMEDIR, 0.0, 0.0);
+
+   dbus_error_init(&error);
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_AP_SSID);
+   if (viewport_variant_get(reply, &ssid))
+     e_nav_world_item_ap_essid_set(nwi, ssid);
+
+   dbus_error_init(&error);
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_AP_FLAGS);
+   if (viewport_variant_get(reply, &flags) && flags)
      e_nav_world_item_ap_key_type_set(nwi, E_NAV_ITEM_AP_KEY_TYPE_WEP);
 
-   return nwi;
+   dbus_error_init(&error);
+   reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_AP_GEOMETRY);
+   if (dbus_message_get_args(reply, &error,
+	    DBUS_TYPE_DOUBLE, &lon,
+	    DBUS_TYPE_DOUBLE, &lat,
+	    DBUS_TYPE_DOUBLE, &w,
+	    DBUS_TYPE_DOUBLE, &h,
+	    DBUS_TYPE_INVALID))
+     {
+	e_nav_world_item_coord_set(nwi, lon, lat);
+	e_nav_world_item_ap_range_set(nwi, w / 2);
+	e_nav_world_item_update(nwi);
+     }
+   else
+     {
+	printf("failed to get geometry: %s\n", error.message);
+	dbus_error_free(&error);
+     }
+
+   e_nav_dbus_batch_destroy(bat);
+
+   diversity_object_data_set(ap, nwi);
 }
-#endif
+
+static E_Nav_DBus_Batch *
+viewport_item_ap_add(Diversity_Object *ap)
+{
+   E_Nav_DBus_Batch *bat;
+   E_DBus_Proxy *proxy;
+   DBusMessage *message;
+
+   /* DISABLE AP */
+   return NULL;
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) ap,
+	 DIVERSITY_DBUS_IFACE_PROPERTIES);
+   if (!proxy)
+     return NULL;
+
+   bat = e_nav_dbus_batch_new(N_VIEWPORT_AP_CALLS, 0.0, 0.0,
+	 viewport_item_ap_add_fini, ap);
+
+   message = viewport_property_call_new(proxy,
+	 DIVERSITY_DBUS_IFACE_AP, "Ssid");
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_AP_SSID, proxy, message);
+   dbus_message_unref(message);
+
+   message = viewport_property_call_new(proxy,
+	 DIVERSITY_DBUS_IFACE_AP, "Flags");
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_AP_FLAGS, proxy, message);
+   dbus_message_unref(message);
+
+   proxy = diversity_dbus_proxy_get((Diversity_DBus *) ap,
+	 DIVERSITY_DBUS_IFACE_OBJECT);
+   if (!proxy)
+     {
+	e_nav_dbus_batch_destroy(bat);
+
+	return NULL;
+     }
+
+   message = e_dbus_proxy_new_method_call(proxy, "GeometryGet");
+   e_nav_dbus_batch_call_begin(bat, VIEWPORT_AP_GEOMETRY, proxy, message);
+   dbus_message_unref(message);
+
+   return bat;
+}
 
 static void
 viewport_item_bard_add_fini(void *data, E_Nav_DBus_Batch *bat)
@@ -415,6 +482,7 @@ viewport_item_add(Diversity_Object *obj, int sync)
    switch (type)
      {
       case DIVERSITY_OBJECT_TYPE_AP:
+	 bat = viewport_item_ap_add(obj);
 	 break;
       case DIVERSITY_OBJECT_TYPE_BARD:
 	 bat = viewport_item_bard_add(obj);
@@ -459,6 +527,13 @@ viewport_item_remove(Diversity_Object *obj)
 
    switch (type)
      {
+      case DIVERSITY_OBJECT_TYPE_AP:
+	   {
+	      Evas_Object *nwi = item;
+
+	      evas_object_del(nwi);
+	   }
+	 break;
       case DIVERSITY_OBJECT_TYPE_BARD:
 	   {
 	      E_Nav_Card *card = item;
