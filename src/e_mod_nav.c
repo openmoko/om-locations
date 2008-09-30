@@ -1231,9 +1231,7 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg)
    if (mdata.tileset)
      {
 	e_nav_world_tileset_set(mdata.nav, mdata.tileset);
-
 	e_nav_tileset_monitor_add(mdata.tileset, tile_path);
-	e_nav_tileset_monitor_add(mdata.tileset, MAPSDIR);
 
 	/* known places where maps are stored */
 	e_nav_tileset_monitor_add(mdata.tileset, "/usr/share/om-maps");
