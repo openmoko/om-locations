@@ -9,8 +9,7 @@ AM_CPPFLAGS =				\
 	$(EDBUS_CFLAGS)			\
 	-I$(top_srcdir)/dbus		\
 	-DLOCALEDIR=\"$(localedir)\"	\
-	-DTHEMEDIR=\"$(themedir)\"	\
-	-DMAPSDIR=\"$(mapsdir)\"
+	-DTHEMEDIR=\"$(themedir)\"
 
 noinst_HEADERS =		\
 	e_mod_main.h		\

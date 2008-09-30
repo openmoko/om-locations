@@ -493,8 +493,6 @@ _e_mod_nav_init(Evas *evas, Diversity_Nav_Config *cfg_local)
    nt = osm_tileset_add(nav);
    if (nt)
      {
-	e_nav_tileset_monitor_add(nt, MAPSDIR);
-
 	/* known places where maps are stored */
 	e_nav_tileset_monitor_add(nt, "/usr/share/om-maps");
 	e_nav_tileset_monitor_add(nt, "/usr/local/share/om-maps");
