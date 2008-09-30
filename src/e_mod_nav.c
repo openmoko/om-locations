@@ -169,7 +169,7 @@ viewport_item_ap_add_fini(void *data, E_Nav_DBus_Batch *bat)
      }
 
    nwi = e_nav_world_item_ap_add(mdata.nav,
-	 THEMEDIR, 0.0, 0.0);
+	 THEMEDIR, 0.0, 0.0, ap);
 
    dbus_error_init(&error);
    reply = e_nav_dbus_batch_reply_get(bat, VIEWPORT_AP_SSID);

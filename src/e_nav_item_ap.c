@@ -27,6 +27,7 @@ typedef struct _AP_Data AP_Data;
 
 struct _AP_Data
 {
+   Diversity_Object       *ap;
    const char             *essid;
    double                  range;
    E_Nav_Item_Ap_Key_Type  key_type;
@@ -34,9 +35,8 @@ struct _AP_Data
    unsigned char           active : 1;
 };
 
-/* FIXME: real menu callbacks */
 static void
-_e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
+on_zoom_clicked(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
    Evas_Object *nav;
    double lon, lat, w, h;
@@ -49,18 +49,16 @@ _e_nav_world_item_cb_menu_1(void *data, Evas_Object *obj, Evas_Object *src_obj)
 }
 
 static void
-_e_nav_world_item_cb_menu_2(void *data, Evas_Object *obj, Evas_Object *src_obj)
+on_report_clicked(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("cb2\n");
-   AP_Data *apd;
-   apd = evas_object_data_get(src_obj, "nav_world_item_ap_data");
-   if (!apd) return;
+   printf("report\n");
+   e_spiralmenu_deactivate(obj);
 }
 
 static void
-_e_nav_world_item_cb_menu_3(void *data, Evas_Object *obj, Evas_Object *src_obj)
+on_information_clicked(void *data, Evas_Object *obj, Evas_Object *src_obj)
 {
-   printf("cb3\n");
+   printf("information\n");
    e_spiralmenu_deactivate(obj);
 }
 
@@ -74,13 +72,13 @@ _e_nav_world_item_cb_mouse_down(void *data, Evas *evas, Evas_Object *obj, void *
    e_spiralmenu_autodelete_set(om, 1);
    e_spiralmenu_deacdelete_set(om, 1);
    e_spiralmenu_source_object_set(om, obj);
-   /* FIXME: real menu items */
+
    e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, _("Zoom"),
-			       _e_nav_world_item_cb_menu_1, NULL);
-   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, _("Join"),
-			       _e_nav_world_item_cb_menu_2, NULL);
+			       on_zoom_clicked, NULL);
+   e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, _("Report"),
+			       on_report_clicked, NULL);
    e_spiralmenu_theme_item_add(om, "modules/diversity_nav/item", 48, _("Information"),
-			       _e_nav_world_item_cb_menu_3, NULL);
+			       on_information_clicked, NULL);
    evas_object_show(om);
    e_spiralmenu_activate(om);
 }
@@ -98,7 +96,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
 /////////////////////////////////////////////////////////////////////////////
 Evas_Object *
-e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, double lon, double lat)
+e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, double lon, double lat, Diversity_Object *ap)
 {
    Evas_Object *o;
    AP_Data *apd;
@@ -120,9 +118,24 @@ e_nav_world_item_ap_add(Evas_Object *nav, const char *theme_dir, double lon, dou
    e_nav_world_item_update(o);
    evas_object_event_callback_add(o, EVAS_CALLBACK_DEL,
 				  _e_nav_world_item_cb_del, NULL);
+
+   apd->ap = ap;
+
    evas_object_data_set(o, "nav_world_item_ap_data", apd);
    evas_object_show(o);
    return o;
+}
+
+Diversity_Object *
+e_nav_world_item_ap_ap_get(Evas_Object *item)
+{
+   AP_Data *apd;
+
+   apd = evas_object_data_get(item, "nav_world_item_ap_data");
+   if (!apd)
+     return NULL;
+
+   return apd->ap;
 }
 
 void
