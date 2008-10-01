@@ -140,8 +140,8 @@ int                 diversity_tag_prop_get(Diversity_Tag *tag, const char *key, 
 int                 diversity_sms_tag_send(Diversity_Sms *sms, const char *number, Diversity_Tag *tag);
 int                 diversity_sms_tag_share(Diversity_Sms *sms, Diversity_Bard *bard, Diversity_Tag *tag);
 
-int                 diversity_rae_login(Diversity_Rae *rae, const char *username, const char *password);
-int                 diversity_rae_query(Diversity_Rae *rae, double lon, double lat, double radius);
-int                 diversity_rae_report(Diversity_Rae *rae, Diversity_Ap *ap);
+unsigned int        diversity_rae_request_login(Diversity_Rae *rae, const char *username, const char *password);
+unsigned int        diversity_rae_request_query(Diversity_Rae *rae, double lon, double lat, double radius);
+unsigned int        diversity_rae_request_report(Diversity_Rae *rae, Diversity_Ap *ap);
 
 #endif

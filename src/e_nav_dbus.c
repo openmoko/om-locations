@@ -1527,11 +1527,12 @@ diversity_sms_tag_share(Diversity_Sms *sms, Diversity_Bard *bard, Diversity_Tag 
    return TRUE;
 }
 
-int
-diversity_rae_login(Diversity_Rae *rae, const char *username, const char *password)
+unsigned int
+diversity_rae_request_login(Diversity_Rae *rae, const char *username, const char *password)
 {
    E_DBus_Proxy *proxy;
    DBusError error;
+   unsigned int id = 0;
 
    if (!username)
      username = "";
@@ -1541,82 +1542,87 @@ diversity_rae_login(Diversity_Rae *rae, const char *username, const char *passwo
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) rae,
 	 DIVERSITY_DBUS_IFACE_RAE);
    if (!proxy)
-     return FALSE;
+     return 0;
 
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
-				 "Login", &error,
+				 "RequestLogin", &error,
                                  DBUS_TYPE_STRING, &username,
 				 DBUS_TYPE_STRING, &password,
 				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_UINT32, &id,
 				 DBUS_TYPE_INVALID))
      {
 	printf("failed to login: %s | %s\n", error.name, error.message);
 	dbus_error_free(&error);
 
-        return FALSE;
+        return 0;
      }
 
-   return TRUE;
+   return id;
 }
 
-int
-diversity_rae_query(Diversity_Rae *rae, double lon, double lat, double radius)
+unsigned int
+diversity_rae_request_query(Diversity_Rae *rae, double lon, double lat, double radius)
 {
    E_DBus_Proxy *proxy;
    DBusError error;
+   unsigned int id = 0;
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) rae,
 	 DIVERSITY_DBUS_IFACE_RAE);
    if (!proxy)
-     return FALSE;
+     return 0;
 
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
-				 "Query", &error,
+				 "RequestQuery", &error,
                                  DBUS_TYPE_DOUBLE, &lon,
                                  DBUS_TYPE_DOUBLE, &lat,
                                  DBUS_TYPE_DOUBLE, &radius,
 				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_UINT32, &id,
 				 DBUS_TYPE_INVALID))
      {
 	printf("failed to query: %s | %s\n", error.name, error.message);
 	dbus_error_free(&error);
 
-        return FALSE;
+        return 0;
      }
 
-   return TRUE;
+   return id;
 }
 
-int
-diversity_rae_report(Diversity_Rae *rae, Diversity_Ap *ap)
+unsigned int
+diversity_rae_request_report(Diversity_Rae *rae, Diversity_Ap *ap)
 {
    E_DBus_Proxy *proxy;
    DBusError error;
    const char *path;
+   unsigned int id = 0;
 
    proxy = diversity_dbus_proxy_get((Diversity_DBus *) rae,
 	 DIVERSITY_DBUS_IFACE_RAE);
    if (!proxy)
-     return FALSE;
+     return 0;
 
    path = diversity_dbus_path_get((Diversity_DBus *) ap);
    if (!path)
-     return FALSE;
+     return 0;
 
    dbus_error_init(&error);
    if (!e_dbus_proxy_simple_call(proxy,
-				 "Report", &error,
+				 "RequestReport", &error,
                                  DBUS_TYPE_OBJECT_PATH, &path,
 				 DBUS_TYPE_INVALID,
+				 DBUS_TYPE_UINT32, &id,
 				 DBUS_TYPE_INVALID))
      {
 	printf("failed to Report: %s | %s\n", error.name, error.message);
 	dbus_error_free(&error);
 
-        return FALSE;
+        return 0;
      }
 
-   return TRUE;
+   return id;
 }
