@@ -199,7 +199,6 @@ e_nav_list_add(Evas *e, int type)
         etk_scrolled_view_drag_bouncy_set(
               ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(sd->tree))), 
               ETK_BOUNCY_STOPTOOBJECT);
-        edje_object_signal_emit(sd->frame, "e,state,taglist", "e");
      }
 
    return li;
