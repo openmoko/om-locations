@@ -194,8 +194,13 @@ e_nav_list_add(Evas *e, int type)
    embed_obj = etk_embed_object_get(ETK_EMBED(sd->embed));
    edje_object_part_swallow(sd->frame, "swallow", embed_obj);
 
-   if (type == E_NAV_LIST_TYPE_TAG)
-     edje_object_signal_emit(sd->frame, "e,state,taglist", "e");
+   if (type == E_NAV_LIST_TYPE_TAG) 
+     {
+        etk_scrolled_view_drag_bouncy_set(
+              ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(sd->tree))), 
+              ETK_BOUNCY_STOPTOOBJECT);
+        edje_object_signal_emit(sd->frame, "e,state,taglist", "e");
+     }
 
    return li;
 }
@@ -591,6 +596,11 @@ _e_nav_list_smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 
    evas_object_resize(sd->clip, sd->w, sd->h);
    evas_object_resize(sd->frame, sd->w, sd->h);
+
+   if (sd->type == E_NAV_LIST_TYPE_TAG) 
+     {
+        etk_scrolled_view_extra_vmargin_set(ETK_SCROLLED_VIEW(etk_tree_scrolled_view_get(ETK_TREE(sd->tree))), sd->h/2);
+     }
 }
 
 static void
