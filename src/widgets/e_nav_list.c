@@ -29,7 +29,7 @@
 
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _List_Row_Callback List_Row_Callback;
-#define MAGIC_OF_FAKE_ROW 6
+#define MAGIC_OF_FAKE_ROW 5
 
 struct _E_Smart_Data
 {
