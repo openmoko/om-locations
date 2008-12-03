@@ -29,6 +29,7 @@
 
 typedef struct _E_Smart_Data E_Smart_Data;
 typedef struct _List_Row_Callback List_Row_Callback;
+#define MAGIC_OF_FAKE_ROW 6
 
 struct _E_Smart_Data
 {
@@ -341,6 +342,7 @@ void
 e_nav_list_item_add(Evas_Object *li, E_Nav_List_Item *item)
 {
    E_Smart_Data *sd;
+   int row_num;
 
    SMART_CHECK(li, ;);
 
@@ -348,6 +350,9 @@ e_nav_list_item_add(Evas_Object *li, E_Nav_List_Item *item)
      return;
 
    _list_item_add(sd, item);
+   row_num  = ((Etk_Tree *)sd->tree)->total_rows;
+   if(row_num > MAGIC_OF_FAKE_ROW && !e_nav_list_fake_get(li) ) 
+     e_nav_list_fake_set(li, TRUE);
 }
 
 static Etk_Tree_Row *
@@ -395,12 +400,17 @@ e_nav_list_item_remove(Evas_Object *li, E_Nav_List_Item *item)
 {
    E_Smart_Data *sd;
    Etk_Tree_Row *row;
+   int row_num;
 
    SMART_CHECK(li, ;);
 
    row = _etk_tree_row_find_by_data(ETK_TREE(sd->tree), item);
    if (row)
      etk_tree_row_delete(row);
+
+   row_num  = ((Etk_Tree *)sd->tree)->total_rows;
+   if(e_nav_list_fake_get(li) && row_num <= (MAGIC_OF_FAKE_ROW + 1) ) 
+     e_nav_list_fake_set(li, FALSE);
 }
 
 void
