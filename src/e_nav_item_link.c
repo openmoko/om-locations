@@ -36,7 +36,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
    
    linkd = evas_object_data_get(obj, "nav_world_item_link_data");
    if (!linkd) return;
-//   if (linkd->name) evas_stringshare_del(linkd->name);
+//   if (linkd->name) eina_stringshare_del(linkd->name);
    free(linkd);
 }
 
@@ -74,8 +74,8 @@ e_nav_world_item_link_name_set(Evas_Object *item, const char *name)
    
    linkd = evas_object_data_get(item, "nav_world_item_link_data");
    if (!linkd) return;
-   if (linkd->name) evas_stringshare_del(linkd->name);
-   if (name) linkd->name = evas_stringshare_add(name);
+   if (linkd->name) eina_stringshare_del(linkd->name);
+   if (name) linkd->name = eina_stringshare_add(name);
    else linkd->name = NULL;
    edje_object_part_text_set(item, "e.text.name", linkd->name);
 }

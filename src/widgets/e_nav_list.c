@@ -49,7 +49,7 @@ struct _E_Smart_Data
 
    int frozen;
 
-   Evas_List       *callbacks;
+   Eina_List       *callbacks;
 
    int            (*sort_cb)(void *data, E_Nav_List_Item *item1, E_Nav_List_Item *item2);
    void            *sort_data;
@@ -107,7 +107,7 @@ _list_tree_row_clicked_cb(Etk_Tree *tree, Etk_Tree_Row *row, Etk_Event_Mouse_Up 
    Evas_Object *li = data;
    E_Smart_Data *sd;
    E_Nav_List_Item *item;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(li, ETK_TRUE;);
 
@@ -294,7 +294,7 @@ e_nav_list_callback_add(Evas_Object *li, void (*func)(void *data, Evas_Object *l
    cb->func = func;
    cb->data = data;
 
-   sd->callbacks = evas_list_prepend(sd->callbacks, cb);
+   sd->callbacks = eina_list_prepend(sd->callbacks, cb);
 }
 
 void
@@ -302,7 +302,7 @@ e_nav_list_callback_del(Evas_Object *li, void *func, void *data)
 {
    E_Smart_Data *sd;
    List_Row_Callback *cb;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(li, ;);
 
@@ -317,7 +317,7 @@ e_nav_list_callback_del(Evas_Object *li, void *func, void *data)
    if (!l)
      return;
 
-   sd->callbacks = evas_list_remove_list(sd->callbacks, l);
+   sd->callbacks = eina_list_remove_list(sd->callbacks, l);
    free(cb);
 }
 
@@ -561,7 +561,7 @@ _e_nav_list_smart_del(Evas_Object *obj)
    while (sd->callbacks)
      {
 	free(sd->callbacks->data);
-	sd->callbacks = evas_list_remove_list(sd->callbacks, sd->callbacks);
+	sd->callbacks = eina_list_remove_list(sd->callbacks, sd->callbacks);
      }
 
    etk_object_destroy(ETK_OBJECT(sd->embed));

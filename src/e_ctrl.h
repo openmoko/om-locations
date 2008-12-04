@@ -51,7 +51,7 @@ void                e_ctrl_contact_delete(Evas_Object *obj, E_Nav_Card *card);
 E_Nav_Card         *e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name);
 E_Nav_Card         *e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number);
 /* the list is owned by e_ctrl */
-Evas_List          *e_ctrl_contact_list(Evas_Object *obj);
+Eina_List          *e_ctrl_contact_list(Evas_Object *obj);
 
 void                e_ctrl_object_store_item_add(Evas_Object *obj, const char *obj_path, void *item);
 void               *e_ctrl_object_store_item_get(Evas_Object *obj, const char *obj_path);

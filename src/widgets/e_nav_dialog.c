@@ -67,7 +67,7 @@ struct _E_Smart_Data
 
    Evas_Object     *clip;
 
-   Evas_List      *textblocks;
+   Eina_List      *textblocks;
    Evas_Object    *bbar;
 
    E_Nav_Drop_Data *drop;
@@ -359,7 +359,7 @@ _e_nav_dialog_smart_del(Evas_Object *obj)
 	E_TextBlock_Item *tbi;
 	
 	tbi = sd->textblocks->data;
-	sd->textblocks = evas_list_remove_list(sd->textblocks, sd->textblocks);
+	sd->textblocks = eina_list_remove_list(sd->textblocks, sd->textblocks);
 	evas_object_del(tbi->label_obj);
 	evas_object_del(tbi->item_obj);
 	if (tbi->label)
@@ -585,7 +585,7 @@ e_nav_dialog_textblock_text_get(Evas_Object *obj, const char *label)
    sd = evas_object_smart_data_get(obj);
    if (!sd) return NULL;
    E_TextBlock_Item *tbi;
-   Evas_List *l;
+   Eina_List *l;
    for (l = sd->textblocks; l; l = l->next)
      {
         tbi = l->data;
@@ -729,13 +729,13 @@ e_nav_dialog_textblock_add(Evas_Object *obj, const char *label, const char*input
 
    textblock_text_set(tbi, input, 0);
 
-   sd->textblocks = evas_list_append(sd->textblocks, tbi);
+   sd->textblocks = eina_list_append(sd->textblocks, tbi);
 }
 
 static void
 textblocks_update(E_Smart_Data *sd, Evas_Coord tb_start, Evas_Coord tb_end)
 {
-   Evas_List *l;
+   Eina_List *l;
    Evas_Coord gap_big, gap_small;
    Evas_Coord label_height, item_height;
    Evas_Coord y;

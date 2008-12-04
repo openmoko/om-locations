@@ -90,7 +90,7 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
    
    apd = evas_object_data_get(obj, "nav_world_item_ap_data");
    if (!apd) return;
-   if (apd->essid) evas_stringshare_del(apd->essid);
+   if (apd->essid) eina_stringshare_del(apd->essid);
    free(apd);
 }
 
@@ -145,8 +145,8 @@ e_nav_world_item_ap_essid_set(Evas_Object *item, const char *essid)
    
    apd = evas_object_data_get(item, "nav_world_item_ap_data");
    if (!apd) return;
-   if (apd->essid) evas_stringshare_del(apd->essid);
-   if (essid) apd->essid = evas_stringshare_add(essid);
+   if (apd->essid) eina_stringshare_del(apd->essid);
+   if (essid) apd->essid = eina_stringshare_add(essid);
    else apd->essid = NULL;
    edje_object_part_text_set(item, "e.text.name", apd->essid);
 }

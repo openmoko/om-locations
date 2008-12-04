@@ -179,10 +179,10 @@ e_contact_editor_input_get(Evas_Object *obj)
 }
 
 void
-e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *contacts)
+e_contact_editor_contacts_set(Evas_Object *obj, Eina_List *contacts)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(obj, ;);
 

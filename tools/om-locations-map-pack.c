@@ -170,13 +170,13 @@ map_describe(void)
 
    edd = eet_data_descriptor_new(
 	 "E_Nav_Map_Desc", sizeof(E_Nav_Map_Desc),
-	 (void *) evas_list_next,
-	 (void *) evas_list_append,
-	 (void *) evas_list_data,
-	 (void *) evas_list_free,
-	 (void *) evas_hash_foreach,
-	 (void *) evas_hash_add,
-	 (void *) evas_hash_free);
+	 (void *) eina_list_next,
+	 (void *) eina_list_append,
+	 (void *) eina_list_data_get,
+	 (void *) eina_list_free,
+	 (void *) eina_hash_foreach,
+	 (void *) eina_hash_add,
+	 (void *) eina_hash_free);
 
    EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
 	 "format", format, EET_T_UCHAR);

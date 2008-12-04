@@ -40,7 +40,7 @@ struct _E_Smart_Data
 
    unsigned int serial_number;
 
-   Evas_List *messages;
+   Eina_List *messages;
 };
 
 struct _Message_Data {
@@ -151,7 +151,7 @@ msgboard_message_add(Evas_Object *mb, const char *msg, double timeout)
    if (!md)
      return 0;
 
-   sd->messages = evas_list_prepend(sd->messages, md);
+   sd->messages = eina_list_prepend(sd->messages, md);
 
    msg_edit(md, msg, timeout);
 
@@ -165,7 +165,7 @@ msgboard_message_edit(Evas_Object *mb, unsigned int msg_id, const char *msg, dou
 {
    E_Smart_Data *sd;
    Message_Data *md;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(mb, ;);
 
@@ -186,7 +186,7 @@ msgboard_message_del(Evas_Object *mb, unsigned int msg_id)
 {
    E_Smart_Data *sd;
    Message_Data *md;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(mb, ;);
 
@@ -199,7 +199,7 @@ msgboard_message_del(Evas_Object *mb, unsigned int msg_id)
    if (!l)
      return;
 
-   sd->messages = evas_list_remove_list(sd->messages, l);
+   sd->messages = eina_list_remove_list(sd->messages, l);
 
    msg_destroy(md);
 
@@ -275,7 +275,7 @@ _msgboard_smart_del(Evas_Object *obj)
      {
 	msg_destroy(sd->messages->data);
 	sd->messages = 
-	   evas_list_remove_list(sd->messages, sd->messages);
+	   eina_list_remove_list(sd->messages, sd->messages);
      }
 
    evas_object_del(sd->bg);
@@ -370,12 +370,12 @@ static void
 _msgboard_update(Evas_Object *mb)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
    int count;
 
    SMART_CHECK(mb, ;);
 
-   for (l = evas_list_last(sd->messages), count = 0; l; l = l->prev, count++)
+   for (l = eina_list_last(sd->messages), count = 0; l; l = l->prev, count++)
      {
 	Message_Data *md = l->data;
 	Evas_Coord x, y, w, h;

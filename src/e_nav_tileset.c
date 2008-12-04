@@ -67,7 +67,7 @@ struct _E_Smart_Data
    Evas_Object *clip;
    Evas_Coord x, y, w, h;
 
-   Evas_List *maps;
+   Eina_List *maps;
    Ecore_Hash *mons;
 
    Tileman *tman;
@@ -378,13 +378,13 @@ map_describe(void)
 
    edd = eet_data_descriptor_new(
 	 "E_Nav_Map_Desc", sizeof(E_Nav_Map_Desc),
-	 (void *) evas_list_next,
-	 (void *) evas_list_append,
-	 (void *) evas_list_data,
-	 (void *) evas_list_free,
-	 (void *) evas_hash_foreach,
-	 (void *) evas_hash_add,
-	 (void *) evas_hash_free);
+	 (void *) eina_list_next,
+	 (void *) eina_list_append,
+	 (void *) eina_list_data_get,
+	 (void *) eina_list_free,
+	 (void *) eina_hash_foreach,
+	 (void *) eina_hash_add,
+	 (void *) eina_hash_free);
 
    EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Nav_Map_Desc,
 	 "format", format, EET_T_UCHAR);
@@ -597,7 +597,7 @@ on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Ev
    E_Smart_Data *sd;
    struct stat st;
    const char *p;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(obj, ;);
 
@@ -643,7 +643,7 @@ on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Ev
 	     map = map_new(path);
 
 	     if (map)
-	       sd->maps = evas_list_prepend(sd->maps, map);
+	       sd->maps = eina_list_prepend(sd->maps, map);
 	  }
      }
    else
@@ -653,7 +653,7 @@ on_path_changed(void *obj, Ecore_File_Monitor *ecore_file_monitor, Ecore_File_Ev
 	     //printf("del %s\n", (char *) map->path);
 
 	     map_free(l->data);
-	     sd->maps = evas_list_remove_list(sd->maps, l);
+	     sd->maps = eina_list_remove_list(sd->maps, l);
 	  }
      }
 }
@@ -704,7 +704,7 @@ e_nav_tileset_monitor_del(Evas_Object *obj, const char *dn)
 {
    E_Smart_Data *sd;
    Ecore_File_Monitor *mon;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(obj, ;);
 
@@ -729,7 +729,7 @@ e_nav_tileset_monitor_del(Evas_Object *obj, const char *dn)
 	     map_free(map);
 
 	     l = l->prev;
-	     sd->maps = evas_list_remove_list(sd->maps, l->next);
+	     sd->maps = eina_list_remove_list(sd->maps, l->next);
 	  }
      }
 }
@@ -803,7 +803,7 @@ _e_nav_tileset_smart_del(Evas_Object *obj)
      {
 	map_free(sd->maps->data);
 
-	sd->maps = evas_list_remove_list(sd->maps, sd->maps);
+	sd->maps = eina_list_remove_list(sd->maps, sd->maps);
      }
 
    evas_object_del(sd->clip);
@@ -962,7 +962,7 @@ _e_nav_tileset_tile_get(Evas_Object *obj, int i, int j)
 
    if (!tileman_tile_load(tile, sd->level, x, y))
      {
-	Evas_List *l;
+	Eina_List *l;
 	int err = 1;
 
 	for (l = sd->maps; l; l = l->next)

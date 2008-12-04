@@ -37,7 +37,7 @@ struct _E_Smart_Data
 {
    Evas_Object *nav;
 
-   Evas_List  *contacts;
+   Eina_List  *contacts;
    Ecore_Hash *objectStore;
 
    Evas_Object *obj;      
@@ -413,7 +413,7 @@ _e_ctrl_smart_del(Evas_Object *obj)
      }
 
    while (sd->contacts)
-     sd->contacts = evas_list_remove_list(sd->contacts, sd->contacts);
+     sd->contacts = eina_list_remove_list(sd->contacts, sd->contacts);
 
    evas_object_del(sd->clip);
    evas_object_del(sd->map_overlay);
@@ -662,7 +662,7 @@ e_ctrl_contact_add(Evas_Object *obj, E_Nav_Card *card)
 
    SMART_CHECK(obj, ;);
 
-   sd->contacts = evas_list_prepend(sd->contacts, card);
+   sd->contacts = eina_list_prepend(sd->contacts, card);
 }
 
 void
@@ -672,14 +672,14 @@ e_ctrl_contact_delete(Evas_Object *obj, E_Nav_Card *card)
 
    SMART_CHECK(obj, ;);
 
-   sd->contacts = evas_list_remove(sd->contacts, card);
+   sd->contacts = eina_list_remove(sd->contacts, card);
 }
 
 E_Nav_Card *
 e_ctrl_contact_get_by_name(Evas_Object *obj, const char *name)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(obj, NULL;);
 
@@ -699,7 +699,7 @@ E_Nav_Card *
 e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(obj, NULL;);
 
@@ -715,7 +715,7 @@ e_ctrl_contact_get_by_number(Evas_Object *obj, const char *number)
    return NULL;
 }
 
-Evas_List *
+Eina_List *
 e_ctrl_contact_list(Evas_Object *obj)
 {
    E_Smart_Data *sd;

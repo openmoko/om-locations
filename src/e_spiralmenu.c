@@ -44,7 +44,7 @@ struct _E_Smart_Data
    
    Evas_Object     *clip;
 
-   Evas_List      *items;
+   Eina_List      *items;
    double           activate_time;
    int              activate_deactivate;
    Ecore_Animator  *animator;
@@ -173,7 +173,7 @@ void
 e_spiralmenu_activate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
    E_Spiralmenu_Item *si;
    
    SMART_CHECK(obj, ;);
@@ -195,7 +195,7 @@ void
 e_spiralmenu_deactivate(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
    E_Spiralmenu_Item *si;
    
    SMART_CHECK(obj, ;);
@@ -232,7 +232,7 @@ e_spiralmenu_theme_item_add(Evas_Object *obj, const char *icon, Evas_Coord size,
 				  _e_spiralmenu_cb_item_up, si);
    
    edje_object_part_text_set(si->item_obj, "e.text.name", label);
-   sd->items = evas_list_append(sd->items, si);
+   sd->items = eina_list_append(sd->items, si);
 }
 
 /* internal calls */
@@ -315,7 +315,7 @@ _e_spiralmenu_smart_del(Evas_Object *obj)
 	E_Spiralmenu_Item *si;
 	
 	si = sd->items->data;
-	sd->items = evas_list_remove_list(sd->items, sd->items);
+	sd->items = eina_list_remove_list(sd->items, sd->items);
 	evas_object_del(si->item_obj);
 	free(si);
      }
@@ -402,7 +402,7 @@ static void
 _e_spiralmenu_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
    E_Spiralmenu_Item *si;
    Evas_Coord x, y, w, h, xx, yy, ww, hh;
    double t, p, r;
@@ -414,7 +414,7 @@ _e_spiralmenu_update(Evas_Object *obj)
      {
 	t = 1.0;
 	evas_object_geometry_get(sd->src_obj, &x, &y, &w, &h);
-	p = (2.0 * M_PI) / (double)evas_list_count(sd->items);
+	p = (2.0 * M_PI) / (double)eina_list_count(sd->items);
 	r = 0.0;
 	for (l = sd->items; l; l = l->next)
 	  {
@@ -424,9 +424,9 @@ _e_spiralmenu_update(Evas_Object *obj)
 	     else
 	       {
 		  xx = cos(r + (t * 4.0)) * 
-		    ((48 / 2) + (si->sz * 0.5 * sqrt(evas_list_count(sd->items)) * t));
+		    ((48 / 2) + (si->sz * 0.5 * sqrt(eina_list_count(sd->items)) * t));
 		  yy = sin(r + (t * 4.0)) * 
-		    ((48 / 2) + (si->sz * 0.5 * sqrt(evas_list_count(sd->items)) * t));
+		    ((48 / 2) + (si->sz * 0.5 * sqrt(eina_list_count(sd->items)) * t));
 		  ww = si->sz * t;
 		  hh = si->sz * t;
 		  evas_object_move(si->item_obj, 
@@ -450,15 +450,15 @@ _e_spiralmenu_update(Evas_Object *obj)
 	t = 1.0 - ((1.0 - t) * (1.0 - t)); /* decelerate */
 	if (t >= 1.0) sd->activate_deactivate = 0;
 	evas_object_geometry_get(sd->src_obj, &x, &y, &w, &h);
-	p = (2.0 * M_PI) / (double)evas_list_count(sd->items);
+	p = (2.0 * M_PI) / (double)eina_list_count(sd->items);
 	r = 0.0;
 	for (l = sd->items; l; l = l->next)
 	  {
 	     si = l->data;
 	     xx = cos(r + (t * 4.0)) * 
-	       ((48 / 2) + (si->sz * 0.5 * sqrt(evas_list_count(sd->items)) * t));
+	       ((48 / 2) + (si->sz * 0.5 * sqrt(eina_list_count(sd->items)) * t));
 	     yy = sin(r + (t * 4.0)) * 
-	       ((48 / 2) + (si->sz * 0.5 * sqrt(evas_list_count(sd->items)) * t));
+	       ((48 / 2) + (si->sz * 0.5 * sqrt(eina_list_count(sd->items)) * t));
 	     ww = si->sz * t;
 	     hh = si->sz * t;
 	     evas_object_move(si->item_obj, 
@@ -482,15 +482,15 @@ _e_spiralmenu_update(Evas_Object *obj)
 	  }
 	t = 1.0 - t;
 	evas_object_geometry_get(sd->src_obj, &x, &y, &w, &h);
-	p = (2.0 * M_PI) / (double)evas_list_count(sd->items);
+	p = (2.0 * M_PI) / (double)eina_list_count(sd->items);
 	r = 0.0;
 	for (l = sd->items; l; l = l->next)
 	  {
 	     si = l->data;
 	     xx = cos(r + (t * 4.0)) * 
-	       ((48 / 2) + (si->sz * 0.5 * sqrt(evas_list_count(sd->items)) * t));
+	       ((48 / 2) + (si->sz * 0.5 * sqrt(eina_list_count(sd->items)) * t));
 	     yy = sin(r + (t * 4.0)) * 
-	       ((48 / 2) + (si->sz * 0.5 * sqrt(evas_list_count(sd->items)) * t));
+	       ((48 / 2) + (si->sz * 0.5 * sqrt(eina_list_count(sd->items)) * t));
 	     ww = si->sz * t;
 	     hh = si->sz * t;
 	     evas_object_move(si->item_obj, 

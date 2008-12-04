@@ -101,10 +101,10 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
    
    neod = evas_object_data_get(obj, "nav_world_item_neo_other_data");
    if (!neod) return;
-   if (neod->name) evas_stringshare_del(neod->name);
-   if (neod->phone) evas_stringshare_del(neod->phone);
-   if (neod->alias) evas_stringshare_del(neod->alias);
-   if (neod->twitter) evas_stringshare_del(neod->twitter);
+   if (neod->name) eina_stringshare_del(neod->name);
+   if (neod->phone) eina_stringshare_del(neod->phone);
+   if (neod->alias) eina_stringshare_del(neod->alias);
+   if (neod->twitter) eina_stringshare_del(neod->twitter);
    free(neod);
 }
 
@@ -148,8 +148,8 @@ e_nav_world_item_neo_other_name_set(Evas_Object *item, const char *name)
    
    neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
    if (!neod) return;
-   if (neod->name) evas_stringshare_del(neod->name);
-   if (name) neod->name = evas_stringshare_add(name);
+   if (neod->name) eina_stringshare_del(neod->name);
+   if (name) neod->name = eina_stringshare_add(name);
    else neod->name = NULL;
    edje_object_part_text_set(item, "e.text.name", neod->name);
 }
@@ -171,8 +171,8 @@ e_nav_world_item_neo_other_phone_set(Evas_Object *item, const char *phone)
    
    neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
    if (!neod) return;
-   if (neod->phone) evas_stringshare_del(neod->phone);
-   if (phone) neod->phone = evas_stringshare_add(phone);
+   if (neod->phone) eina_stringshare_del(neod->phone);
+   if (phone) neod->phone = eina_stringshare_add(phone);
    else neod->phone = NULL;
 }
 
@@ -193,8 +193,8 @@ e_nav_world_item_neo_other_alias_set(Evas_Object *item, const char *alias)
    
    neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
    if (!neod) return;
-   if (neod->alias) evas_stringshare_del(neod->alias);
-   if (alias) neod->alias = evas_stringshare_add(alias);
+   if (neod->alias) eina_stringshare_del(neod->alias);
+   if (alias) neod->alias = eina_stringshare_add(alias);
    else neod->alias = NULL;
 }
 
@@ -215,8 +215,8 @@ e_nav_world_item_neo_other_twitter_set(Evas_Object *item, const char *twitter)
    
    neod = evas_object_data_get(item, "nav_world_item_neo_other_data");
    if (!neod) return;
-   if (neod->twitter) evas_stringshare_del(neod->twitter);
-   if (twitter) neod->twitter = evas_stringshare_add(twitter);
+   if (neod->twitter) eina_stringshare_del(neod->twitter);
+   if (twitter) neod->twitter = eina_stringshare_add(twitter);
    else neod->twitter = NULL;
 }
 

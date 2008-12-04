@@ -65,7 +65,7 @@ struct _E_Smart_Data
    Evas_Object     *tileset;
    
    /* the list of items in the world as we have been told by the backend */
-   Evas_List       *world_items;
+   Eina_List       *world_items;
    Evas_Object     *neo_me;
    
    /* directory to find theme .edj files from the module - if there is one */
@@ -496,7 +496,7 @@ e_nav_world_item_add(Evas_Object *obj, Evas_Object *item)
    evas_object_data_set(item, "nav_world_item", nwi);
    evas_object_event_callback_add(item, EVAS_CALLBACK_DEL,
 	 _e_nav_world_item_cb_item_del, NULL);
-   sd->world_items = evas_list_append(sd->world_items, item);
+   sd->world_items = eina_list_append(sd->world_items, item);
    evas_object_smart_member_add(nwi->item, nwi->obj);
    evas_object_clip_set(nwi->item, sd->clip);
 
@@ -516,7 +516,7 @@ e_nav_world_item_delete(Evas_Object *obj, Evas_Object *item)
    if (!nwi)
      return;
 
-   sd->world_items = evas_list_remove(sd->world_items, item);
+   sd->world_items = eina_list_remove(sd->world_items, item);
 
    evas_object_event_callback_del(item, EVAS_CALLBACK_DEL,
 	 _e_nav_world_item_cb_item_del);
@@ -859,7 +859,7 @@ _e_nav_smart_del(Evas_Object *obj)
 					    _e_nav_world_item_cb_item_del);
 	     evas_object_del(nwi->item);
 	     _e_nav_world_item_free(nwi);
-	     sd->world_items = evas_list_remove_list(sd->world_items,
+	     sd->world_items = eina_list_remove_list(sd->world_items,
 						     sd->world_items);
 	  }
      }
@@ -1177,7 +1177,7 @@ static void
 _e_nav_update(Evas_Object *obj)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
 
    sd = evas_object_smart_data_get(obj);
    _e_nav_wallpaper_update(obj);
@@ -1404,6 +1404,6 @@ _e_nav_world_item_cb_item_del(void *data, Evas *evas, Evas_Object *obj, void *ev
    nwi = evas_object_data_get(obj, "nav_world_item");
    if (!nwi) return;
    sd = evas_object_smart_data_get(nwi->obj);
-   sd->world_items = evas_list_remove(sd->world_items, obj);
+   sd->world_items = eina_list_remove(sd->world_items, obj);
    _e_nav_world_item_free(nwi);
 }

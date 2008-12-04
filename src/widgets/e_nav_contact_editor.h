@@ -34,6 +34,6 @@ size_t          e_contact_editor_input_length_limit_get(Evas_Object *obj);
 void            e_contact_editor_input_set(Evas_Object *obj, const char *name, const char *input);
 const char     *e_contact_editor_input_get(Evas_Object *obj);
 
-void            e_contact_editor_contacts_set(Evas_Object *obj, Evas_List *list);
+void            e_contact_editor_contacts_set(Evas_Object *obj, Eina_List *list);
 
 #endif /* E_NAV_CONTACT_EDITOR_H */

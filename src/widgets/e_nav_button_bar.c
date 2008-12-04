@@ -59,7 +59,7 @@ struct _E_Smart_Data
    Evas_Coord req_button_width;
    Evas_Coord req_button_height;
 
-   Evas_List *buttons;
+   Eina_List *buttons;
    Evas_Coord button_width;
    Evas_Coord button_height;
 
@@ -189,7 +189,7 @@ static void
 e_nav_button_bar_button_size_calc(Evas_Object *bbar)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
    Evas_Coord w, h;
 
    SMART_CHECK(bbar, ;);
@@ -283,7 +283,7 @@ e_nav_button_bar_num_buttons_get(Evas_Object *bbar)
 
    SMART_CHECK(bbar, 0;);
 
-   return evas_list_count(sd->buttons);
+   return eina_list_count(sd->buttons);
 }
 
 Evas_Coord
@@ -300,7 +300,7 @@ e_nav_button_bar_width_min_calc(Evas_Object *bbar)
 
    w = sd->pad_front + sd->pad_back;
 
-   count = evas_list_count(sd->buttons);
+   count = eina_list_count(sd->buttons);
    if (count)
      w += sd->button_width * count + sd->pad_inter * (count - 1);
 
@@ -413,7 +413,7 @@ e_nav_button_bar_bdata_add(Evas_Object *bbar, Button_Data *bdata)
 {
    E_Smart_Data *sd;
    Button_Data *prev = NULL;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(bbar, ;);
 
@@ -443,7 +443,7 @@ e_nav_button_bar_bdata_add(Evas_Object *bbar, Button_Data *bdata)
 	  }
      }
 
-   sd->buttons = evas_list_prepend(sd->buttons, bdata);
+   sd->buttons = eina_list_prepend(sd->buttons, bdata);
    e_nav_button_bar_button_size_calc(bbar);
 }
 
@@ -452,11 +452,11 @@ e_nav_button_bar_bdata_remove(Evas_Object *bbar, Button_Data *bdata)
 {
    E_Smart_Data *sd;
    Button_Data *prev = NULL;
-   Evas_List *l, *tmp_l;
+   Eina_List *l, *tmp_l;
 
    SMART_CHECK(bbar, ;);
 
-   l = evas_list_find(sd->buttons, bdata);
+   l = eina_list_data_find(sd->buttons, bdata);
    if (!l)
      return;
 
@@ -478,7 +478,7 @@ e_nav_button_bar_bdata_remove(Evas_Object *bbar, Button_Data *bdata)
 	prev->pad = NULL;
      }
 
-   sd->buttons = evas_list_remove_list(sd->buttons, l);
+   sd->buttons = eina_list_remove_list(sd->buttons, l);
    e_nav_button_bar_button_size_calc(bbar);
 }
 
@@ -525,7 +525,7 @@ e_nav_button_bar_button_remove(Evas_Object *bbar, void (*func)(void *data, Evas_
 {
    E_Smart_Data *sd;
    Button_Data *bdata;
-   Evas_List *l;
+   Eina_List *l;
 
    SMART_CHECK(bbar, ;);
 
@@ -608,7 +608,7 @@ _e_nav_button_bar_smart_del(Evas_Object *obj)
      {
 	button_destroy(sd->buttons->data);
 	sd->buttons = 
-	   evas_list_remove_list(sd->buttons, sd->buttons);
+	   eina_list_remove_list(sd->buttons, sd->buttons);
      }
 
    if (sd->bg)
@@ -712,13 +712,13 @@ static void
 _e_nav_button_bar_update(Evas_Object *bbar)
 {
    E_Smart_Data *sd;
-   Evas_List *l;
+   Eina_List *l;
    Evas_Coord x, y, w, h;
    int count;
 
    SMART_CHECK(bbar, ;);
 
-   count = evas_list_count(sd->buttons);
+   count = eina_list_count(sd->buttons);
    if (!count)
      return;
 
@@ -757,7 +757,7 @@ _e_nav_button_bar_update(Evas_Object *bbar)
      }
 
    /* layout buttons in the front */
-   for (l = evas_list_last(sd->buttons); l; l = l->prev)
+   for (l = eina_list_last(sd->buttons); l; l = l->prev)
      {
 	Button_Data *bdata = l->data;
 

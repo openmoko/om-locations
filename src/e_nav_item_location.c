@@ -73,12 +73,12 @@ location_save(Evas_Object *item, const char *title, const char *msg)
 
    if (diversity_tag_prop_set(locd->tag, "description", desc))
      {
-        if (locd->name) evas_stringshare_del(locd->name);
-        if (title) locd->name = evas_stringshare_add(title);
+        if (locd->name) eina_stringshare_del(locd->name);
+        if (title) locd->name = eina_stringshare_add(title);
         else locd->name = NULL;
 
-        if (locd->note) evas_stringshare_del(locd->note);
-        if (msg) locd->note = evas_stringshare_add(msg);
+        if (locd->note) eina_stringshare_del(locd->note);
+        if (msg) locd->note = eina_stringshare_add(msg);
         else locd->note = NULL;
 
         e_ctrl_taglist_tag_set(xxx_ctrl, item);
@@ -259,8 +259,8 @@ _e_nav_world_item_cb_del(void *data, Evas *evas, Evas_Object *obj, void *event)
 
    locd = evas_object_data_get(obj, "nav_world_item_location_data");
    if (!locd) return;
-   if (locd->name) evas_stringshare_del(locd->name);
-   if (locd->note) evas_stringshare_del(locd->note);
+   if (locd->name) eina_stringshare_del(locd->name);
+   if (locd->note) eina_stringshare_del(locd->note);
    if (locd->timestring) free(locd->timestring);
 
    edje_object_signal_callback_del(obj, "MENU_ACTIVATE", "e.text.name", cb_menu_activate);
@@ -310,8 +310,8 @@ e_nav_world_item_location_name_set(Evas_Object *item, const char *name)
 
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
-   if (locd->name) evas_stringshare_del(locd->name);
-   if (name) locd->name = evas_stringshare_add(name);
+   if (locd->name) eina_stringshare_del(locd->name);
+   if (name) locd->name = eina_stringshare_add(name);
    else locd->name = NULL;
    if(!locd->name || !strcmp(locd->name, ""))
      edje_object_part_text_set(item, "e.text.name", _("No Title"));
@@ -336,8 +336,8 @@ e_nav_world_item_location_note_set(Evas_Object *item, const char *note)
 
    locd = evas_object_data_get(item, "nav_world_item_location_data");
    if (!locd) return;
-   if (locd->note) evas_stringshare_del(locd->note);
-   if (note) locd->note = evas_stringshare_add(note);
+   if (locd->note) eina_stringshare_del(locd->note);
+   if (note) locd->note = eina_stringshare_add(note);
    else locd->note = NULL;
 }
 
@@ -871,7 +871,7 @@ action_show_editor(Action_Data *act_data)
    if (!editor)
      {
 	Evas_Coord x, y, w, h;
-	Evas_List *contacts;
+	Eina_List *contacts;
 
 	editor = e_contact_editor_add(act_data->evas);
 	if (!editor)
