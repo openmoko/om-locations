@@ -54,6 +54,7 @@ struct _E_Smart_Data
    Tileman *tman;
 
    int tz, tx, ty;
+   int path_loaded;
 
    /* these members are used by job_ */
    E_DBus_Proxy_Call *pending;
@@ -260,6 +261,7 @@ tileman_tile_reset(Evas_Object *tile, int z, int x, int y)
    sd->tz = z;
    sd->tx = x;
    sd->ty = y;
+   sd->path_loaded = 0;
 
    if (sd->fallback)
      edje_object_part_text_set(sd->fallback, "status", NULL);
@@ -270,15 +272,21 @@ tileman_tile_show(Evas_Object *tile)
 {
    E_Smart_Data *sd;
    char buf[PATH_MAX];
-   int err = 0;
+   int err;
 
    SMART_CHECK(tile, ;);
 
-   snprintf(buf, sizeof(buf), "%s/%s/%d/%d/%d.%s",
-	 sd->tman->dir, sd->tman->src,
-	 sd->tz, sd->tx, sd->ty, sd->tman->suffix);
+   if (sd->path_loaded) {
+	evas_object_image_reload(sd->img);
+   } else {
+	snprintf(buf, sizeof(buf), "%s/%s/%d/%d/%d.%s",
+	      sd->tman->dir, sd->tman->src,
+	      sd->tz, sd->tx, sd->ty, sd->tman->suffix);
 
-   evas_object_image_file_set(sd->img, buf, NULL);
+	evas_object_image_file_set(sd->img, buf, NULL);
+	sd->path_loaded = 1;
+   }
+
    err = evas_object_image_load_error_get(sd->img);
    if (!err)
      evas_object_show(sd->img);
@@ -318,6 +326,9 @@ tileman_tile_image_set(Evas_Object *tile, const char *path, const char *key)
    SMART_CHECK(tile, 0;);
 
    evas_object_image_file_set(sd->img, path, key);
+   /* a custom path is used */
+   sd->path_loaded = 0;
+
    err = evas_object_image_load_error_get(sd->img);
    if (!err)
      {
