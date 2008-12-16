@@ -506,7 +506,7 @@ map_new(const char *path)
 
 	map->desc->format = 0;
 	map->desc->version = 0;
-	map->desc->source = NULL;
+	map->desc->source = strdup("osm");
 	map->desc->min_level = 0;
 	map->desc->max_level = 20;
 	map->desc->lon = -180.0;
