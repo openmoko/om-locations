@@ -274,7 +274,7 @@ tileman_tile_show(Evas_Object *tile)
    char buf[PATH_MAX];
    int err;
 
-   SMART_CHECK(tile, ;);
+   SMART_CHECK(tile, 0;);
 
    if (sd->path_loaded) {
 	evas_object_image_reload(sd->img);

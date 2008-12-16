@@ -155,7 +155,7 @@ e_flyingmenu_item_size_min_get(Evas_Object *obj)
 {
    E_Smart_Data *sd;
    
-   SMART_CHECK(obj, ;);
+   SMART_CHECK(obj, 0;);
 
    return sd->button_min_size;
 }

@@ -109,7 +109,7 @@ e_nav_button_bar_embed_set(Evas_Object *bbar, Evas_Object *embedding, const char
 {
    E_Smart_Data *sd;
 
-   SMART_CHECK(bbar, 0;);
+   SMART_CHECK(bbar, ;);
 
    sd->embedding = embedding;
 

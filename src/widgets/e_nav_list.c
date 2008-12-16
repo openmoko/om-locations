@@ -469,7 +469,7 @@ e_nav_list_fake_get(Evas_Object *li)
 {
    E_Smart_Data *sd;
 
-   SMART_CHECK(li, ;);
+   SMART_CHECK(li, FALSE;);
 
    return (sd->fake_row != NULL);
 }

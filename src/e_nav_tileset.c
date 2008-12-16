@@ -312,7 +312,7 @@ e_nav_tileset_level_to_span(Evas_Object *obj, int level)
 {
    E_Smart_Data *sd;
 
-   SMART_CHECK(obj, ;);
+   SMART_CHECK(obj, 0;);
 
    if (level < sd->min_level)
      level = sd->min_level;
