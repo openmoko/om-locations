@@ -453,18 +453,6 @@ map_read(E_Nav_Map *map)
 	  map->desc->min_level = 0;
 	if (map->desc->max_level < 0)
 	  map->desc->max_level = 0;
-
-	printf("%s: %d %d %s %d %d %f %f %f %f\n",
-	      map->path,
-	      map->desc->format,
-	      map->desc->version,
-	      map->desc->source,
-	      map->desc->min_level,
-	      map->desc->max_level,
-	      map->desc->lon,
-	      map->desc->lat,
-	      map->desc->width,
-	      map->desc->height);
      }
 
    eet_data_descriptor_free(edd);
@@ -514,6 +502,18 @@ map_new(const char *path)
 	map->desc->width = 360.0;
 	map->desc->height = 180.0;
      }
+
+   printf("%s: %d %d %s %d %d %f %f %f %f\n",
+	 map->path,
+	 map->desc->format,
+	 map->desc->version,
+	 map->desc->source,
+	 map->desc->min_level,
+	 map->desc->max_level,
+	 map->desc->lon,
+	 map->desc->lat,
+	 map->desc->width,
+	 map->desc->height);
 
    for (z = 0; z < 18; z++)
      {
