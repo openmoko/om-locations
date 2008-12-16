@@ -79,7 +79,7 @@ static void job_cancel(Tileman *tman, E_Smart_Data *sd);
 #define SMART_NAME "tileman_tile"
 static Evas_Smart *_e_smart = NULL;
 
-#define TILE_VALID_NUM(lv, num) ((num) >= 0 && (num) < (1 << lv))
+#define TILE_VALID_NUM(lv, num) ((num) >= 0 && (lv) >= 0 && (num) < (1 << lv))
 #define TILE_VALID(lv, x, y) (TILE_VALID_NUM(lv, x) && TILE_VALID_NUM(lv, y))
 
 Tileman *
@@ -229,6 +229,8 @@ Evas_Object *tileman_tile_add(Tileman *tman)
    evas_object_show(sd->fallback);
 
    sd->tman = tman;
+   /* invalidate current tile */
+   sd->tz = -1;
 
    return tile;
 }
@@ -263,11 +265,34 @@ tileman_tile_reset(Evas_Object *tile, int z, int x, int y)
      edje_object_part_text_set(sd->fallback, "status", NULL);
 }
 
+static int
+tileman_tile_show(Evas_Object *tile)
+{
+   E_Smart_Data *sd;
+   char buf[PATH_MAX];
+   int err = 0;
+
+   SMART_CHECK(tile, ;);
+
+   snprintf(buf, sizeof(buf), "%s/%s/%d/%d/%d.%s",
+	 sd->tman->dir, sd->tman->src,
+	 sd->tz, sd->tx, sd->ty, sd->tman->suffix);
+
+   evas_object_image_file_set(sd->img, buf, NULL);
+   err = evas_object_image_load_error_get(sd->img);
+   if (!err)
+     evas_object_show(sd->img);
+   else
+     tileman_tile_fail(tile, _("failed to load"));
+
+   return (!err);
+}
+
 int
 tileman_tile_load(Evas_Object *tile, int z, int x, int y)
 {
    E_Smart_Data *sd;
-   int err = 0;
+   int ret = 1;
 
    SMART_CHECK(tile, 0;);
 
@@ -277,49 +302,24 @@ tileman_tile_load(Evas_Object *tile, int z, int x, int y)
    tileman_tile_reset(tile, z, x, y);
 
    if (TILE_VALID(z, x, y))
-     {
-	char buf[PATH_MAX];
-
-	snprintf(buf, sizeof(buf), "%s/%s/%d/%d/%d.%s",
-	      sd->tman->dir, sd->tman->src,
-	      sd->tz, sd->tx, sd->ty, sd->tman->suffix);
-
-	evas_object_image_file_set(sd->img, buf, NULL);
-	err = evas_object_image_load_error_get(sd->img);
-	if (!err)
-	  evas_object_show(sd->img);
-	else
-	  tileman_tile_fail(tile, _("failed to load"));
-     }
+     ret = tileman_tile_show(tile);
    else
-     {
-	tileman_tile_fail(tile, _("another world"));
-	err = 0;
-     }
+     tileman_tile_fail(tile, _("another world"));
 
-   return (!err);
+   return ret;
 }
 
 int
 tileman_tile_image_set(Evas_Object *tile, const char *path, const char *key)
 {
    E_Smart_Data *sd;
-   const char *old_path, *old_key;
    int err;
 
    SMART_CHECK(tile, 0;);
 
-   if (job_busy(sd->tman, sd))
-     evas_object_image_file_get(sd->img, &old_path, &old_key);
-
    evas_object_image_file_set(sd->img, path, key);
    err = evas_object_image_load_error_get(sd->img);
-   if (err)
-     {
-	if (job_busy(sd->tman, sd))
-	  evas_object_image_file_set(sd->img, old_path, old_key);
-     }
-   else
+   if (!err)
      {
 	if (job_busy(sd->tman, sd))
 	  job_cancel(sd->tman, sd);
@@ -331,24 +331,17 @@ tileman_tile_image_set(Evas_Object *tile, const char *path, const char *key)
 }
 
 int
-tileman_tile_download(Evas_Object *tile, int z, int x, int y)
+tileman_tile_download(Evas_Object *tile)
 {
    E_Smart_Data *sd;
    int ret = 0;
 
    SMART_CHECK(tile, 0;);
 
-   if (sd->tz == z && sd->tx == x && sd->ty == y)
-     {
-	if (job_busy(sd->tman, sd))
-	  return 1;
-     }
-   else
-     {
-	tileman_tile_reset(tile, z, x, y);
-     }
+   if (job_busy(sd->tman, sd))
+     return 1;
 
-   if (TILE_VALID(z, x, y) && sd->tman->proxy_level == z)
+   if (TILE_VALID(sd->tz, sd->tx, sd->ty) && sd->tman->proxy_level == sd->tz)
      ret = job_submit(sd->tman, sd, 1);
 
    if (ret)
@@ -401,10 +394,7 @@ on_job_completed(Tileman *tman, DBusMessage *message)
 
    //printf("job %u completed with status %d\n", id, status);
    if (status == 0)
-     {
-	evas_object_image_reload(sd->img);
-	status = evas_object_image_load_error_get(sd->img);
-     }
+     status = !tileman_tile_show(tile);
 
    if (status == 0)
      evas_object_show(sd->img);

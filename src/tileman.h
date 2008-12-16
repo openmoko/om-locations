@@ -45,7 +45,7 @@ Evas_Object            *tileman_tile_add(Tileman *tman);
 int                     tileman_tile_load(Evas_Object *tile, int z, int x, int y);
 int                     tileman_tile_image_set(Evas_Object *tile, const char *path, const char *key);
 
-int                     tileman_tile_download(Evas_Object *tile, int z, int x, int y);
+int                     tileman_tile_download(Evas_Object *tile);
 void                    tileman_tile_cancel(Evas_Object *tile);
 
 #endif /* TILEMAN_H */

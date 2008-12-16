@@ -980,7 +980,7 @@ _e_nav_tileset_tile_get(Evas_Object *obj, int i, int j)
 	  }
    
 	if (err != EVAS_LOAD_ERROR_NONE)
-	  tileman_tile_download(tile, sd->level, x, y);
+	  tileman_tile_download(tile);
      }
 
    return tile;
